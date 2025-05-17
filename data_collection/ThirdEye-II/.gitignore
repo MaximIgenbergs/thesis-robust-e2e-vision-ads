@@ -1,0 +1,10 @@
+
+/Data
+*.pyc
+*.ckpt
+/model/segmentation/unet/lightning_logs
+/simulator
+/udacity_dataset_lake_12_12_2
+/.idea
+/model/ckpts
+unitylog.txt
