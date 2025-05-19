@@ -6,11 +6,12 @@ from udacity_gym import UdacitySimulator, UdacityGym, UdacityAction
 from udacity_gym.agent import PIDUdacityAgent, PIDUdacityAgent_Angle
 from udacity_gym.agent_tf import SupervisedAgent_tf
 from udacity_gym.agent_callback import LogObservationCallback, PauseSimulationCallback, ResumeSimulationCallback
-from utils.conf import PROJECT_DIR, Track_Infos
+from utils.conf import Track_Infos
 
+# Configuration
 track_index = 2 # jungle
 logging = True
-steps = 100 # enough for 1 lap in jungle (~ 5200 )
+steps = 2000 # 1 lap in jungle ~ 5200
 
 if __name__ == '__main__':
 
@@ -63,7 +64,7 @@ if __name__ == '__main__':
             track=track,
             before_action_callbacks=[],
         )
-        print("log_observation_callback disabled.")
+        print("Logging has disabled by user.")
 
     # Take steps
     try:
@@ -81,18 +82,16 @@ if __name__ == '__main__':
         print("Execution interrupted by user. Saving logs and exiting...")
 
     finally:
-        # Persist final info.json if present
         if info:
             info_path = log_directory.joinpath("info.json")
             with open(info_path, "w") as f:
                 json.dump(info, f)
 
-        # Save logged observations (images + log.csv)
         if log_observation_callback.logs:
             log_observation_callback.save()
             print(f"Logs saved to {log_directory}")
         else:
-            print("No observations were recorded; nothing to save.")
+            print("No observations were recorded --> nothing to save.")
 
         # Cleanly shut down simulator and environment
         simulator.close()

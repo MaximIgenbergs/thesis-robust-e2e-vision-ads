@@ -16,9 +16,9 @@ simulator_infos = defaultdict(dict)
 
 # pick the right executable name
 if sys.platform == "darwin":
-    exe = PROJECT_DIR / "simulator" / "builds_mac.app"
+    exe = PROJECT_DIR / "udacity_gym_binaries" / "builds_mac.app"
 elif sys.platform.startswith("linux"):
-    exe = PROJECT_DIR / "simulator" / "build_angle_diff" / "udacity.x86_64"
+    exe = PROJECT_DIR / "udacity_gym_binaries" / "build_angle_diff" / "udacity.x86_64"
 else:
     raise RuntimeError(f"Unsupported platform: {sys.platform}")
 

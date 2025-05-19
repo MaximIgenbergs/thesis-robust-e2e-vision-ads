@@ -1,3 +1,5 @@
+# type: ignore
+
 import pathlib
 import random
 import lightning as pl

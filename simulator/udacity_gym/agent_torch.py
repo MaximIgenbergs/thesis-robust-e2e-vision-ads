@@ -85,7 +85,7 @@ class PIDUdacityAgent_Angle(UdacityAgent):
         elif self.track == "jungle":
             pid_parameters = {
                 'Kp_angle': 0.01,
-                'Kd_angle': 0.002,
+                'Kd_angle': 0.004,
                 'Ki_angle': 0.0,
                 'Kp_speed': 0.1,
                 'Kd_speed': 0.0,
