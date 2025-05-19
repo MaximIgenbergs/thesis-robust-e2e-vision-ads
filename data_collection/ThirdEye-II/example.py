@@ -9,6 +9,8 @@ from udacity_gym.agent_callback import LogObservationCallback, PauseSimulationCa
 from utils.conf import PROJECT_DIR, Track_Infos
 
 track_index = 2 # jungle
+logging = True
+steps = 6000 # enough for 1 lap in jungle (~ 5200 )
 
 if __name__ == '__main__':
 
@@ -50,28 +52,21 @@ if __name__ == '__main__':
 
     log_observation_callback = LogObservationCallback(log_directory) 
 
-    # agent = PIDUdacityAgent(#PIDUdacityAgent(_Angle
-    #     kp=0.05, kd=0.8, ki=0.000001,
-    #     # kp=0.12, kd=1.2, ki=0.000001,
-    #     before_action_callbacks=[],
-    #     after_action_callbacks=[log_observation_callback],
-    #     # track = track
-    # )
-    # agent = PIDUdacityAgent(#PIDUdacityAgent(_Angle
-    #     kp=0.05, kd=0.8, ki=0.000001,
-    #     # kp=0.12, kd=1.2, ki=0.000001,
-    #     before_action_callbacks=[],
-    #     after_action_callbacks=[log_observation_callback],
-    #     # track = track
-    # )
-    agent = PIDUdacityAgent_Angle(
-        track = track,
-        before_action_callbacks=[],
-        # after_action_callbacks=[log_observation_callback], # add logging
-    )
+    if logging:
+        agent = PIDUdacityAgent_Angle(
+            track=track,
+            before_action_callbacks=[],
+            after_action_callbacks=[log_observation_callback],
+        )
+    else:
+        agent = PIDUdacityAgent_Angle(
+            track=track,
+            before_action_callbacks=[],
+        )
+        print("log_observation_callback disabled.")
 
-    # Interacting with the gym environment
-    for _ in tqdm.tqdm(range(5000)):
+    # Take steps
+    for _ in tqdm.tqdm(range(steps)):
         action = agent(observation)
         last_observation = observation
         observation, reward, terminated, truncated, info = env.step(action)
@@ -83,7 +78,12 @@ if __name__ == '__main__':
     if info:
         json.dump(info, open(log_directory.joinpath("info.json"), "w"))
 
-    log_observation_callback.save()
+
+    if log_observation_callback.logs:
+        log_observation_callback.save()
+    else:
+        print("No observations were logged.")
+
     simulator.close()
     env.close()
     print("Experiment concluded.")
