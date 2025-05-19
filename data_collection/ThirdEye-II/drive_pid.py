@@ -10,7 +10,7 @@ from utils.conf import PROJECT_DIR, Track_Infos
 
 track_index = 2 # jungle
 logging = True
-steps = 6000 # enough for 1 lap in jungle (~ 5200 )
+steps = 100 # enough for 1 lap in jungle (~ 5200 )
 
 if __name__ == '__main__':
 
@@ -20,7 +20,7 @@ if __name__ == '__main__':
 
     # Track settings
     track = Track_Infos[track_index]['track_name']
-    daytime = "day" # TODO: add day night cycle, maybe 'daynight'
+    daytime = "day" # TODO: add days night cycle, maybe 'daynight'
     weather = "sunny" #TODO: add weather cycle? can be changed in the simulator at runtime
     log_directory = pathlib.Path(f"udacity_dataset_lake_dave/{track}_{weather}_{daytime}")
     print(Track_Infos[track_index]['simulator'])
@@ -66,24 +66,35 @@ if __name__ == '__main__':
         print("log_observation_callback disabled.")
 
     # Take steps
-    for _ in tqdm.tqdm(range(steps)):
-        action = agent(observation)
-        last_observation = observation
-        observation, reward, terminated, truncated, info = env.step(action)
+    try:
+        for _ in tqdm.tqdm(range(steps)):
+            action = agent(observation)
+            last_observation = observation
+            observation, reward, terminated, truncated, info = env.step(action)
 
-        while observation.time == last_observation.time:
-            observation = env.observe()
-            time.sleep(0.0025)
+            # Wait until a new frame arrives
+            while observation.time == last_observation.time:
+                observation = env.observe()
+                time.sleep(0.0025)
 
-    if info:
-        json.dump(info, open(log_directory.joinpath("info.json"), "w"))
+    except KeyboardInterrupt:
+        print("Execution interrupted by user. Saving logs and exiting...")
 
+    finally:
+        # Persist final info.json if present
+        if info:
+            info_path = log_directory.joinpath("info.json")
+            with open(info_path, "w") as f:
+                json.dump(info, f)
 
-    if log_observation_callback.logs:
-        log_observation_callback.save()
-    else:
-        print("No observations were logged.")
+        # Save logged observations (images + log.csv)
+        if log_observation_callback.logs:
+            log_observation_callback.save()
+            print(f"Logs saved to {log_directory}")
+        else:
+            print("No observations were recorded; nothing to save.")
 
-    simulator.close()
-    env.close()
-    print("Experiment concluded.")
+        # Cleanly shut down simulator and environment
+        simulator.close()
+        env.close()
+        print("Experiment concluded.")
