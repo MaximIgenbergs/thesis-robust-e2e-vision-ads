@@ -3,6 +3,8 @@ import tensorflow as tf
 from utils.data_loader import DrivingDataset
 from utils.utils import load_dataframes
 from model import build_model
+from matplotlib import pyplot as plt
+import datetime
 
 # Configuration
 CSV_PATH      = 'udacity_dataset_lake_dave/jungle_sunny_day/log.csv'
@@ -77,6 +79,27 @@ history = model.fit(
     callbacks=callbacks
 )
 
-# 8) Save final model
+# Save final model
 model.save(os.path.join(SAVE_DIR, 'final_model.h5'))
 print(f"Training complete. Models saved to {SAVE_DIR}")
+
+# Create a loss graph
+fig_dir = os.path.join(SAVE_DIR, 'figures')
+os.makedirs(fig_dir, exist_ok=True)
+
+plt.figure()
+plt.plot(history.history['loss'],   label='train_loss')
+plt.plot(history.history['val_loss'], label='val_loss')
+plt.xlabel('Epoch')
+plt.ylabel('Loss')
+plt.title('Training & Validation Loss')
+plt.legend()
+
+ts = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+plot_fn = f"loss_curve_{ts}.png"
+plot_path = os.path.join(fig_dir, plot_fn)
+
+plt.savefig(plot_path)
+plt.close()
+
+print(f"Loss curve saved to {plot_path}")
