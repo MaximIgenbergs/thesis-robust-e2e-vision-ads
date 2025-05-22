@@ -1,3 +1,4 @@
+import datetime
 import json
 import pathlib
 import time
@@ -11,7 +12,7 @@ from utils.conf import Track_Infos
 # Configuration
 track_index = 2 # jungle
 logging = True
-steps = 2000 # 1 lap in jungle ~ 5200
+steps = 6000 # 1 lap in jungle ~ 5200
 
 if __name__ == '__main__':
 
@@ -21,9 +22,11 @@ if __name__ == '__main__':
 
     # Track settings
     track = Track_Infos[track_index]['track_name']
-    daytime = "day" # TODO: add days night cycle, maybe 'daynight'
-    weather = "sunny" #TODO: add weather cycle? can be changed in the simulator at runtime
-    log_directory = pathlib.Path(f"udacity_dataset_lake_dave/{track}_{weather}_{daytime}")
+    daytime = "day"
+    weather = "sunny"
+    ts = datetime.datetime.now().strftime('%d_%m_%Y_%H_%M_%S')
+    log_directory = pathlib.Path(f"logs/log_{ts}")
+    log_directory.mkdir(parents=True, exist_ok=True)
     print(Track_Infos[track_index]['simulator'])
 
     # Creating the simulator wrapper

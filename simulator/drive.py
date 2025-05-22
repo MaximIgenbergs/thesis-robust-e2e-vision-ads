@@ -1,7 +1,7 @@
-
 import udacity_gym.global_manager as _gm 
 _gm.get_simulator_state = lambda: {} # Fix by ChatGPT to remove multiprocessing.Manager spawn that hangs on macOS
 
+import datetime
 import json
 import pathlib
 import time
@@ -19,7 +19,7 @@ from tensorflow.keras.models import load_model  # type: ignore
 track_index = 2 # jungle
 logging = True
 steps = 4000  
-model_path = Path(__file__).resolve().parents[1] / 'models/baseline_cnn/models/best_model.h5'
+model_path = Path(__file__).resolve().parents[1] / 'models/baseline_cnn/models/drives_careful.h5'
 
 class BaselineCNNAgent(UdacityAgent):
     """
@@ -67,7 +67,8 @@ if __name__ == '__main__':
     sim_info     = track_info['simulator']
     daytime      = "day"
     weather      = "sunny"
-    log_directory = pathlib.Path(f"udacity_dataset_lake_dave/{track}_{weather}_{daytime}_baseline")
+    ts = datetime.datetime.now().strftime('%d_%m_%Y_%H_%M_%S')
+    log_directory = pathlib.Path(f"logs/log_{ts}")
     log_directory.mkdir(parents=True, exist_ok=True)
     print(sim_info)
 

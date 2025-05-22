@@ -10,8 +10,8 @@ import datetime
 csv_path = 'udacity_dataset_lake_dave/jungle_sunny_day/log.csv'
 img_dir = 'udacity_dataset_lake_dave/jungle_sunny_day/image'
 batch_size = 64
-epochs = 50
-patience = 5
+epochs = 100
+patience = 7
 learning_rate = 0.0001
 alpha_steer = 0.8  # steering weight in loss
 val_split = 0.2
@@ -96,7 +96,7 @@ plt.ylabel('Loss')
 plt.title('Training & Validation Loss')
 plt.legend()
 
-ts = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+ts = datetime.datetime.now().strftime('%d_%m_%Y_%H_%M_%S')
 plot_fn = f"loss_curve_{ts}.png"
 plot_path = os.path.join(fig_dir, plot_fn)
 
