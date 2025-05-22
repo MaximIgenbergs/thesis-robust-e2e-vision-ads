@@ -1,14 +1,12 @@
 import os
 import tensorflow as tf
+import datetime
 from utils.data_loader import DrivingDataset
 from utils.utils import load_dataframes
 from model import build_model
 from matplotlib import pyplot as plt
-import datetime
 
 # Configuration
-csv_path = 'udacity_dataset_lake_dave/jungle_sunny_day/log.csv'
-img_dir = 'udacity_dataset_lake_dave/jungle_sunny_day/image'
 batch_size = 64
 epochs = 100
 patience = 7
@@ -16,24 +14,29 @@ learning_rate = 0.0001
 alpha_steer = 0.8  # steering weight in loss
 val_split = 0.2
 random_seed = 42
-save_dir = 'models'
 
-os.makedirs(save_dir, exist_ok=True)
+# Paths
+LOG_PATH = 'udacity_dataset_lake_dave/jungle_sunny_day/log.csv'
+IMG_DIR = 'udacity_dataset_lake_dave/jungle_sunny_day/image'
+MODELS_DIR = 'models'
+FIG_DIR = 'figures'
+os.makedirs(MODELS_DIR, exist_ok=True)
+os.makedirs(FIG_DIR, exist_ok=True)
 
 # Load & split metadata
-train_df, val_df = load_dataframes(csv_path, val_split=val_split, random_seed=random_seed)
+train_df, val_df = load_dataframes(LOG_PATH, val_split=val_split, random_seed=random_seed)
 
 # Build tf.data pipelines
 train_ds = DrivingDataset(
     df=train_df,
-    img_dir=img_dir,
+    img_dir=IMG_DIR,
     batch_size=batch_size,
     shuffle=True
 ).dataset()
 
 val_ds = DrivingDataset(
     df=val_df,
-    img_dir=img_dir,
+    img_dir=IMG_DIR,
     batch_size=batch_size,
     shuffle=False
 ).dataset()
@@ -65,7 +68,7 @@ callbacks = [
         monitor='val_loss', factor=0.5, patience=patience, verbose=1
     ),
     tf.keras.callbacks.ModelCheckpoint(
-        filepath=os.path.join(save_dir, 'best_model.h5'),
+        filepath=os.path.join(MODELS_DIR, 'best_model.h5'),
         monitor='val_loss',
         save_best_only=True,
         verbose=1
@@ -81,13 +84,10 @@ history = model.fit(
 )
 
 # Save final model
-model.save(os.path.join(save_dir, 'final_model.h5'))
-print(f"Training complete. Models saved to {save_dir}")
+model.save(os.path.join(MODELS_DIR, 'final_model.h5'))
+print(f"Training complete. Models saved to {MODELS_DIR}")
 
 # Create a loss graph
-fig_dir = os.path.join(save_dir, 'figures')
-os.makedirs(fig_dir, exist_ok=True)
-
 plt.figure()
 plt.plot(history.history['loss'], label='train_loss')
 plt.plot(history.history['val_loss'], label='val_loss')
@@ -97,10 +97,10 @@ plt.title('Training & Validation Loss')
 plt.legend()
 
 ts = datetime.datetime.now().strftime('%d_%m_%Y_%H_%M_%S')
-plot_fn = f"loss_curve_{ts}.png"
-plot_path = os.path.join(fig_dir, plot_fn)
+plot = f"loss_curve_{ts}.png"
+PLOT_PATH = os.path.join(FIG_DIR, plot)
 
-plt.savefig(plot_path)
+plt.savefig(PLOT_PATH)
 plt.close()
 
-print(f"Loss curve saved to {plot_path}")
+print(f"Loss curve saved to {PLOT_PATH}")

@@ -9,7 +9,7 @@ multiprocessing.set_start_method("fork", force=True) # This is required for the 
 
 PROJECT_DIR = pathlib.Path(__file__).parent.parent
 CHECKPOINT_DIR = PROJECT_DIR.joinpath("model/ckpts")
-LOG_DIR = PROJECT_DIR.joinpath("Logs")
+LOG_DIR = PROJECT_DIR.joinpath("logs")
 
 # Simulator settings
 simulator_infos = defaultdict(dict)

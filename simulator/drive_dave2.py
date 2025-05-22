@@ -2,11 +2,12 @@ import json
 import pathlib
 import time
 import tqdm
+import datetime
 from udacity_gym import UdacitySimulator, UdacityGym, UdacityAction
 from udacity_gym.agent_tf import SupervisedAgent_tf
 from udacity_gym.agent_torch import DaveUdacityAgent
 from udacity_gym.agent_callback import LogObservationCallback
-from utils.conf import PROJECT_DIR, Track_Infos
+from utils.conf import PROJECT_DIR, Track_Infos, LOG_DIR
 
 track_index = 2
 
@@ -15,14 +16,14 @@ if __name__ == '__main__':
     # Configuration settings
     host = "127.0.0.1"
     port = 4567
-    # simulator_exe_path = PROJECT_DIR.joinpath("simulator", "build_angle_diff" ,"udacity.x86_64")
-    # assert pathlib.Path(simulator_exe_path).exists(), f"Simulator binary not found at {simulator_exe_path}"
 
     # Track settings
     track = Track_Infos[track_index]['track_name']
     daytime = "day"
     weather = "sunny"
-    log_directory = pathlib.Path(f"udacity_dataset_lake_dave/{track}_{weather}_{daytime}")
+    ts = datetime.datetime.now().strftime('%d_%m_%Y_%H_%M_%S')
+    log_directory = pathlib.Path(LOG_DIR) / f"log_{ts}"
+    log_directory.mkdir(parents=True, exist_ok=True)
     print(Track_Infos[track_index]['simulator'])
 
     # Creating the simulator wrapper

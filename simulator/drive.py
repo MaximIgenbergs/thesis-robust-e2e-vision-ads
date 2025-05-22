@@ -12,7 +12,7 @@ from pathlib import Path
 from udacity_gym import UdacitySimulator, UdacityGym, UdacityAction
 from udacity_gym.agent import UdacityAgent
 from udacity_gym.agent_callback import LogObservationCallback, PauseSimulationCallback, ResumeSimulationCallback
-from utils.conf import Track_Infos
+from utils.conf import Track_Infos, LOG_DIR
 from tensorflow.keras.models import load_model  # type: ignore
 
 # Configuration
@@ -68,7 +68,7 @@ if __name__ == '__main__':
     daytime      = "day"
     weather      = "sunny"
     ts = datetime.datetime.now().strftime('%d_%m_%Y_%H_%M_%S')
-    log_directory = pathlib.Path(f"logs/log_{ts}")
+    log_directory = pathlib.Path(LOG_DIR) / f"log_{ts}"
     log_directory.mkdir(parents=True, exist_ok=True)
     print(sim_info)
 
