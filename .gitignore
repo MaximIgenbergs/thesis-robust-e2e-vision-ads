@@ -177,5 +177,8 @@ cython_debug/
 udacity_dataset_*
 **/logs/
 
-# All model files
-*.h5
+# Figures
+**/figures/
+
+# Models
+**/models/
