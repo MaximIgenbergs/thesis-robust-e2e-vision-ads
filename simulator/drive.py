@@ -1,5 +1,7 @@
-import udacity_gym.global_manager as _gm
-_gm.get_simulator_state = lambda: {}
+
+import udacity_gym.global_manager as _gm 
+_gm.get_simulator_state = lambda: {} # Fix by ChatGPT to remove multiprocessing.Manager spawn that hangs on macOS
+
 import json
 import pathlib
 import time
