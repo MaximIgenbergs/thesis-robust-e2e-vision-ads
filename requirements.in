@@ -1,5 +1,6 @@
 # Basics
 pandas
+numpy
 pip-tools
 
 # Machine Learning
@@ -11,6 +12,7 @@ torchmetrics
 pillow
 tqdm
 opencv-python
+scikit-learn
 
 # Tensorflow (MacOS)
 tensorflow-macos
