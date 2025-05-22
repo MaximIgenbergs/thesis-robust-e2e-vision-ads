@@ -1,1 +1,29 @@
-numpy
+# Basics
+pandas
+pip-tools
+
+# Machine Learning
+torch
+torchvision
+lightning
+torchinfo
+torchmetrics
+pillow
+tqdm
+opencv-python
+
+# Tensorflow (MacOS)
+tensorflow-macos
+tensorflow-metal
+
+# Plotting
+matplotlib
+seaborn
+
+# Simulator
+gymnasium
+Flask
+Flask-SocketIO
+eventlet
+Werkzeug
+pygame
