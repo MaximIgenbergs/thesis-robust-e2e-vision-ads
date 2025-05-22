@@ -175,6 +175,7 @@ cython_debug/
 
 # Training data
 udacity_dataset_*
+**/logs/
 
 # All model files
 *.h5
