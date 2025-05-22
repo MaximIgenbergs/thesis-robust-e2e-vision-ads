@@ -7,33 +7,34 @@ from matplotlib import pyplot as plt
 import datetime
 
 # Configuration
-CSV_PATH      = 'udacity_dataset_lake_dave/jungle_sunny_day/log.csv'
-IMG_DIR       = 'udacity_dataset_lake_dave/jungle_sunny_day/image'
-BATCH_SIZE    = 64
-EPOCHS        = 50
-LEARNING_RATE = 0.0001
-ALPHA_STEER   = 0.8 # steering weight in loss
-VAL_SPLIT     = 0.2
-RANDOM_SEED   = 42
-SAVE_DIR      = 'models'
+csv_path = 'udacity_dataset_lake_dave/jungle_sunny_day/log.csv'
+img_dir = 'udacity_dataset_lake_dave/jungle_sunny_day/image'
+batch_size = 64
+epochs = 50
+patience = 5
+learning_rate = 0.0001
+alpha_steer = 0.8  # steering weight in loss
+val_split = 0.2
+random_seed = 42
+save_dir = 'models'
 
-os.makedirs(SAVE_DIR, exist_ok=True)
+os.makedirs(save_dir, exist_ok=True)
 
 # Load & split metadata
-train_df, val_df = load_dataframes(CSV_PATH, val_split=VAL_SPLIT, random_seed=RANDOM_SEED)
+train_df, val_df = load_dataframes(csv_path, val_split=val_split, random_seed=random_seed)
 
 # Build tf.data pipelines
 train_ds = DrivingDataset(
     df=train_df,
-    img_dir=IMG_DIR,
-    batch_size=BATCH_SIZE,
+    img_dir=img_dir,
+    batch_size=batch_size,
     shuffle=True
 ).dataset()
 
 val_ds = DrivingDataset(
     df=val_df,
-    img_dir=IMG_DIR,
-    batch_size=BATCH_SIZE,
+    img_dir=img_dir,
+    batch_size=batch_size,
     shuffle=False
 ).dataset()
 
@@ -48,10 +49,10 @@ def weighted_mse(y_true, y_pred):
     throttle_pred = y_pred[:, 1]
     loss_s = tf.reduce_mean(tf.square(steer_true - steer_pred))
     loss_t = tf.reduce_mean(tf.square(throttle_true - throttle_pred))
-    return ALPHA_STEER * loss_s + (1 - ALPHA_STEER) * loss_t
+    return alpha_steer * loss_s + (1 - alpha_steer) * loss_t
 
 # Compile
-optimizer = tf.keras.optimizers.Adam(learning_rate=LEARNING_RATE)
+optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
 model.compile(
     optimizer=optimizer,
     loss=weighted_mse,
@@ -61,10 +62,10 @@ model.compile(
 # Callbacks
 callbacks = [
     tf.keras.callbacks.ReduceLROnPlateau(
-        monitor='val_loss', factor=0.5, patience=3, verbose=1
+        monitor='val_loss', factor=0.5, patience=patience, verbose=1
     ),
     tf.keras.callbacks.ModelCheckpoint(
-        filepath=os.path.join(SAVE_DIR, 'best_model.h5'),
+        filepath=os.path.join(save_dir, 'best_model.h5'),
         monitor='val_loss',
         save_best_only=True,
         verbose=1
@@ -75,20 +76,20 @@ callbacks = [
 history = model.fit(
     train_ds,
     validation_data=val_ds,
-    epochs=EPOCHS,
+    epochs=epochs,
     callbacks=callbacks
 )
 
 # Save final model
-model.save(os.path.join(SAVE_DIR, 'final_model.h5'))
-print(f"Training complete. Models saved to {SAVE_DIR}")
+model.save(os.path.join(save_dir, 'final_model.h5'))
+print(f"Training complete. Models saved to {save_dir}")
 
 # Create a loss graph
-fig_dir = os.path.join(SAVE_DIR, 'figures')
+fig_dir = os.path.join(save_dir, 'figures')
 os.makedirs(fig_dir, exist_ok=True)
 
 plt.figure()
-plt.plot(history.history['loss'],   label='train_loss')
+plt.plot(history.history['loss'], label='train_loss')
 plt.plot(history.history['val_loss'], label='val_loss')
 plt.xlabel('Epoch')
 plt.ylabel('Loss')
