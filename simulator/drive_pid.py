@@ -12,7 +12,7 @@ from utils.conf import Track_Infos, LOG_DIR
 # Configuration
 track_index = 2 # jungle
 logging = True
-steps = 6000 # 1 lap in jungle ~ 5200
+steps = 7000 # 1 lap in jungle ~ 5200
 
 if __name__ == '__main__':
 
@@ -25,7 +25,7 @@ if __name__ == '__main__':
     daytime = "day"
     weather = "sunny"
     ts = datetime.datetime.now().strftime('%d_%m_%Y_%H_%M_%S')
-    log_directory = pathlib.Path(LOG_DIR) / f"log_{ts}"
+    log_directory = pathlib.Path(LOG_DIR) / f"log_pid_{ts}"
     log_directory.mkdir(parents=True, exist_ok=True)
     print(Track_Infos[track_index]['simulator'])
 
