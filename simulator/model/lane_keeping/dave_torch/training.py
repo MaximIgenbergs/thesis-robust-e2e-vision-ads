@@ -1,6 +1,8 @@
-# type: ignore
-
+import sys
 import pathlib
+PROJECT_ROOT = pathlib.Path(__file__).resolve().parent.parent.parent.parent # so utils.conf is found
+sys.path.insert(0, str(PROJECT_ROOT))
+
 import random
 import lightning as pl
 import pandas as pd
@@ -11,7 +13,7 @@ from lightning.pytorch.callbacks import ModelCheckpoint, EarlyStopping
 
 from torch.utils.data import Dataset, DataLoader
 
-from udacity_gym.extras.model.lane_keeping.dave.dave_model import Dave2
+from dave_model import Dave2
 from utils.conf import ACCELERATOR, DEVICE, DEFAULT_DEVICE, CHECKPOINT_DIR, PROJECT_DIR
 
 pl.seed_everything(42)
