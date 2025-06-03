@@ -2,14 +2,16 @@
 import pathlib
 import sys
 from collections import defaultdict
-import multiprocessing
-multiprocessing.set_start_method("fork", force=True) # This is required for the simulator to work on MacOS, maybe has to be removed for linux
+# import multiprocessing
+import torch
+# multiprocessing.set_start_method("fork", force=True) # This is required for the simulator to work on MacOS, maybe has to be removed for linux
 
 # Paths
 
 PROJECT_DIR = pathlib.Path(__file__).parent.parent
 CHECKPOINT_DIR = PROJECT_DIR.joinpath("model/ckpts")
 LOG_DIR = PROJECT_DIR.joinpath("logs")
+TRAINING_DIR = PROJECT_DIR.joinpath("Data/log_pid_02_06_2025_13_01_12")
 
 # Simulator settings
 simulator_infos = defaultdict(dict)
@@ -24,9 +26,18 @@ else:
 
 
 # Device settings
-ACCELERATOR = "gpu"  # choose between gpu or cpu
-DEVICE = 0  # if multiple gpus are available
-DEFAULT_DEVICE = f'cuda:{DEVICE}' if ACCELERATOR == 'gpu' else 'cpu'
+if torch.cuda.is_available():
+    ACCELERATOR = "gpu" # 4090
+    DEVICE = 0
+    DEFAULT_DEVICE = f"cuda:{DEVICE}"
+elif torch.backends.mps.is_available():
+    ACCELERATOR = "mps" # Apple Silicon GPU
+    DEVICE = 0                
+    DEFAULT_DEVICE = "mps"
+else:
+    ACCELERATOR = "cpu"
+    DEVICE = 0             
+    DEFAULT_DEVICE = "cpu"
 
 # Simulator settings
 simulator_infos = defaultdict(dict)
@@ -63,7 +74,7 @@ Track_Infos[1]['driving_style'] = ["normal_lowspeed", "reverse_lowspeed", "norma
 Track_Infos[1]['training_data_dir'] = Training_Configs['training_data_dir'].joinpath('lane_keeping_data', 'track1_throttle')
 
 Track_Infos[2]['track_name'] = 'jungle'
-Track_Infos[2]['model_path'] = CHECKPOINT_DIR.joinpath('ads', 'track3-dave2-191.h5') # TODO: add the right model
+Track_Infos[2]['model_path'] = CHECKPOINT_DIR.joinpath('lane_keeping', 'dave2', 'dave2_refining.ckpt') # ckpts/lane_keeping/dave2/dave2_refining.ckpt
 Track_Infos[2]['simulator'] = simulator_infos[1]
 Track_Infos[2]['driving_style'] = ["normal_lowspeed", "reverse_lowspeed", "normal_lowspeed", "reverse_lowspeed"]
 Track_Infos[2]['training_data_dir'] = Training_Configs['training_data_dir'].joinpath('lane_keeping_data', 'track2_throttle')
