@@ -1,18 +1,20 @@
+import sys
 import pathlib
+PROJECT_ROOT = pathlib.Path(__file__).resolve().parent.parent.parent.parent # so utils.conf is found
+sys.path.insert(0, str(PROJECT_ROOT))
+
 import random
 from functools import cache
-
 import lightning as pl
 import pandas as pd
 import torch
 import torchvision.transforms
 from PIL import Image
 from lightning.pytorch.callbacks import ModelCheckpoint, EarlyStopping
-
 from torch.utils.data import Dataset, DataLoader
 
-from model.lane_keeping.dave_torch.dave_model import Dave2
-from utils.conf import ACCELERATOR, DEVICE, DEFAULT_DEVICE, CHECKPOINT_DIR, PROJECT_DIR
+from dave_model import Dave2
+from utils.conf import ACCELERATOR, DEVICE, CHECKPOINT_DIR, TRAINING_DIR
 
 pl.seed_everything(42)
 torch.set_float32_matmul_precision('high')
@@ -102,7 +104,7 @@ if __name__ == '__main__':
             'udacity_dataset_lake_12_12_1',
         ]
         train_dataset = torch.utils.data.ConcatDataset([
-            DrivingDataset(dataset_dir=PROJECT_DIR.joinpath(dataset, "lake_sunny_day"), split="train")
+            DrivingDataset(dataset_dir=TRAINING_DIR, split="train")
             for dataset in dataset_paths
         ])
 
@@ -110,12 +112,14 @@ if __name__ == '__main__':
             train_dataset,
             batch_size=256,
             shuffle=True,
-            prefetch_factor=8,
-            num_workers=32,
+            # prefetch_factor=8,
+            # num_workers=32,
+            num_workers=0, # MacOS does not support num_workers > 0 in DataLoader with multiprocessing 
+            persistent_workers=False
         )
 
         val_dataset = torch.utils.data.ConcatDataset([
-            DrivingDataset(dataset_dir=PROJECT_DIR.joinpath(dataset, "lake_sunny_day"), split="val",
+            DrivingDataset(dataset_dir=TRAINING_DIR, split="val",
                            transform=torchvision.transforms.ToTensor())
             for dataset in dataset_paths
         ])
@@ -123,8 +127,10 @@ if __name__ == '__main__':
             val_dataset,
             batch_size=64,
             shuffle=True,
-            prefetch_factor=2,
-            num_workers=16,
+            # prefetch_factor=2,
+            # num_workers=16,
+            num_workers=0, # MacOS does not support num_workers > 0 in DataLoader with multiprocessing 
+            persistent_workers=False
         )
 
         checkpoint_callback = ModelCheckpoint(
