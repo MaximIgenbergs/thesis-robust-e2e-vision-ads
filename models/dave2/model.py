@@ -33,4 +33,4 @@ def build_model(input_shape=(66, 200, 3)):
     throttle = layers.Dense(1, name='throttle')(x)
     outputs  = layers.Concatenate(name='control_outputs')([steer, throttle])
 
-    return Model(inputs=inputs, outputs=outputs, name='baseline_cnn')
+    return Model(inputs=inputs, outputs=outputs, name='dave2')

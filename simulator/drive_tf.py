@@ -1,5 +1,5 @@
-import udacity_gym.global_manager as _gm 
-_gm.get_simulator_state = lambda: {} # Fix by ChatGPT to remove multiprocessing.Manager spawn that hangs on macOS
+import udacity_gym.global_manager as _gm
+_gm.get_simulator_state = lambda: {}  # Fix for macOS spawn issue
 
 import datetime
 import json
@@ -12,14 +12,16 @@ from pathlib import Path
 from udacity_gym import UdacitySimulator, UdacityGym, UdacityAction
 from udacity_gym.agent import UdacityAgent
 from udacity_gym.agent_callback import LogObservationCallback, PauseSimulationCallback, ResumeSimulationCallback
-from utils.conf import Track_Infos, LOG_DIR
+from utils.conf import Track_Infos
+from models.utils.utils import make_collection_dir
 from tensorflow.keras.models import load_model  # type: ignore
 
 # Configuration
-track_index = 2 # jungle
+collector = 'dave2'
+track_index = 2  # jungle
 logging = True
-steps = 4000  
-model_path = Path(__file__).resolve().parents[1] / 'models/baseline_cnn/models/drives_careful.h5'
+steps = 4000
+model_path = Path(__file__).resolve().parents[1] / 'models/dave2/models/drives_careful.h5'
 
 class BaselineCNNAgent(UdacityAgent):
     """
@@ -33,66 +35,44 @@ class BaselineCNNAgent(UdacityAgent):
         self.model = load_model(str(model_path), compile=False)
 
     def action(self, observation, *args, **kwargs) -> UdacityAction:
-        # 1) grab raw image
-        img = observation.input_image  # PIL.Image or numpy array
-        arr = np.array(img, dtype=np.float32)   # likely (80,160,3)
-
-        # 2) resize to (66,200)
+        img = observation.input_image
+        arr = np.array(img, dtype=np.float32)
         img_tf = tf.image.resize(arr, [66, 200])
-
-        # 3) normalize to [-1,1]
         img_tf = img_tf / 127.5 - 1.0
-
-        # 4) batch & predict [steer, throttle]
-        inp  = tf.expand_dims(img_tf, axis=0)    # (1,66,200,3)
+        inp  = tf.expand_dims(img_tf, axis=0)
         pred = self.model.predict(inp, verbose=0)[0]
         steer, thr = float(pred[0]), float(pred[1])
-
-        # 5) clamp
         steer = np.clip(steer, -1.0, 1.0)
         thr   = np.clip(thr,   0.0, 1.0)
-
         return UdacityAction(steering_angle=steer, throttle=thr)
 
-
 if __name__ == '__main__':
+    # Track & simulator settings
+    track_info = Track_Infos[track_index]
+    track      = track_info['track_name']
+    sim_info   = track_info['simulator']
+    daytime    = 'day'
+    weather    = 'sunny'
 
-    # Simulator connection settings (unused but in PID script)
-    host = "127.0.0.1"
-    port = 4567
+    # Create a new collection directory under data/collections
+    log_directory = make_collection_dir(collector)
+    print(f"Logging to {log_directory}")
 
-    # Track settings
-    track_info   = Track_Infos[track_index]
-    track        = track_info['track_name']
-    sim_info     = track_info['simulator']
-    daytime      = "day"
-    weather      = "sunny"
-    ts = datetime.datetime.now().strftime('%d_%m_%Y_%H_%M_%S')
-    log_directory = pathlib.Path(LOG_DIR) / f"log_{ts}"
-    log_directory.mkdir(parents=True, exist_ok=True)
-    print(sim_info)
-
-    # Create simulator & gym
-    assert pathlib.Path(sim_info['exe_path']).exists(), f"Simulator binary not found at {sim_info['exe_path']}"
+    # Initialize simulator & environment
+    assert Path(sim_info['exe_path']).exists(), f"Simulator binary not found at {sim_info['exe_path']}"
     simulator = UdacitySimulator(
-        sim_exe_path=sim_info['exe_path'],
-        host=sim_info['host'],
-        port=sim_info['port'],
+        sim_exe_path=sim_info['exe_path'], host=sim_info['host'], port=sim_info['port']
     )
     env = UdacityGym(simulator=simulator)
-
-    # Use Unity’s built-in SocketIO server only
     simulator.start = simulator.sim_executor.start
     simulator.start()
 
-    # Reset environment
+    # Reset and wait for readiness
     observation, _ = env.reset(track=track, weather=weather, daytime=daytime)
-
-    # Wait for environment to set up
     while not observation or not observation.is_ready():
-        observation = env.observe()
         print("Waiting for environment to set up...")
         time.sleep(1)
+        observation = env.observe()
 
     # Logging callback
     log_cb = LogObservationCallback(log_directory)
@@ -101,7 +81,7 @@ if __name__ == '__main__':
     agent = BaselineCNNAgent(
         model_path=model_path,
         before_action_callbacks=[],
-        after_action_callbacks=[log_cb] if logging else None
+        after_action_callbacks=[log_cb] if logging else []
     )
 
     # Main loop
@@ -111,29 +91,23 @@ if __name__ == '__main__':
             action = agent(observation)
             last_obs = observation
             observation, reward, terminated, truncated, info = env.step(action)
-
-            # Wait for next frame
             while observation.time == last_obs.time:
-                observation = env.observe()
                 time.sleep(0.0025)
-
+                observation = env.observe()
     except KeyboardInterrupt:
         print("Execution interrupted by user. Saving logs and exiting...")
-
     finally:
         # Save simulator info
         if info:
             with open(log_directory / "info.json", "w") as f:
                 json.dump(info, f)
-
         # Save logs
         if logging and log_cb.logs:
             log_cb.save()
             print(f"Logs saved to {log_directory}")
         else:
             print("No observations were recorded → nothing to save.")
-
-        # Clean shutdown
         simulator.close()
         env.close()
         print("Experiment concluded.")
+

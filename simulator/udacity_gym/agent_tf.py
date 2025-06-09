@@ -6,7 +6,7 @@ from .agent import UdacityAgent
 from .action import UdacityAction
 from .observation import UdacityObservation
 
-from tensorflow.keras.models import load_model
+from tensorflow.keras.models import load_model # type: ignore
 from utils.utils import preprocess
 import tensorflow as tf
 print("test is_gpu_available" ,tf.test.is_gpu_available())

@@ -4,10 +4,8 @@ import numpy as np
 import torchvision
 import os
 
-from model.lane_keeping.chauffeur.chauffeur_model import Chauffeur
-from model.lane_keeping.dave_torch.dave_model import Dave2
-from model.lane_keeping.epoch.epoch_model import Epoch
-from model.lane_keeping.vit.vit_model import ViT
+from models.dave2_legacy.model import Dave2
+from models.vit import ViT
 
 from .action import UdacityAction
 from .observation import UdacityObservation
@@ -166,7 +164,7 @@ def pid_speed21(pid_parameters,
     return throttle, steering
 
 
-class EndToEndLaneKeepingAgent(UdacityAgent):
+class EndToEndLaneKeepingAgent(UdacityAgent): # pytorch dave2 agent
 
     def __init__(self, model_name, checkpoint_path, before_action_callbacks=None, after_action_callbacks=None,
                  transform_callbacks=None):
@@ -174,10 +172,6 @@ class EndToEndLaneKeepingAgent(UdacityAgent):
         self.checkpoint_path = pathlib.Path(checkpoint_path)
         if model_name == "dave2":
             self.model = Dave2.load_from_checkpoint(self.checkpoint_path)
-        if model_name == "epoch":
-            self.model = Epoch.load_from_checkpoint(self.checkpoint_path)
-        if model_name == "chauffeur":
-            self.model = Chauffeur.load_from_checkpoint(self.checkpoint_path)
         if model_name == "vit":
             self.model = ViT.load_from_checkpoint(self.checkpoint_path)
 

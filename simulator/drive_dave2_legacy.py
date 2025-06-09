@@ -1,29 +1,29 @@
 import udacity_gym.global_manager as _gm
-_gm.get_simulator_state = lambda: {}  # Fix by ChatGPT to remove multiprocessing.Manager spawn on macOS
+_gm.get_simulator_state = lambda: {}  # macOS multiprocessing fix
 
 import multiprocessing as mp
-mp.set_start_method("fork", force=True)  # ensure fork, not spawn
+mp.set_start_method("fork", force=True)
 
-import datetime
 import json
-import pathlib
 import time
 import tqdm
-
 import numpy as np
 import torch
 import torchvision.transforms as T
 from PIL import Image
+import pathlib
 
 from udacity_gym import UdacitySimulator, UdacityGym, UdacityAction
 from udacity_gym.agent_callback import LogObservationCallback
-from utils.conf import Track_Infos, LOG_DIR
+
+from utils.conf import Track_Infos
+from models.utils.utils import make_collection_dir
 
 # Configuration
-fixed_throttle = 0.24
-track_index = 2  # jungle
-logging     = False
-steps       = 4000
+fixed_throttle  = 0.24 # outputs only steering for now
+track_index     = 2   # jungle
+logging_enabled = False
+steps           = 4000
 
 if __name__ == '__main__':
     # Track and simulator settings
@@ -35,17 +35,15 @@ if __name__ == '__main__':
     print(f"Using checkpoint: {ckpt_path}")
     print(f"Running for {steps} steps on track '{track}'")
 
-    # Prepare logging directory
-    daytime       = "day"
-    weather       = "sunny"
-    ts            = datetime.datetime.now().strftime('%d_%m_%Y_%H_%M_%S')
-    log_directory = pathlib.Path(LOG_DIR) / f"log_{ts}"
-    log_directory.mkdir(parents=True, exist_ok=True)
+    # Prepare logging directory using new centralized logic
+    log_directory = make_collection_dir('dave2_legacy')
+    print(f"Logging to {log_directory}")
 
     # Create simulator and gym
-    assert pathlib.Path(sim_info['exe_path']).exists(), f"Simulator binary not found at {sim_info['exe_path']}"
+    exe_path = pathlib.Path(sim_info['exe_path'])
+    assert exe_path.exists(), f"Simulator binary not found at {exe_path}"
     simulator = UdacitySimulator(
-        sim_exe_path=sim_info['exe_path'],
+        sim_exe_path=exe_path,
         host=sim_info['host'],
         port=sim_info['port'],
     )
@@ -56,6 +54,8 @@ if __name__ == '__main__':
     simulator.start()
 
     # Reset environment and wait until ready
+    daytime = "day"
+    weather = "sunny"
     observation, _ = env.reset(track=track, weather=weather, daytime=daytime)
     while not observation or not observation.is_ready():
         observation = env.observe()
@@ -66,7 +66,7 @@ if __name__ == '__main__':
     log_cb = LogObservationCallback(log_directory)
 
     # Load PyTorch Lightning model
-    from model.lane_keeping.dave_torch.dave_model import Dave2
+    from models.dave2_legacy.model import Dave2
     device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
     model = Dave2.load_from_checkpoint(str(ckpt_path))
     model.eval().to(device)
@@ -104,11 +104,11 @@ if __name__ == '__main__':
         if info:
             with open(log_directory / "info.json", "w") as f:
                 json.dump(info, f)
-        if logging and log_cb.logs:
+        if logging_enabled and log_cb.logs:
             log_cb.save()
             print(f"Logs saved to {log_directory}")
         else:
-            print("No observations recorded — nothing to save.")
+            print("No observations recorded -> nothing to save.")
         simulator.close()
         env.close()
         print("Experiment concluded.")
