@@ -1,9 +1,17 @@
 import udacity_gym.global_manager as _gm
 _gm.get_simulator_state = lambda: {}  # Fix for macOS spawn issue
 
-import datetime
-import json
+import multiprocessing as mp
+mp.set_start_method("fork", force=True)
+
+import sys
 import pathlib
+
+# Add project root to PYTHONPATH so shared utils can be imported
+PROJECT_DIR = pathlib.Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(PROJECT_DIR))
+
+import json
 import time
 import tqdm
 import numpy as np
@@ -19,9 +27,9 @@ from tensorflow.keras.models import load_model  # type: ignore
 # Configuration
 collector = 'dave2'
 track_index = 2  # jungle
-logging = True
+logging = False
 steps = 4000
-model_path = Path(__file__).resolve().parents[1] / 'models/dave2/models/drives_careful.h5'
+model_path = Path(__file__).resolve().parents[1] / 'models/dave2/models/final_model.h5'
 
 class BaselineCNNAgent(UdacityAgent):
     """

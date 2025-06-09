@@ -1,6 +1,11 @@
-import datetime
-import json
+import sys
 import pathlib
+
+# Add project root to PYTHONPATH so shared utils can be imported
+PROJECT_DIR = pathlib.Path(__file__).resolve().parent.parent.parent
+sys.path.insert(0, str(PROJECT_DIR))
+
+import json
 import time
 import tqdm
 from udacity_gym import UdacitySimulator, UdacityGym

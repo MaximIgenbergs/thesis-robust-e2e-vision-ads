@@ -1,8 +1,8 @@
-import datetime
+from datetime import datetime
 import pandas as pd
 from typing import Tuple, Union
 import pathlib
-from paths import PROJECT_DIR
+from .paths import PROJECT_DIR
 
 COLLECTION_ROOT = PROJECT_DIR / 'data' / 'collections'
 COLLECTION_ROOT.mkdir(parents=True, exist_ok=True)
