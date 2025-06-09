@@ -173,15 +173,12 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 
-# Training data
+# Training data & logs
+data/
 udacity_dataset_*
 **/logs/
-
-# Figures
-**/figures/
-
-# Models
-**/models/
-
-# Lightning logs
 **/lightning_logs/
+
+# Models & figures
+models/**/models/
+models/**/figures/
