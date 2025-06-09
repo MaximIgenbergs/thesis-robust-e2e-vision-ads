@@ -21,8 +21,8 @@ from lightning.pytorch.loggers import CSVLogger
 from torch.utils.data import Dataset, DataLoader
 
 from model import ViT
-from utils.device_config import ACCELERATOR, DEVICE
-from utils.paths import get_model_dir, get_fig_dir, TRAIN_DATA_DIR
+from models.utils.device_config import ACCELERATOR, DEVICE
+from models.utils.paths import get_model_dir, get_fig_dir, TRAIN_DATA_DIR
 
 # Ensure reproducibility
 pl.seed_everything(42)
