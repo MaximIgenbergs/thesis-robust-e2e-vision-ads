@@ -1,6 +1,11 @@
 # This file represent configuration settings and constants in the project
 import pathlib
 import sys
+
+# Add project root to PYTHONPATH so shared utils can be imported
+PROJECT_DIR = pathlib.Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(PROJECT_DIR))
+
 from collections import defaultdict
 # import multiprocessing
 import torch
@@ -74,7 +79,7 @@ Track_Infos[1]['driving_style'] = ["normal_lowspeed", "reverse_lowspeed", "norma
 Track_Infos[1]['training_data_dir'] = Training_Configs['training_data_dir'].joinpath('lane_keeping_data', 'track1_throttle')
 
 Track_Infos[2]['track_name'] = 'jungle'
-Track_Infos[2]['model_path'] = CHECKPOINT_DIR.joinpath('lane_keeping', 'dave2', 'dave2_refining.ckpt') # ckpts/lane_keeping/dave2/dave2_refining.ckpt
+Track_Infos[2]['model_path'] = PROJECT_DIR.joinpath("..", "models", "dave2_legacy", "models", "dave2_refining.ckpt")
 Track_Infos[2]['simulator'] = simulator_infos[1]
 Track_Infos[2]['driving_style'] = ["normal_lowspeed", "reverse_lowspeed", "normal_lowspeed", "reverse_lowspeed"]
 Track_Infos[2]['training_data_dir'] = Training_Configs['training_data_dir'].joinpath('lane_keeping_data', 'track2_throttle')
