@@ -1,5 +1,3 @@
-# File: models/vit/model.py
-
 import math
 from typing import Tuple
 
