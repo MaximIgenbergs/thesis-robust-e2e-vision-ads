@@ -1,4 +1,3 @@
-import math
 from typing import Tuple
 
 import lightning as pl
@@ -62,7 +61,7 @@ class ViT(pl.LightningModule):
         loss = self.alpha_steer * loss_s + (1 - self.alpha_steer) * loss_t
 
         self.log("train/loss", loss, prog_bar=True, on_step=True)
-        self.log("train/rmse", math.sqrt(loss), prog_bar=True, on_step=True)
+        self.log("train/rmse", torch.sqrt(loss), prog_bar=True, on_step=True)
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -77,7 +76,7 @@ class ViT(pl.LightningModule):
         loss = self.alpha_steer * loss_s + (1 - self.alpha_steer) * loss_t
 
         self.log("val/loss", loss, prog_bar=True, on_epoch=True)
-        self.log("val/rmse", math.sqrt(loss), prog_bar=True, on_epoch=True)
+        self.log("val/rmse", torch.sqrt(loss), prog_bar=True, on_epoch=True)
 
     def test_step(self, batch, batch_idx):
         imgs, targets = batch
@@ -91,7 +90,7 @@ class ViT(pl.LightningModule):
         loss = self.alpha_steer * loss_s + (1 - self.alpha_steer) * loss_t
 
         self.log("test/loss", loss, prog_bar=True)
-        self.log("test/rmse", math.sqrt(loss), prog_bar=True)
+        self.log("test/rmse", torch.sqrt(loss), prog_bar=True)
 
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=self.learning_rate)
