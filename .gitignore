@@ -182,3 +182,6 @@ udacity_dataset_*
 # Models & figures
 models/**/models/
 models/**/figures/
+
+# VSCode settings
+.vscode/
