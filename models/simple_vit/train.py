@@ -74,9 +74,9 @@ val_loader = DataLoader(
 
 # prepare model, callbacks, trainer
 model = ViT()
-csv_logger = CSVLogger(save_dir=get_fig_dir('vit'), name='logs', version='vit')
+csv_logger = CSVLogger(save_dir=get_fig_dir('simple_vit'), name='logs', version='simple_vit')
 checkpoint_cb = pl.callbacks.ModelCheckpoint(
-    dirpath=get_model_dir('vit'), filename='best_model', monitor='val/loss', save_top_k=1, mode='min', verbose=True
+    dirpath=get_model_dir('simple_vit'), filename='best_model', monitor='val/loss', save_top_k=1, mode='min', verbose=True
 )
 earlystop_cb = pl.callbacks.EarlyStopping(
     monitor='val/loss', mode='min', patience=PATIENCE, verbose=True
@@ -88,28 +88,23 @@ trainer = pl.Trainer(
 
 # train & save
 trainer.fit(model, train_loader, val_loader)
-trainer.save_checkpoint(get_model_dir('vit') / 'final_model.ckpt')
-print(f"Training complete. Checkpoints in: {get_model_dir('vit')}")
+trainer.save_checkpoint(get_model_dir('simple_vit') / 'final_model.ckpt')
+print(f"Training complete. Checkpoints in: {get_model_dir('simple_vit')}")
 
-# plot & save loss curve
-metrics_file = Path(csv_logger.log_dir) / 'metrics.csv'
-if metrics_file.exists():
-    df = pd.read_csv(metrics_file).dropna(subset=['epoch','train/loss','val/loss'])
-    plt.figure()
-    plt.plot(df['epoch'], df['train/loss'], label='train_loss')
-    plt.plot(df['epoch'], df['val/loss'],   label='val_loss')
-    plt.xlabel('Epoch')
-    plt.ylabel('MSE Loss')
-    plt.legend()
-    plt.title('Training & Validation Loss')
-    ts = datetime.datetime.now().strftime('%Y%m%dT%H%M%S')
-    out = get_fig_dir('vit') / f"loss_curve_{ts}.png"
-    plt.savefig(out)
-    plt.close()
-    print(f"Loss curve saved to: {out}")
+  # Plot & save loss curve
+metrics_path  = pathlib.Path(csv_logger.log_dir) / "metrics.csv"
+metrics_df    = pd.read_csv(metrics_path).groupby("epoch").last().reset_index()
 
-# cleanup: remove Lightning log artifacts
-import shutil
-logs_root = Path(csv_logger.save_dir) / csv_logger.name
-if logs_root.exists():
-    shutil.rmtree(logs_root)
+plt.figure()
+plt.plot(metrics_df["epoch"], metrics_df["train/loss"], label="train_loss")
+plt.plot(metrics_df["epoch"], metrics_df["val/loss"], label="val_loss")
+plt.xlabel("Epoch")
+plt.ylabel("Loss")
+plt.title("Training and Validation Loss")
+plt.legend()
+
+ts = datetime.datetime.now().strftime("%Y%m%dT%H%M%S")
+plot_name = f"loss_curve_{ts}.png"
+plt.savefig(str(get_fig_dir('simple_vit') / plot_name))
+plt.close()
+print(f"Loss curve saved to: {get_fig_dir('simple_vit')/plot_name}")
