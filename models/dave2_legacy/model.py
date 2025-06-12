@@ -46,7 +46,7 @@ class Dave2(pl.LightningModule):
         pred = self.forward(x=img)
         loss = self.loss(pred, true)
         self.log("train/loss", loss, prog_bar=True, on_step=True)
-        self.log("train/rmse", math.sqrt(loss), prog_bar=True, on_step=True)
+        self.log("train/rmse", torch.sqrt(loss), prog_bar=True, on_step=True)
         return loss
 
     def validation_step(self, batch: Tensor, batch_idx: int, dataloader_idx: int = 0):
@@ -54,7 +54,7 @@ class Dave2(pl.LightningModule):
         pred = self(img)
         loss = self.loss(pred, true)
         self.log("val/loss", loss, prog_bar=True, on_epoch=True)
-        self.log("val/rmse", math.sqrt(loss), prog_bar=True, on_epoch=True)
+        self.log("val/rmse", torch.sqrt(loss), prog_bar=True, on_epoch=True)
         return loss
 
     def test_step(self, batch: Tensor, batch_idx: int, dataloader_idx: int = 0):
@@ -62,7 +62,7 @@ class Dave2(pl.LightningModule):
         pred = self(img)
         loss = self.loss(pred, true)
         self.log("test/loss", loss, prog_bar=True)
-        self.log("test/rmse", math.sqrt(loss), prog_bar=True)
+        self.log("test/rmse", torch.sqrt(loss), prog_bar=True)
         return loss
 
     def predict_step(self, batch: Tensor, batch_idx: int, dataloader_idx: int = 0):
