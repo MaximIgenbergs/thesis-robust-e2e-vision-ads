@@ -62,25 +62,76 @@ class UdacitySimulator:
                               f"Check if the path {self.simulator_exe_path} is correct.")
 
     def step(self, action: UdacityAction):
+        # 1) Send control command
+        cmd = {
+            "command": "send_control",
+            "steering_angle": action.steering_angle,
+            "throttle": action.throttle
+        }
+        self.cmd_sock.sendall((json.dumps(cmd) + "\n").encode("utf-8"))
         self.sim_state['action'] = action
-        return self.observe()
+
+        # 2) Read one full JSON line from telemetry, skipping empty or malformed lines
+        while True:
+            # If we already have a complete line in the buffer, process it
+            if b"\n" in self._tel_buffer:
+                line, sep, rest = self._tel_buffer.partition(b"\n")
+                self._tel_buffer = rest
+                text = line.strip()
+                if not text:
+                    # empty or whitespace-only line, skip it
+                    continue
+                if text.startswith(b"{"):
+                    data = json.loads(text.decode("utf-8"))
+                    break
+                else:
+                    # non-JSON line, skip it
+                    continue
+
+            # Otherwise, receive more bytes
+            chunk = self.tel_sock.recv(4096)
+            if not chunk:
+                raise ConnectionError("Telemetry socket closed")
+            self._tel_buffer += chunk
+
+        # 3) Map telemetry JSON into an observation
+        try:
+            img = Image.open(BytesIO(base64.b64decode(data["image"])))
+        except Exception:
+            img = None
+
+        obs = UdacityObservation(
+            input_image=img,
+            semantic_segmentation=None,
+            position=(
+                float(data["pos_x"]),
+                float(data["pos_y"]),
+                float(data["pos_z"])
+            ),
+            steering_angle=float(data.get("steering_angle", 0.0)),
+            throttle=float(data.get("throttle", 0.0)),
+            speed=float(data["speed"]) * 3.6,
+            cte=float(data["cte"]),
+            next_cte=float(data["next_cte"]),
+            lap=int(data["lap"]),
+            sector=int(data["sector"]),
+            time=int(time.time() * 1000),
+            angle_diff=float(data.get("angular_difference", 0.0))
+        )
+        self.sim_state["observation"] = obs
+        return obs
 
     def observe(self):
         return self.sim_state['observation']
 
-    # TODO: add a sync parameter in pause method. if sync, the method waits for the pause response
     def pause(self):
-        # TODO: change 'pause' with constant
+        cmd = {"command": "pause_sim"}
+        self.event_sock.sendall((json.dumps(cmd) + "\n").encode("utf-8"))
         self.sim_state['paused'] = True
-        # TODO: this loop is to make an async api synchronous
-        # We wait the confirmation of the pause command
-        while self.sim_state.get('sim_state', '') != 'paused':
-            # TODO: modify the sleeping time with constant
-            # print("waiting for pause...")
-            time.sleep(0.1)
-        # self.logger.info("exiting pause")
 
     def resume(self):
+        cmd = {"command": "resume_sim"}
+        self.event_sock.sendall((json.dumps(cmd) + "\n").encode("utf-8"))
         self.sim_state['paused'] = False
         # TODO: this loop is to make an async api synchronous
         # We wait the confirmation of the resume command
