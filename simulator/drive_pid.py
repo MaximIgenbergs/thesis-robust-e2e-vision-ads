@@ -8,7 +8,7 @@ import sys
 import pathlib
 
 # Add project root to PYTHONPATH so shared utils can be imported
-PROJECT_DIR = pathlib.Path(__file__).resolve().parent.parent.parent
+PROJECT_DIR = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_DIR))
 
 import json
@@ -33,9 +33,11 @@ if __name__ == '__main__':
     daytime    = 'day'
     weather    = 'sunny'
 
-    # Create a new collection directory under data/collections
-    log_directory = make_collection_dir('pid')
-    print(f"Logging to {log_directory}")
+    if logging:
+        log_directory = make_collection_dir('pid')
+        print(f"Logging to {log_directory}")
+    else:
+        print("Logging is disabled.")
 
     # Initialize simulator & environment
     assert pathlib.Path(sim_info['exe_path']).exists(), f"Simulator binary not found at {sim_info['exe_path']}"
@@ -54,7 +56,8 @@ if __name__ == '__main__':
         observation = env.observe()
 
     # Logging callback
-    log_cb = LogObservationCallback(log_directory)
+    if logging:
+        log_cb = LogObservationCallback(log_directory)
 
     # Instantiate agent
     agent = PIDUdacityAgent_Angle(
@@ -70,14 +73,14 @@ if __name__ == '__main__':
             action = agent(observation)
             last_obs = observation
             observation, reward, terminated, truncated, info = env.step(action)
+            # wait for next frame
             while observation.time == last_obs.time:
                 time.sleep(0.0025)
                 observation = env.observe()
     except KeyboardInterrupt:
         print("Execution interrupted by user. Saving logs and exiting...")
     finally:
-        # Save simulator info
-        if info:
+        if logging and info:
             with open(log_directory / "info.json", "w") as f:
                 json.dump(info, f)
         # Save logs
