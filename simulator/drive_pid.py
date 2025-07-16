@@ -1,3 +1,9 @@
+import udacity_gym.global_manager as _gm
+_gm.get_simulator_state = lambda: {}  # Fix for macOS spawn issue
+
+import multiprocessing as mp
+mp.set_start_method("fork", force=True)
+
 import sys
 import pathlib
 
