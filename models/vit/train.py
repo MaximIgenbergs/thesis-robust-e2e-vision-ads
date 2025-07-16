@@ -23,7 +23,7 @@ from torch.utils.data import Dataset, DataLoader
 from model import ViT
 from models.utils.device_config import ACCELERATOR, DEVICE
 from models.utils.paths import get_model_dir, get_fig_dir, TRAIN_DATA_DIR
-from models.utils.training_defaults import ALPHA_STEER
+from models.utils.training_defaults import ALPHA_STEER, PATIENCE, EPOCHS
 
 # Ensure reproducibility
 pl.seed_everything(42)
@@ -97,7 +97,7 @@ class DrivingDataset(Dataset):
 if __name__ == "__main__":
     # Training configuration
     input_shape = (3, 160, 320)
-    max_epochs  = 2000
+    max_epochs  = EPOCHS
     devices     = [DEVICE]
     accelerator = ACCELERATOR
 
@@ -124,7 +124,7 @@ if __name__ == "__main__":
     earlystop_cb = EarlyStopping(
         monitor="val/loss",
         mode="min",
-        patience=20,
+        patience=PATIENCE,
     )
 
     trainer = pl.Trainer(
