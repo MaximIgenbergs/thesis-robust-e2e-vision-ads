@@ -1,18 +1,14 @@
-# This file represent configuration settings and constants in the project
+# This file represents configuration settings and constants in the project
 import pathlib
 import sys
+from collections import defaultdict
+import torch
 
 # Add project root to PYTHONPATH so shared utils can be imported
 PROJECT_DIR = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_DIR))
 
-from collections import defaultdict
-# import multiprocessing
-import torch
-# multiprocessing.set_start_method("fork", force=True) # This is required for the simulator to work on MacOS, maybe has to be removed for linux
-
 # Paths
-
 PROJECT_DIR = pathlib.Path(__file__).parent.parent
 CHECKPOINT_DIR = PROJECT_DIR.joinpath("model/ckpts")
 LOG_DIR = PROJECT_DIR.joinpath("logs")
@@ -44,11 +40,13 @@ else:
     DEVICE = 0             
     DEFAULT_DEVICE = "cpu"
 
-# Simulator settings
+# Network ports for the simulator
 simulator_infos = defaultdict(dict)
-simulator_infos[1]["exe_path"] = exe
+simulator_infos[1]['exe_path'] = exe
 simulator_infos[1]['host'] = "127.0.0.1"
-simulator_infos[1]['port'] = 4567
+simulator_infos[1]['cmd_port'] = 55001
+simulator_infos[1]['telemetry_port'] = 56001
+simulator_infos[1]['event_port'] = 57001
 
 # Training settings
 Training_Configs = defaultdict()
@@ -89,8 +87,14 @@ Track_Infos[3]['model_path'] = CHECKPOINT_DIR.joinpath('ads', 'track3-dave2-191.
 Track_Infos[3]['simulator'] = simulator_infos[1]
 Track_Infos[3]['driving_style']  = ["normal", "reverse", "normal", "reverse"]
 Track_Infos[3]['training_data_dir'] = Training_Configs['training_data_dir'].joinpath('lane_keeping_data', 'track3_throttle')
-# TODO: add code to override default settings
 
+Track_Infos[4]["track_name"] = "city"        # TODO: find out actual handle
+Track_Infos[4]["model_path"] = None          # TODO: set model path
+Track_Infos[4]["simulator"] = simulator_infos[1]
+Track_Infos[4]["driving_style"] = []         # TODO: define driving styles
+Track_Infos[4]["training_data_dir"] = None   # TODO: set training data directory
+
+# Model configuration
 model_cfgs = defaultdict()
 model_cfgs['image_width'] = 320
 model_cfgs['image_height'] = 160
@@ -98,4 +102,4 @@ model_cfgs['image_depth'] = 3
 model_cfgs['resized_image_width'] = 160
 model_cfgs['resized_image_height'] = 80
 
-model_cfgs['num_outputs'] = 2 # when we wish to predict steering and throttle:
+model_cfgs['num_outputs'] = 2
