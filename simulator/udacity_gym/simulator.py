@@ -1,7 +1,12 @@
 import copy
 import pathlib
 import time
-# from multiprocessing import Manager
+import socket
+import json
+import base64
+from io import BytesIO
+from PIL import Image
+
 from .global_manager import get_simulator_state
 
 from .action import UdacityAction
@@ -17,20 +22,39 @@ class UdacitySimulator:
             self,
             sim_exe_path: str = "./examples/udacity/udacity_utils/sim/udacity_sim.app",
             host: str = "127.0.0.1",
-            port: int = 4567,
+            cmd_port: int = 55001,
+            telemetry_port: int = 56001,
+            event_port: int = 57001,
     ):
         # Simulator path
         self.simulator_exe_path = sim_exe_path
         self.sim_process = UnityProcess()
-        # Simulator network settings
-        from .executor import UdacityExecutor
-        self.sim_executor = UdacityExecutor(host, port)
+
+        # Network settings
         self.host = host
-        self.port = port
-        # Simulator logging
+        self.cmd_port = cmd_port
+        self.tel_port = telemetry_port
+        self.event_port = event_port
+
+        # Logging & shared state
         self.logger = CustomLogger(str(self.__class__))
-        # Simulator state
         self.sim_state = get_simulator_state()
+
+        # Buffer for partial telemetry lines
+        self._tel_buffer = b""
+
+        # Open raw-TCP sockets
+        self.cmd_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.cmd_sock.connect((host, cmd_port))
+        self.cmd_sock.settimeout(10.0)
+
+        self.tel_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.tel_sock.connect((host, telemetry_port))
+        self.tel_sock.settimeout(10.0)
+
+        self.event_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.event_sock.connect((host, event_port))
+        self.event_sock.settimeout(10.0)
 
         # Verify binary location
         if not pathlib.Path(sim_exe_path).exists():
@@ -104,19 +128,16 @@ class UdacitySimulator:
         # Start Unity simulation subprocess
         self.logger.info("Starting Unity process for Udacity simulator...")
         self.sim_process.start(
-            sim_path=self.simulator_exe_path, headless=False, port=self.port
+            sim_path=self.simulator_exe_path, headless=False, port=self.cmd_port
         )
-        self.sim_executor.start()
 
     def close(self):
         self.sim_process.close()
-
-# manager = Manager()
-#
-# simulator_state = manager.dict()
-# simulator_state['observation'] = None
-# simulator_state['action'] = UdacityAction(0.0, 0.0)
-# simulator_state['paused'] = False
-# simulator_state['track'] = "lake"
-# simulator_state['events'] = []
-# simulator_state['episode_metrics'] = None
+        for sock in (getattr(self, 'cmd_sock', None),
+                     getattr(self, 'tel_sock', None),
+                     getattr(self, 'event_sock', None)):
+            if sock:
+                try:
+                    sock.close()
+                except:
+                    pass

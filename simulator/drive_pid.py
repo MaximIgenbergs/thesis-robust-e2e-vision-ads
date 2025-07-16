@@ -15,6 +15,7 @@ import json
 import time
 import tqdm
 from udacity_gym import UdacitySimulator, UdacityGym
+from udacity_gym.action import UdacityAction
 from udacity_gym.agent import PIDUdacityAgent_Angle
 from udacity_gym.agent_callback import LogObservationCallback
 from utils.conf import Track_Infos
@@ -40,13 +41,16 @@ if __name__ == '__main__':
         print("Logging is disabled.")
 
     # Initialize simulator & environment
-    assert pathlib.Path(sim_info['exe_path']).exists(), f"Simulator binary not found at {sim_info['exe_path']}"
+    assert pathlib.Path(sim_info['exe_path']).exists(), \
+        f"Simulator binary not found at {sim_info['exe_path']}"
     simulator = UdacitySimulator(
-        sim_exe_path=sim_info['exe_path'], host=sim_info['host'], port=sim_info['port']
+        sim_exe_path=sim_info['exe_path'],
+        host=sim_info['host'],
+        cmd_port=sim_info['cmd_port'],
+        telemetry_port=sim_info['telemetry_port'],
+        event_port=sim_info['event_port']
     )
     env = UdacityGym(simulator=simulator)
-    simulator.start = simulator.sim_executor.start
-    simulator.start()
 
     # Reset and wait for readiness
     observation, _ = env.reset(track=track, weather=weather, daytime=daytime)
