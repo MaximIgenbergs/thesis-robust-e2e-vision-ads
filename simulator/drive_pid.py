@@ -23,7 +23,7 @@ from models.utils.utils import make_collection_dir
 
 # Configuration
 track_index = 2  # jungle
-logging = True
+logging = False
 steps = 7000
 
 if __name__ == '__main__':
@@ -52,12 +52,7 @@ if __name__ == '__main__':
     )
     env = UdacityGym(simulator=simulator)
 
-    # Reset and wait for readiness
     observation, _ = env.reset(track=track, weather=weather, daytime=daytime)
-    while not observation or not observation.is_ready():
-        print("Waiting for environment to set up...")
-        time.sleep(1)
-        observation = env.observe()
 
     # Logging callback
     if logging:
@@ -87,7 +82,6 @@ if __name__ == '__main__':
         if logging and info:
             with open(log_directory / "info.json", "w") as f:
                 json.dump(info, f)
-        # Save logs
         if logging and log_cb.logs:
             log_cb.save()
             print(f"Logs saved to {log_directory}")
