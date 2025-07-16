@@ -1,4 +1,3 @@
-import copy
 import pathlib
 import time
 import socket
@@ -8,14 +7,12 @@ from io import BytesIO
 from PIL import Image
 
 from .global_manager import get_simulator_state
-
 from .action import UdacityAction
 from .logger import CustomLogger
 from .observation import UdacityObservation
 from .unity_process import UnityProcess
 
 
-# TODO: it should extend an abstract simulator
 class UdacitySimulator:
 
     def __init__(
@@ -133,48 +130,62 @@ class UdacitySimulator:
         cmd = {"command": "resume_sim"}
         self.event_sock.sendall((json.dumps(cmd) + "\n").encode("utf-8"))
         self.sim_state['paused'] = False
-        # TODO: this loop is to make an async api synchronous
-        # We wait the confirmation of the resume command
-        while self.sim_state.get('sim_state', '') != 'running':
-            # TODO: modify the sleeping time with constant
-            time.sleep(0.1)
 
-    # # TODO: add other track properties
-    # def set_track(self, track_name):
-    #     self.sim_state['track'] = track_name
-
-    def reset(self, new_track_name: str = 'lake', new_weather_name: str = 'sunny', new_daytime_name: str = 'day'):
-        observation = UdacityObservation(
-            input_image=None,
-            semantic_segmentation=None,
-            position=(0.0, 0.0, 0.0),
-            steering_angle=0.0,
-            throttle=0.0,
-            speed=0.0,
-            cte=0.0,
-            lap=0,
-            sector=0,
-            next_cte=0.0,
-            time=-1,
-            angle_diff=0.0
-        )
-        action = UdacityAction(
-            steering_angle=0.0,
-            throttle=0.0,
-        )
-        self.sim_state['observation'] = observation
-        self.sim_state['action'] = action
-        # TODO: Change new track name to enum
-        self.sim_state['track'] = {
-            'track': new_track_name,
-            'weather': new_weather_name,
-            'daytime': new_daytime_name,
+    def reset(self, new_track_name: str = 'lake',
+                    new_weather_name: str = 'sunny',
+                    new_daytime_name: str = 'day'):
+        # 1) Send start_episode
+        evt = {
+            "command": "start_episode",
+            "track_name": new_track_name,
+            "weather_name": new_weather_name,
+            "daytime_name": new_daytime_name
         }
-        self.sim_state['events'] = []
-        self.sim_state['episode_metrics'] = None
+        self.event_sock.sendall((json.dumps(evt) + "\n").encode("utf-8"))
 
-        return observation, {}
+        # 2) Wait for {"event":"episode_started"} on the event socket
+        buf_evt = b""
+        while b"\n" not in buf_evt:
+            buf_evt += self.event_sock.recv(4096)
+        line_evt, _, _ = buf_evt.partition(b"\n")
+        msg = json.loads(line_evt.decode("utf-8"))
+        if msg.get("event") != "episode_started":
+            raise RuntimeError(f"Unexpected event during reset: {msg}")
 
+        # 3) Now the scene is loaded — grab the very first telemetry frame
+        buf_tel = b""
+        while b"\n" not in buf_tel:
+            buf_tel += self.tel_sock.recv(4096)
+        line_tel, _, _ = buf_tel.partition(b"\n")
+        data = json.loads(line_tel.decode("utf-8"))
+
+        # 4) Build and return a real observation
+        try:
+            img = Image.open(BytesIO(base64.b64decode(data["image"])))
+        except Exception:
+            img = None
+
+        obs = UdacityObservation(
+            input_image=img,
+            semantic_segmentation=None,
+            position=(
+                float(data["pos_x"]),
+                float(data["pos_y"]),
+                float(data["pos_z"])
+            ),
+            steering_angle=0.0,
+            throttle=0.0,
+            speed=float(data["speed"]) * 3.6,
+            cte=float(data["cte"]),
+            next_cte=float(data["next_cte"]),
+            lap=int(data["lap"]),
+            sector=int(data["sector"]),
+            time=int(time.time() * 1000),
+            angle_diff=float(data["angular_difference"])
+        )
+        self.sim_state["observation"] = obs
+        return obs, {}
+    
     def start(self):
         # Start Unity simulation subprocess
         self.logger.info("Starting Unity process for Udacity simulator...")
