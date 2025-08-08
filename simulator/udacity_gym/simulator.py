@@ -22,6 +22,7 @@ class UdacitySimulator:
             cmd_port: int = 55001,
             telemetry_port: int = 56001,
             event_port: int = 57001,
+            others_port: int = 58001
     ):
         # Simulator path
         self.simulator_exe_path = sim_exe_path
@@ -32,6 +33,7 @@ class UdacitySimulator:
         self.cmd_port = cmd_port
         self.tel_port = telemetry_port
         self.event_port = event_port
+        self.others_port = others_port
 
         # Logging & shared state
         self.logger = CustomLogger(str(self.__class__))
@@ -53,13 +55,17 @@ class UdacitySimulator:
         self.event_sock.connect((host, event_port))
         self.event_sock.settimeout(10.0)
 
+        self.others_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.others_sock.connect((host, others_port))
+        self.others_sock.settimeout(10.0)
+
         # Verify binary location
         if not pathlib.Path(sim_exe_path).exists():
             self.logger.error(f"Executable binary to the simulator does not exists. "
                               f"Check if the path {self.simulator_exe_path} is correct.")
 
     def step(self, action: UdacityAction):
-        # 1) Send control command
+        # Send control command
         cmd = {
             "command": "send_control",
             "steering_angle": action.steering_angle,
@@ -68,7 +74,7 @@ class UdacitySimulator:
         self.cmd_sock.sendall((json.dumps(cmd) + "\n").encode("utf-8"))
         self.sim_state['action'] = action
 
-        # 2) Read one full JSON line from telemetry, skipping empty or malformed lines
+        # Read one full JSON line from telemetry, skipping empty or malformed lines
         while True:
             # If we already have a complete line in the buffer, process it
             if b"\n" in self._tel_buffer:
@@ -76,14 +82,12 @@ class UdacitySimulator:
                 self._tel_buffer = rest
                 text = line.strip()
                 if not text:
-                    # empty or whitespace-only line, skip it
-                    continue
+                    continue # empty or whitespace-only line, skip it
                 if text.startswith(b"{"):
                     data = json.loads(text.decode("utf-8"))
                     break
                 else:
-                    # non-JSON line, skip it
-                    continue
+                    continue # non-JSON line, skip it
 
             # Otherwise, receive more bytes
             chunk = self.tel_sock.recv(4096)
@@ -91,7 +95,7 @@ class UdacitySimulator:
                 raise ConnectionError("Telemetry socket closed")
             self._tel_buffer += chunk
 
-        # 3) Map telemetry JSON into an observation
+        # Map telemetry JSON into an observation
         try:
             img = Image.open(BytesIO(base64.b64decode(data["image"])))
         except Exception:
@@ -131,10 +135,11 @@ class UdacitySimulator:
         self.event_sock.sendall((json.dumps(cmd) + "\n").encode("utf-8"))
         self.sim_state['paused'] = False
 
+
     def reset(self, new_track_name: str = 'lake',
                     new_weather_name: str = 'sunny',
                     new_daytime_name: str = 'day'):
-        # 1) Send start_episode
+        # Send start_episode
         evt = {
             "command": "start_episode",
             "track_name": new_track_name,
@@ -143,7 +148,7 @@ class UdacitySimulator:
         }
         self.event_sock.sendall((json.dumps(evt) + "\n").encode("utf-8"))
 
-        # 2) Wait for {"event":"episode_started"} on the event socket
+        # Wait for {"event":"episode_started"} on the event socket
         buf_evt = b""
         while b"\n" not in buf_evt:
             buf_evt += self.event_sock.recv(4096)
@@ -152,14 +157,14 @@ class UdacitySimulator:
         if msg.get("event") != "episode_started":
             raise RuntimeError(f"Unexpected event during reset: {msg}")
 
-        # 3) Now the scene is loaded — grab the very first telemetry frame
+        # Scene is loaded --> grab the first telemetry frame
         buf_tel = b""
         while b"\n" not in buf_tel:
             buf_tel += self.tel_sock.recv(4096)
         line_tel, _, _ = buf_tel.partition(b"\n")
         data = json.loads(line_tel.decode("utf-8"))
 
-        # 4) Build and return a real observation
+        # Build and return a real observation
         try:
             img = Image.open(BytesIO(base64.b64decode(data["image"])))
         except Exception:
@@ -197,7 +202,8 @@ class UdacitySimulator:
         self.sim_process.close()
         for sock in (getattr(self, 'cmd_sock', None),
                      getattr(self, 'tel_sock', None),
-                     getattr(self, 'event_sock', None)):
+                     getattr(self, 'event_sock', None),
+                     getattr(self, 'others_sock', None)):
             if sock:
                 try:
                     sock.close()
