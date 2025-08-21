@@ -157,6 +157,24 @@ class PIDUdacityAgent_Angle(UdacityAgent):
                 'Kd_speed': 0.0,
                 'Ki_speed': 0.0
             }
+        elif self.track == "city": # TODO: adjust for 90° turns
+            pid_parameters = {
+                'Kp_angle': 0.01,
+                'Kd_angle': 0.002,
+                'Ki_angle': 0.0,
+                'Kp_speed': 0.1,
+                'Kd_speed': 0.0,
+                'Ki_speed': 0.0
+            }
+        elif self.track == "generator":
+            pid_parameters = {
+                'Kp_angle': 0.01,
+                'Kd_angle': 0.002,
+                'Ki_angle': 0.0,
+                'Kp_speed': 0.1,
+                'Kd_speed': 0.0,
+                'Ki_speed': 0.0
+            }
 
         (throttle, steering,
          #prev_road_error, prev_angle_error, prev_speed_error, total_road_error, total_angle_error, total_speed_error
