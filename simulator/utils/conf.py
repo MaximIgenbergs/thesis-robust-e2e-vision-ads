@@ -15,7 +15,13 @@ WEATHER = "sunny"
 ENABLE_LOGGING = False
 STEPS = 7000
 EGO_CIRCUIT_NAME = "MainWayPointCircuit"
-EGO_SPAWN_INDEX = 1
+EGO_SPAWN_INDEX = {
+    "jungle": 44,
+    "city": 350,
+    "lake": 1,
+    "mountain": 1,
+    "generator": 1
+}.get(TRACK, 1)
 RANDOM_NPCS = 0 # Number of randomly spawned NPC vehicles
 FIXED_NPCS = [ # Each entry describes one NPC car to spawn with fixed settings
     # Example:
