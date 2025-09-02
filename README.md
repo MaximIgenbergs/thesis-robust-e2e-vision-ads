@@ -1,2 +1,4 @@
 # thesis-robust-e2e-vision-ads
-Bachelor’s thesis: Implementing and benchmarking robust end-to-end, vision-only autonomous driving models by leveraging temporal features and ViT architectures with MPC-based data collection and advanced robustness testing.
+Bachelor Thesis: Dual-Axis Testing of Visual Robustness and Topological Generalization in Vision-based End-to-End Driving Models
+
+- `make deps` to fetch submodules
