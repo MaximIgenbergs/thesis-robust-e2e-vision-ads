@@ -142,7 +142,7 @@ class UdacitySimulator:
             "command": "send_control",
             "carControll": {
                 "carId": int(ego_id),
-                "Indicator": "Straight",  # Left / Right / Straight
+                "Indicator": 1,  # Left: 0, Straight: 1, Right: 2
                 "steering_angle": float(action.steering_angle),
                 "throttle": float(action.throttle),
             }
