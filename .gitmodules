@@ -1,4 +1,0 @@
-[submodule "external/perturbation-drive"]
-	path = external/perturbation-drive
-	url = https://github.com/ast-fortiss-tum/perturbation-drive.git
-	branch = Replication
