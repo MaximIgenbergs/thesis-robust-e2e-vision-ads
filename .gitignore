@@ -185,3 +185,5 @@ models/**/figures/
 
 # VSCode settings
 .vscode/
+
+external/carla-test/runs/**

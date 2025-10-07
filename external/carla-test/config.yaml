@@ -1,0 +1,23 @@
+town: Town05          # e.g., Town01 / Town05
+fps: 20
+seed: 42
+duration_s: 600       # ~10 minutes per run
+ego_blueprint: vehicle.tesla.model3
+traffic_vehicles: 60
+camera:
+  x: 1.5
+  y: 0.0
+  z: 2.0
+  roll: 0.0
+  pitch: 0.0
+  yaw: 0.0
+  image_size_x: 1280
+  image_size_y: 720
+  fov: 90
+output_dir: ./runs
+routes:
+  num_routes: 10
+  min_route_m: 800
+  max_route_m: 2000
+weather:
+  preset: CLEAR_NOON
