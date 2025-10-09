@@ -1,9 +1,14 @@
-town: Town05          # e.g., Town01 / Town05
-fps: 20
+# Map & runtime
+town: Town05
+fps: 30                 # used only in sync mode (20–30 is typical)
 seed: 42
-duration_s: 600       # ~10 minutes per run
+duration_s: 600
+
+# Ego & traffic
 ego_blueprint: vehicle.tesla.model3
-traffic_vehicles: 60
+traffic_vehicles: 0
+
+# Camera (ego-attached)
 camera:
   x: 1.5
   y: 0.0
@@ -14,10 +19,35 @@ camera:
   image_size_x: 1280
   image_size_y: 720
   fov: 90
+
+# Outputs
 output_dir: ./runs
+
+# Route sampling
 routes:
   num_routes: 10
   min_route_m: 800
   max_route_m: 2000
+
+# Weather preset
 weather:
-  preset: CLEAR_NOON
+  preset: CLEAR_NOON   # supported: CLEAR_NOON, CLEAR_SUNSET, CLOUDY_NOON, ...
+
+# Spectator view: "sensor" (FPP) or "chase" (3rd person)
+view: chase
+
+# Logging controls
+logging:
+  enabled: true            # true/false OR mode: on/off (both supported)
+  # Use EXACTLY ONE of the following two options:
+  hz: 0                    # e.g., 3.0 logs at ~3 Hz (works in sync & async)
+  every_n: 1               # if hz==0, log every N ticks
+  image_format: png        # png | jpg
+  jpeg_quality: 90         # for jpg
+  png_compress_level: 6    # 0..9
+  metadata_dump: true      # write run_meta.json
+
+# Runtime controls
+runtime:
+  mode: sync               # sync | async
+  fast_mode: false         # sync only; true = tick as fast as possible
