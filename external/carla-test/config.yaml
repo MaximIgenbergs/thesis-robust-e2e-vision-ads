@@ -1,5 +1,5 @@
 # Map & runtime
-town: Town05
+town: Town01
 fps: 30                 # used only in sync mode (20–30 is typical)
 seed: 42
 duration_s: 600
@@ -38,8 +38,7 @@ view: chase
 
 # Logging controls
 logging:
-  enabled: true            # true/false OR mode: on/off (both supported)
-  # Use EXACTLY ONE of the following two options:
+  enabled: false            # true/false OR mode: on/off (both supported)
   hz: 0                    # e.g., 3.0 logs at ~3 Hz (works in sync & async)
   every_n: 1               # if hz==0, log every N ticks
   image_format: png        # png | jpg
@@ -51,3 +50,19 @@ logging:
 runtime:
   mode: sync               # sync | async
   fast_mode: false         # sync only; true = tick as fast as possible
+
+tcp:
+  ckpt: "~/Downloads/best_model.ckpt"     # path to your .ckpt or .pt
+  format: "lightning"                     # "lightning" | "torchscript"
+  device: "cuda:0"                        # or "cpu"
+  input_w: 256
+  input_h: 256
+  n_cmds: 9                               # override if auto-infer fails
+  aim_dist: 4.0                           # meters ahead for target point
+  model:
+    class: "TCP.model.TCP"                # your model class import path
+    kwargs: {}                            # passed to the class / load_from_checkpoint
+    # optional ways to provide a config object:
+    config_yaml: null                     # e.g. "TCP/configs/tcp.yaml"
+    config_class: "TCP.config:GlobalConfig"
+    config_override: {}                   # e.g. {input_resolution: 256}
