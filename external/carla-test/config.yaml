@@ -16,8 +16,8 @@ camera:
   roll: 0.0
   pitch: 0.0
   yaw: 0.0
-  image_size_x: 1280
-  image_size_y: 720
+  image_size_x: 928 # TCP was trained on 928x256 images that were scaled and cropped to 256x256
+  image_size_y: 256
   fov: 90
 
 # Outputs
@@ -38,7 +38,7 @@ view: chase
 
 # Logging controls
 logging:
-  enabled: false            # true/false OR mode: on/off (both supported)
+  enabled: true            # true/false OR mode: on/off (both supported)
   hz: 0                    # e.g., 3.0 logs at ~3 Hz (works in sync & async)
   every_n: 1               # if hz==0, log every N ticks
   image_format: png        # png | jpg
@@ -52,17 +52,8 @@ runtime:
   fast_mode: false         # sync only; true = tick as fast as possible
 
 tcp:
-  ckpt: "~/Downloads/best_model.ckpt"     # path to your .ckpt or .pt
-  format: "lightning"                     # "lightning" | "torchscript"
-  device: "cuda:0"                        # or "cpu"
-  input_w: 256
-  input_h: 256
-  n_cmds: 9                               # override if auto-infer fails
-  aim_dist: 4.0                           # meters ahead for target point
-  model:
-    class: "TCP.model.TCP"                # your model class import path
-    kwargs: {}                            # passed to the class / load_from_checkpoint
-    # optional ways to provide a config object:
-    config_yaml: null                     # e.g. "TCP/configs/tcp.yaml"
-    config_class: "TCP.config:GlobalConfig"
-    config_override: {}                   # e.g. {input_resolution: 256}
+  lookahead_m: 12.0     # fixed distance ahead for target_point (default 12.0)
+  control: policy       # policy | pid
+  ckpt: ~/Downloads/best_model.ckpt
+  device: cpu
+  speed_div: 12.0

@@ -342,3 +342,7 @@ class TCP(nn.Module):
 		brake = torch.clamp(brake, 0, 1)
 
 		return throttle, steer, brake
+	
+
+if __name__ == '__main__':
+	pass

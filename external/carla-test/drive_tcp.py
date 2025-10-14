@@ -1,470 +1,221 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
- drive_tcp.py — Run a TCP end-to-end model in CARLA (Lightning/TorchScript, no CLI flags)
+drive_tcp.py — Drive CARLA using a TCP model (Lightning ckpt).
 
- • Loads a TCP model **from config.yaml** (no command-line flags).
- • Supports **PyTorch Lightning** checkpoints (primary) and **TorchScript** .pt (optional).
- • Derives high-level commands from your route (via agents_helpers) and, if needed,
-   provides a **target point** in ego coordinates to TCP variants that expect it.
- • Logging, spectator view, timing, and cleanup mirror collector.py.
+What this script ensures
+------------------------
+- Ego spawn is lane-centered & yaw-aligned (no initial drift).
+- Target point (TP) is on the lane center, LOOKAHEAD_M meters ahead.
+- Correct, single world→ego transform: +x forward, +y right.
+- Optional debug overlays: forward arrow & TP dot (in UE window).
+- Control modes:
+    * policy : TCP action head
+    * pid    : TCP PID controller over predicted waypoints
+- Runtime: sync/async + fast mode (sync only)
 
-Config schema additions (under top-level `tcp:`):
-
-  tcp:
-    ckpt: "~/Downloads/best_model.ckpt"     # path to .ckpt or .pt
-    format: "lightning"                      # "lightning" | "torchscript"
-    device: "cuda:0"                         # "cpu" or CUDA device
-    input_w: 256                             # model input width
-    input_h: 256                             # model input height
-    n_cmds: 9                                # command vector length (if auto-infer fails)
-    aim_dist: 4.0                            # meters ahead for target point
-    model:
-      class: "TCP.model.TCP"                # import path to model class (Lightning or plain nn.Module)
-      kwargs: {}                             # kwargs for class or load_from_checkpoint
-      config_yaml: null                      # optional: path to YAML to pass as 'config'
-      config_class: "TCP.config:GlobalConfig"# optional: "module:Class" to instantiate as 'config'
-      config_override: {}                    # optional: dict of overrides for config_class
-
-Notes
------
- • If your model returns waypoints instead of controls, a simple pure-pursuit-like
-   controller converts them to (steer, throttle, brake) (tune gains later).
- • If the model forward signature is unusual, we **inspect it** and map inputs by
-   parameter names (image/command/speed/target_point/measurements/etc.).
+Config keys used (same style as collector.py)
+---------------------------------------------
+town, fps, seed, duration_s, ego_blueprint, traffic_vehicles,
+camera{...}, weather.preset, view ("sensor"|"chase"),
+runtime.mode ("sync"|"async"), runtime.fast_mode (bool),
+tcp.ckpt, tcp.device, tcp.control ("policy"|"pid"),
+tcp.speed_div, tcp.lookahead_m,
+debug.enabled (bool)
 """
 
 from __future__ import annotations
-
-import csv
-import importlib
+import argparse
+import math
 import os
 import random
-import signal
 import sys
 import time
-import math
-import inspect
-from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 
 import numpy as np
+from PIL import Image
 import yaml
+import torch
+import torch.nn as nn
+import torchvision.transforms as T
 import carla  # type: ignore
 
-import torch
-from PIL import Image
-
-from agents_helpers import build_grp, pick_routes, next_high_level_command
+# --- Local helpers (from your repo) ---
 from sim_utils import (
-    set_sync, attach_rgb, set_weather,
-    update_spectator, destroy_actors, town_basename,
+    set_sync, attach_rgb, set_weather, update_spectator, destroy_actors, town_basename,
 )
-from io_utils import AsyncImageWriter, write_run_metadata
+from agents_helpers import build_grp, pick_routes, next_high_level_command
+
+# --- TCP model ---
+from TCP.model import TCP
+from TCP.config import GlobalConfig
 
 # ---------------- Constants ----------------
-HOST: str = "localhost"
-RPC_PORT: int = 2000
-TM_PORT: int = 8000
+HOST = "localhost"
+RPC_PORT = 2000
+TM_PORT = 8000
 
-# ---------------- Config validation ----------------
+IMAGENET_MEAN = [0.485, 0.456, 0.406]
+IMAGENET_STD  = [0.229, 0.224, 0.225]
+
+# Input size measured for your backbone stride (per your earlier logs)
+IMG_H, IMG_W = 256, 928
+
+CMD_NAMES = ["left","right","straight","lanefollow","changelaneleft","changelaneright"]
+PRINT_EVERY = 10   # print every N ticks
+
+# ---------------- Small helpers ----------------
 
 def _to_bool(x) -> bool:
-    if isinstance(x, bool):
-        return x
-    if isinstance(x, (int, float)):
-        return bool(x)
-    if isinstance(x, str):
-        return x.strip().lower() in {"1", "true", "yes", "on", "y", "t"}
+    if isinstance(x, bool): return x
+    if isinstance(x, (int, float)): return bool(x)
+    if isinstance(x, str): return x.strip().lower() in {"1","true","yes","on","y","t"}
     return bool(x)
 
-
 def _validate_config(cfg: Dict) -> None:
-    required_top = [
-        "town", "fps", "seed", "duration_s", "camera", "output_dir", "routes", "weather"
-    ]
+    required_top = ["town","fps","seed","duration_s","ego_blueprint","traffic_vehicles","camera","view"]
     for k in required_top:
         if k not in cfg:
             raise ValueError(f"Missing config key: {k}")
-
-    cam_req = ["x", "y", "z", "roll", "pitch", "yaw", "image_size_x", "image_size_y", "fov"]
+    cam_req = ["x","y","z","roll","pitch","yaw","image_size_x","image_size_y","fov"]
     for k in cam_req:
         if k not in cfg["camera"]:
             raise ValueError(f"Missing camera config key: camera.{k}")
-
-    routes_req = ["num_routes", "min_route_m", "max_route_m"]
-    for k in routes_req:
-        if k not in cfg["routes"]:
-            raise ValueError(f"Missing routes config key: routes.{k}")
-
-    if "preset" not in cfg["weather"]:
+    if "preset" not in (cfg.get("weather") or {}):
         raise ValueError("Missing weather.preset")
+    if int(cfg["fps"]) <= 0: raise ValueError("fps must be > 0")
+    if float(cfg["duration_s"]) <= 0: raise ValueError("duration_s must be > 0")
 
-    if cfg["fps"] <= 0:
-        raise ValueError("fps must be > 0")
-    if cfg["duration_s"] <= 0:
-        raise ValueError("duration_s must be > 0")
-    if cfg["routes"]["num_routes"] <= 0:
-        raise ValueError("routes.num_routes must be > 0")
+def load_ckpt_into_tcp(model: nn.Module, ckpt_path: str, strict: bool = False):
+    ckpt = torch.load(os.path.expanduser(ckpt_path), map_location="cpu")
+    if "state_dict" not in ckpt:
+        raise RuntimeError(f"No 'state_dict' in checkpoint: {list(ckpt.keys())}")
+    sd = ckpt["state_dict"]
+    new_sd = {}
+    for k, v in sd.items():
+        new_sd[k[len("model."):] if k.startswith("model.") else k] = v
+    missing, unexpected = model.load_state_dict(new_sd, strict=strict)
+    if missing or unexpected:
+        print(f"[drive_tcp] load_state_dict: missing={missing}, unexpected={unexpected}")
 
-# ---------------- Image utils ----------------
+def _one_hot_command(name_or_idx) -> torch.Tensor:
+    if isinstance(name_or_idx, int):
+        idx = name_or_idx
+    else:
+        name = str(name_or_idx).lower()
+        idx = CMD_NAMES.index(name) if name in CMD_NAMES else 3  # lanefollow fallback
+    idx = int(np.clip(idx, 0, 5))
+    oh = torch.zeros(6, dtype=torch.float32)
+    oh[idx] = 1.0
+    return oh
 
-def carla_image_to_rgb_array(img: "carla.Image") -> np.ndarray:
-    # CARLA returns BGRA uint8 buffer
-    arr = np.frombuffer(img.raw_data, dtype=np.uint8)
-    arr = arr.reshape((img.height, img.width, 4))
-    rgb = arr[:, :, :3][:, :, ::-1]  # BGR -> RGB
-    return rgb
+def _carla_img_to_rgb_tensor(img: "carla.Image", size_hw: Tuple[int,int]) -> torch.Tensor:
+    arr = np.frombuffer(img.raw_data, dtype=np.uint8).reshape(img.height, img.width, 4)
+    rgb = arr[:, :, :3][:, :, ::-1]  # BGRA->RGB
+    pil = Image.fromarray(rgb)
+    tfm = T.Compose([
+        T.Resize(size_hw),  # (H,W)
+        T.ToTensor(),
+        T.Normalize(IMAGENET_MEAN, IMAGENET_STD),
+    ])
+    return tfm(pil).unsqueeze(0)
 
+# ---------- Geometry (clean, single convention) ----------
 
-def preprocess(img_arr: np.ndarray, size: Tuple[int, int]) -> torch.Tensor:
-    # size = (W,H)
-    im = Image.fromarray(img_arr)
-    im = im.resize(size, Image.BILINEAR)
-    x = torch.from_numpy(np.array(im)).float() / 255.0  # H,W,3
-    x = x.permute(2, 0, 1).unsqueeze(0)  # 1,3,H,W
-    return x
-
-# ---------------- Route / target-point utils ----------------
-
-def _closest_target_point_along_route(route, start_idx: int, aim_dist_m: float, ego_loc: "carla.Location") -> "carla.Location":
-    """Pick a target point ~aim_dist_m ahead along the route from start_idx. Fallback to last waypoint."""
-    if not route:
-        return ego_loc
-    last_loc = route[start_idx][0].transform.location if start_idx < len(route) else route[-1][0].transform.location
-    dist = 0.0
-    for i in range(start_idx + 1, len(route)):
-        loc = route[i][0].transform.location
-        step = loc.distance(last_loc)
-        dist += step
-        if dist >= aim_dist_m:
-            return loc
-        last_loc = loc
-    return route[-1][0].transform.location
-
-
-def _world_to_ego_xy(ego_tf: "carla.Transform", world_loc: "carla.Location") -> Tuple[float, float]:
+def world_to_ego_xy(world_loc: carla.Location, ego_tf: carla.Transform) -> Tuple[float,float]:
+    """
+    World → ego 2D (meters). Ego frame: +x forward, +y right.
+    """
     dx = world_loc.x - ego_tf.location.x
     dy = world_loc.y - ego_tf.location.y
     yaw = math.radians(ego_tf.rotation.yaw)
-    cos, sin = math.cos(yaw), math.sin(yaw)
-    x_fwd =  cos * dx + sin * dy
-    y_right = -sin * dx + cos * dy
-    return x_fwd, y_right
+    c, s = math.cos(yaw), math.sin(yaw)
+    x_ego =  c * dx + s * dy
+    y_ego = -s * dx + c * dy
+    return float(x_ego), float(y_ego)
 
-# ---------------- Command encoding ----------------
-
-CMD_ORDER = ["FOLLOW", "LEFT", "RIGHT", "STRAIGHT"]  # base order
-
-
-def encode_command(cmd: str, dim: int = 4) -> torch.Tensor:
-    c = cmd.upper()
-    key = "FOLLOW"
-    if "LEFT" in c:
-        key = "LEFT"
-    elif "RIGHT" in c:
-        key = "RIGHT"
-    elif "STRAIGHT" in c or "LANEFOLLOW" in c:
-        key = "STRAIGHT" if "STRAIGHT" in c else "FOLLOW"
-    onehot = torch.zeros(1, dim, dtype=torch.float32)
-    idx = CMD_ORDER.index(key) if key in CMD_ORDER else 0
-    if idx < dim:
-        onehot[0, idx] = 1.0
-    return onehot
-
-
-def encode_command3(cmd: str) -> torch.Tensor:
-    c = cmd.upper()
-    idx = 2  # STRAIGHT default
-    if "LEFT" in c:
-        idx = 0
-    elif "RIGHT" in c:
-        idx = 1
-    v = torch.zeros(1, 3, dtype=torch.float32)
-    v[0, idx] = 1.0
-    return v
-
-# ---------------- TCP model wrapper ----------------
-
-class TCPWrapper:
-    """Wrapper that adapts multiple TCP signatures (with/without target_point)."""
-    def __init__(self, *, fmt: str, ckpt_path: str, model_class_path: Optional[str], device: str = "cpu", model_kwargs: Optional[dict] = None, n_cmds: Optional[int] = None):
-        self.fmt = fmt
-        self.device = torch.device(device)
-        self.model = None
-        self.input_size = (320, 160)  # (W,H) default; overridden from cfg
-        self.model_kwargs = model_kwargs or {}
-        self.cmd_dim = n_cmds  # may be None; attempt to infer
-        self.fwd_sig = None
-        self._dbg_printed = False
-
-        if fmt == "lightning":
-            if not model_class_path:
-                raise ValueError("tcp.model.class must be provided for fmt=lightning")
-            module, cls_name = model_class_path.rsplit(".", 1)
-            mod = importlib.import_module(module)
-            cls = getattr(mod, cls_name)
-
-            def _safe_load_ckpt(path: str):
-                try:
-                    return torch.load(path, map_location="cpu", weights_only=True)  # type: ignore[arg-type]
-                except Exception:
-                    print("[drive_tcp] Warning: falling back to torch.load(weights_only=False). Only load trusted checkpoints.", file=sys.stderr)
-                    return torch.load(path, map_location="cpu")
-
-            if hasattr(cls, "load_from_checkpoint"):
-                try:
-                    self.model = cls.load_from_checkpoint(ckpt_path, map_location=self.device, **self.model_kwargs)
-                except ModuleNotFoundError:
-                    obj = _safe_load_ckpt(ckpt_path)
-                    state = obj.get("state_dict", obj)
-                    m = cls(**self.model_kwargs)
-                    m.load_state_dict(state, strict=False)
-                    self.model = m
-            else:
-                obj = _safe_load_ckpt(ckpt_path)
-                state = obj.get("state_dict", obj)
-                # strip common prefixes
-                def _strip(sd):
-                    out = {}
-                    for k, v in sd.items():
-                        nk = k
-                        for pref in ("model.", "net.", "module."):
-                            if nk.startswith(pref):
-                                nk = nk[len(pref):]
-                                break
-                        out[nk] = v
-                    return out
-                if isinstance(state, dict):
-                    state = _strip(state)
-                m = cls(**self.model_kwargs)
-                m.load_state_dict(state, strict=False)
-                self.model = m
-
-            self.model.to(self.device).eval()
-            try:
-                self.fwd_sig = inspect.signature(self.model.forward)
-            except Exception:
-                self.fwd_sig = None
-            if self.cmd_dim is None:
-                self.cmd_dim = self._infer_cmd_dim(self.model)
-
-        elif fmt == "torchscript":
-            self.model = torch.jit.load(ckpt_path, map_location=self.device)
-            self.model.eval()
-            try:
-                self.fwd_sig = inspect.signature(self.model.forward)
-            except Exception:
-                self.fwd_sig = None
-            if self.cmd_dim is None:
-                self.cmd_dim = 4
-        else:
-            raise ValueError("tcp.format must be 'lightning' or 'torchscript'")
-
-    def _infer_cmd_dim(self, model) -> int:
-        candidates = set()
-        for _, p in getattr(model, 'named_parameters', lambda: [])():
-            if p.ndim == 2:
-                d = p.shape[1]
-                if d in (4, 5, 6, 8, 9, 10):
-                    candidates.add(d)
-        if candidates:
-            for pref in (9, 8, 6, 5, 4, 10):
-                if pref in candidates:
-                    return pref
-            return max(candidates)
-        return 4
-
-    def set_input_size(self, w: int, h: int):
-        self.input_size = (w, h)
-
-    @torch.no_grad()
-    def forward(self, img_arr: np.ndarray, cmd_str: str, speed: float,
-                target_point_xy: Optional[Tuple[float, float]] = None) -> Tuple[float, float, float]:
-        import inspect
-        # --- inputs ---
-        x = preprocess(img_arr, self.input_size).to(self.device)
-        # ensure we always have a target point (fallback straight ahead)
-        if target_point_xy is None:
-            # 4 m ahead by default
-            target_point_xy = (4.0, 0.0)
-        tp = torch.tensor([[float(target_point_xy[0]), float(target_point_xy[1])]],
-                        dtype=x.dtype, device=self.device)
-        # prepare also common aux (some TCPs ignore them; harmless to compute)
-        cmd_full = encode_command(cmd_str, dim=self.cmd_dim or 4).to(self.device)
-        cmd3 = encode_command3(cmd_str).to(self.device)
-        spd = torch.tensor([[speed]], dtype=x.dtype, device=self.device)
-        meas4 = torch.cat([spd, cmd3], dim=1)
-
-        # --- inspect signature ---
-        try:
-            sig = inspect.signature(self.model.forward)
-            params = list(sig.parameters.items())[1:]  # skip self
-        except Exception:
-            params = []
-        kinds = [(n, p.kind) for n, p in params]
-        if not getattr(self, "_dbg_printed", False):
-            print("[drive_tcp] forward param kinds:", [(n, str(k)) for n, k in kinds])
-            self._dbg_printed = True
-
-        # map values by name
-        def val_for(name: str):
-            key = name.replace("_", "").lower()
-            if key in ("state","image","img","x","rgb","inputs"): return x
-            if key in ("targetpoint","target","tp","goal","waypoint","wp","routepoint"): return tp
-            if key in ("command","cmd","cmdfull","cmd9","routecommand","highlevel"): return cmd_full
-            if key in ("command3","cmd3"): return cmd3
-            if key in ("speed","vel","v"): return spd
-            if key in ("measurements","meas","meas4"): return meas4
-            # heuristics
-            if "point" in key or "goal" in key or "wp" in key: return tp
-            if "meas" in key: return meas4
-            if "cmd" in key: return cmd_full
-            if "spd" in key or "vel" in key: return spd
-            return x
-
-        # build positional/keyword respecting kinds
-        pos_args, kw_args = [], {}
-        for n, k in kinds:
-            v = val_for(n)
-            if k in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD):
-                pos_args.append(v)
-            elif k is inspect.Parameter.KEYWORD_ONLY:
-                kw_args[n] = v
-            else:  # VAR_POSITIONAL/VAR_KEYWORD
-                kw_args[n] = v
-        if not hasattr(self, "_dbg_called"):
-            print("[drive_tcp] mapped forward call:", ("pos", [tuple(a.shape) for a in pos_args]),
-                ("kw", {n: tuple(t.shape) for n,t in kw_args.items()}))
-            self._dbg_called = True
-
-        # helper to normalize outputs
-        def to_controls(out_tensor: torch.Tensor) -> Tuple[float,float,float]:
-            if isinstance(out_tensor, (list, tuple)): out_tensor = out_tensor[0]
-            y = out_tensor.detach().cpu()
-            if y.ndim == 3 and y.shape[-1] == 2:
-                # waypoint controller
-                wp = y[0, 0]
-                x_wp, y_wp = float(wp[0]), float(wp[1])
-                steer = float(np.clip(math.atan2(y_wp, max(1e-3, x_wp)) / 0.4, -1.0, 1.0))
-                target_v = 6.0
-                v_err = target_v - float(spd[0,0].cpu())
-                throttle = float(np.clip(0.2 * v_err, 0.0, 1.0))
-                brake = 0.0 if v_err >= 0 else float(np.clip(-0.3 * v_err, 0.0, 1.0))
-                return steer, throttle, brake
-            y = y.squeeze(0).float().numpy()
-            return float(y[0]), float(y[1]), float(y[2])
-
-        # attempt 1: unbound forward (bypass Lightning __call__)
-        try:
-            unbound = type(self.model).forward
-        except Exception:
-            unbound = None
-        if unbound is not None:
-            try:
-                return to_controls(unbound(self.model, *pos_args, **kw_args))
-            except TypeError:
-                pass
-            # try strict 2-positional (state, target_point)
-            try:
-                return to_controls(unbound(self.model, x, tp))
-            except TypeError:
-                pass
-
-        # attempt 2: bound forward with kwargs/kinds
-        try:
-            return to_controls(self.model.forward(*pos_args, **kw_args))
-        except TypeError:
-            pass
-        try:
-            return to_controls(self.model.forward(x, tp))
-        except TypeError:
-            pass
-
-        # attempt 3: module __call__
-        try:
-            return to_controls(self.model(*pos_args, **kw_args))
-        except TypeError as e:
-            # last resort: wrap with a tiny adapter to force a (state, target_point) signature
-            class _Adapter(torch.nn.Module):
-                def __init__(self, inner):
-                    super().__init__()
-                    self.inner = inner
-                def forward(self, state, target_point):
-                    # try variants
-                    for fn in (self.inner.forward, getattr(self.inner, "__call__", None)):
-                        if fn is None: continue
-                        for args in ((state, target_point),):
-                            try: return fn(*args)
-                            except TypeError: pass
-                        try: return fn(state=state, target_point=target_point)
-                        except TypeError: pass
-                    raise TypeError("adapter could not satisfy inner model forward")
-            try:
-                adapted = _Adapter(self.model).to(self.device).eval()
-                return to_controls(adapted(x, tp))
-            except Exception as e2:
-                raise RuntimeError(f"TCP forward could not be satisfied: {e2}") from e
-            
-            # --- after the __call__ try; before raising
-    # 4) Try TCP forward could not be satisfied by tensor-args or dict-batch calls.")
-
-
-
-# ---------------- Helpers to load TCP from cfg ----------------
-
-def _load_tcp_from_cfg(cfg: Dict) -> Tuple[TCPWrapper, Dict]:
-    tcp_cfg = cfg.get("tcp") or {}
-    ckpt = os.path.expanduser(tcp_cfg.get("ckpt", "~/Downloads/best_model.ckpt"))
-    fmt = str(tcp_cfg.get("format", "lightning")).lower()
-    device = str(tcp_cfg.get("device", "cuda:0"))
-    input_w = int(tcp_cfg.get("input_w", 256))
-    input_h = int(tcp_cfg.get("input_h", 256))
-    n_cmds = tcp_cfg.get("n_cmds")
-    aim_dist = float(tcp_cfg.get("aim_dist", 4.0))
-
-    model_block = tcp_cfg.get("model") or {}
-    model_class = model_block.get("class", "TCP.model.TCP")
-    kwargs = model_block.get("kwargs") or {}
-
-    # Optional config providers
-    cfg_yaml = model_block.get("config_yaml")
-    cfg_class = model_block.get("config_class")
-    cfg_override = model_block.get("config_override") or {}
-
-    # Build kwargs['config'] if provided
-    if cfg_yaml:
-        with open(os.path.expanduser(cfg_yaml), 'r') as f:
-            kwargs.setdefault('config', yaml.safe_load(f))
-    if cfg_class:
-        mod_path, cls_name = cfg_class.split(":", 1)
-        mod = importlib.import_module(mod_path)
-        cls = getattr(mod, cls_name)
-        cfg_obj = cls(**cfg_override)
-        kwargs['config'] = cfg_obj
-
-    tcp = TCPWrapper(
-        fmt=fmt,
-        ckpt_path=ckpt,
-        model_class_path=model_class if fmt == "lightning" else None,
-        device=device,
-        model_kwargs=kwargs,
-        n_cmds=int(n_cmds) if n_cmds is not None else None,
+def ego_forward_tip(ego_tf: carla.Transform, dist: float) -> carla.Location:
+    yaw = math.radians(ego_tf.rotation.yaw)
+    return carla.Location(
+        x=ego_tf.location.x + dist * math.cos(yaw),
+        y=ego_tf.location.y + dist * math.sin(yaw),
+        z=ego_tf.location.z,
     )
-    tcp.set_input_size(input_w, input_h)
-    # return wrapper and a small dict with runtime hints
-    return tcp, {"aim_dist": aim_dist, "config_obj": kwargs.get('config')}
+
+def ego_lane_ahead(world_map: "carla.Map", ego_tf: carla.Transform, lookahead_m: float) -> carla.Location:
+    wp = world_map.get_waypoint(ego_tf.location, project_to_road=True, lane_type=carla.LaneType.Driving)
+    nxt = wp.next(max(1e-3, float(lookahead_m)))
+    return (nxt[0].transform.location if nxt else wp.transform.location)
+
+def clip_tp(tp_x: float, tp_y: float, clip_m: float = 30.0) -> Tuple[float,float]:
+    return float(np.clip(tp_x, -clip_m, clip_m)), float(np.clip(tp_y, -clip_m, clip_m))
+
+# ---------- Spawn helpers ----------
+
+def choose_lane_center_spawn(world: "carla.World") -> carla.Transform:
+    """
+    Prefer a spawn whose nearest waypoint is not in a junction and remains
+    lanefollow shortly ahead. Fall back to first spawn if none found.
+    """
+    wmap = world.get_map()
+    sps = sorted(wmap.get_spawn_points(), key=lambda t: (t.location.x, t.location.y, t.location.z))
+    for sp in sps:
+        wp = wmap.get_waypoint(sp.location, project_to_road=True, lane_type=carla.LaneType.Driving)
+        if wp and not wp.is_junction:
+            nxt = wp.next(30.0)
+            if nxt and not nxt[0].is_junction:
+                return wp.transform
+    # fallback
+    return wmap.get_waypoint(sps[0].location, project_to_road=True, lane_type=carla.LaneType.Driving).transform
+
+# ---------- PID convention calibration (kept minimal/safe) ----------
+
+def _apply_xy_transform(x: torch.Tensor, kind: str) -> torch.Tensor:
+    """
+    Apply convention transform to a (..,2) tensor; used ONLY for PID alignment
+    with the TCP model's expected (learned) waypoint axes.
+    """
+    y = x.clone()
+    if kind == "xy": return y
+    if kind == "negx": y[...,0] = -y[...,0]; return y
+    if kind == "negy": y[...,1] = -y[...,1]; return y
+    if kind == "swap": y[...,0], y[...,1] = y[...,1].clone(), y[...,0].clone(); return y
+    if kind == "swap_negx": y[...,0], y[...,1] = y[...,1].clone(), -y[...,0].clone(); return y
+    if kind == "swap_negy": y[...,0], y[...,1] = -y[...,1].clone(), y[...,0].clone(); return y
+    raise ValueError(kind)
+
+def calibrate_pid_axes(model: TCP, speed_raw: torch.Tensor, pred_wp: torch.Tensor, tp_raw: torch.Tensor) -> Tuple[str, str, float]:
+    """
+    Try a small grid of transforms; pick the pair with minimum |steer|.
+    This DOES NOT change the main world→ego transform; it's only to match
+    the model's trained waypoint axes if they differ.
+    """
+    kinds = ["xy","negx","negy","swap","swap_negx","swap_negy"]
+    best = None
+    with torch.no_grad():
+        for wk in kinds:
+            wpt = _apply_xy_transform(pred_wp, wk)
+            for tk in kinds:
+                tpt = _apply_xy_transform(tp_raw, tk)
+                steer, throttle, brake, _ = model.control_pid(wpt, speed_raw, tpt)
+                score = abs(float(steer))
+                if (best is None) or (score < best[2]):
+                    best = (wk, tk, score)
+    return best  # type: ignore
 
 # ---------------- Main ----------------
 
-def main() -> int:
-    # No CLI: read config path from env or default to ./config.yaml
-    cfg_path = os.environ.get("TCP_CONFIG", "config.yaml")
-    if not os.path.isfile(cfg_path):
-        print(f"[drive_tcp] Config not found: {cfg_path}", file=sys.stderr)
+def main(argv: Optional[List[str]] = None) -> int:
+    parser = argparse.ArgumentParser(description="Drive CARLA with TCP")
+    parser.add_argument("--config", type=str, default="config.yaml")
+    args = parser.parse_args(argv)
+
+    if not os.path.isfile(args.config):
+        print(f"[drive_tcp] Config not found: {args.config}", file=sys.stderr)
         return 2
 
-    with open(cfg_path, "r") as f:
+    with open(args.config, "r") as f:
         cfg = yaml.safe_load(f)
     try:
         _validate_config(cfg)
@@ -472,31 +223,29 @@ def main() -> int:
         print(f"[drive_tcp] Bad config: {e}", file=sys.stderr)
         return 2
 
-    # Runtime
+    # TCP/runtime params
+    tcp_cfg = (cfg.get("tcp") or {})
+    CKPT = os.path.expanduser(tcp_cfg.get("ckpt", "~/Downloads/best_model.ckpt"))
+    DEVICE = str(tcp_cfg.get("device", "cpu")).lower()
+    CONTROL_MODE = str(tcp_cfg.get("control", "policy")).lower()  # "policy" | "pid"
+    SPEED_DIV = float(tcp_cfg.get("speed_div", 12.0))
+    LOOKAHEAD_M = float(tcp_cfg.get("lookahead_m", 12.0))
+    STABILIZE_S = float(tcp_cfg.get("stabilize_s", 2.0))  # force LANEFOLLOW early
+
     runtime_cfg = (cfg.get("runtime") or {})
-    runtime_mode: str = str(runtime_cfg.get("mode", "sync")).lower()
-    fast_mode: bool = _to_bool(runtime_cfg.get("fast_mode", False))
-    SYNC = (runtime_mode == "sync")
+    SYNC = str(runtime_cfg.get("mode", "sync")).lower() == "sync"
+    FAST = _to_bool(runtime_cfg.get("fast_mode", False))
+    FPS = int(cfg["fps"])
 
-    # Logging
-    log_cfg = (cfg.get("logging") or {})
-    LOG_ON: bool = _to_bool(log_cfg.get("enabled", log_cfg.get("mode", True)))
-    EVERY_N: int = int(log_cfg.get("every_n", 1))
-    LOG_HZ: float = float(log_cfg.get("hz", 0.0))
-    assert EVERY_N >= 1, "logging.every_n must be >= 1 when used"
-    img_fmt: str = str(log_cfg.get("image_format", "png")).lower()  # png | jpg
-    jpg_q: int = int(log_cfg.get("jpeg_quality", 90))
-    png_cl: int = int(log_cfg.get("png_compress_level", 6))
-    meta_dump: bool = _to_bool(log_cfg.get("metadata_dump", True))
+    dbg_cfg = (cfg.get("debug") or {})
+    DEBUG_DRAW = _to_bool(dbg_cfg.get("enabled", False))
 
-    view_mode: str = str(cfg.get("view", "sensor")).lower()  # "sensor" | "chase"
-
-    # Connect to CARLA
+    # Connect
     client = carla.Client(HOST, RPC_PORT)
     client.set_timeout(20.0)
     world: "carla.World" = client.get_world()
 
-    # Load map if not already loaded
+    # Map (load if different)
     current = town_basename(world.get_map().name)
     target = str(cfg["town"])
     if current != target:
@@ -507,298 +256,241 @@ def main() -> int:
     tm: "carla.TrafficManager" = client.get_trafficmanager(TM_PORT)
 
     # Seeds + mode
-    SEED, FPS = int(cfg["seed"]), int(cfg["fps"])
-    random.seed(SEED)
-    np.random.seed(SEED)
+    SEED = int(cfg["seed"])
+    random.seed(SEED); np.random.seed(SEED)
     tm.set_random_device_seed(SEED)
     world.set_pedestrians_seed(SEED + 1)
     set_sync(world, tm, FPS, SYNC)
 
-    # Warm-up
+    # Warm-up a bit (gets the sim stable)
     if SYNC:
-        for _ in range(30):
-            world.tick()
+        for _ in range(30): world.tick()
     else:
-        for _ in range(30):
-            world.wait_for_tick(seconds=1.0)
+        for _ in range(30): world.wait_for_tick(seconds=1.0)
 
     # Weather
     set_weather(world, cfg["weather"]["preset"])
 
-    # Spawn ego only (no autopilot here)
-    spawn_points = world.get_map().get_spawn_points()
-    spawn_points.sort(key=lambda t: (t.location.x, t.location.y, t.location.z))
+    # Spawn ego (lane-centered) + optional traffic
+    ego_bp = world.get_blueprint_library().find(cfg["ego_blueprint"])
+    spawn_tf = choose_lane_center_spawn(world)
+    ego = world.try_spawn_actor(ego_bp, spawn_tf)
+    if not ego:
+        raise RuntimeError("Failed to spawn ego at chosen lane-centered transform.")
 
-    actors: List["carla.Actor"] = []
-    meta_fp = None
-    writer = None
-    img_writer: Optional[AsyncImageWriter] = None
+    actors: List["carla.Actor"] = [ego]
 
-    # Graceful termination
-    stop_flag = {"stop": False}
-    def _handle_sig(signum, _frame):
-        print(f"[drive_tcp] Signal {signum}; stopping at next tick.")
-        stop_flag["stop"] = True
-    signal.signal(signal.SIGINT, _handle_sig)
-    signal.signal(signal.SIGTERM, _handle_sig)
+    # Traffic
+    sps = world.get_map().get_spawn_points()
+    sps.sort(key=lambda t: (t.location.x, t.location.y, t.location.z))
+    veh_bps = list(world.get_blueprint_library().filter("vehicle.*"))
+    i = 0
+    while i < len(sps) and len(actors) - 1 < int(cfg["traffic_vehicles"]):
+        bp = veh_bps[(len(actors)-1) % len(veh_bps)]
+        v = world.try_spawn_actor(bp, sps[i]); i += 1
+        if v:
+            v.set_autopilot(True, tm.get_port())
+            actors.append(v)
 
-    # Instantiate model from cfg
+    # Camera
+    cam, q = attach_rgb(world, ego, cfg["camera"])
+    actors.append(cam)
+
+    # Spectator & ensure first frame exists
+    spectator = world.get_spectator()
+    for _ in range(120):
+        if SYNC: world.tick()
+        else: world.wait_for_tick(seconds=1.0)
+        update_spectator(spectator, ego, cam, cfg.get("view","sensor"))
+        if len(q) > 0:
+            break
+    else:
+        raise RuntimeError("Camera never produced a frame in warm-up")
+
+    # TCP model
+    device = torch.device(DEVICE if (DEVICE=="cpu" or torch.cuda.is_available()) else "cpu")
+    tcp_model = TCP(GlobalConfig()).to(device).eval()
+    load_ckpt_into_tcp(tcp_model, CKPT, strict=False)
+
+    # (One-shot) perception stride sanity check
+    x_probe = _carla_img_to_rgb_tensor(q[-1], (IMG_H, IMG_W)).to(device)
+    with torch.no_grad():
+        _, feat = tcp_model.perception(x_probe)
+    print(f"[drive_tcp] perception feature HW = {tuple(feat.shape[-2:])} (expect (8, 29))")
+
+    # Routes
+    grp = build_grp(world, sampling_resolution=2.0)
+    rng = random.Random(SEED)
+    routes = pick_routes(
+        world, grp,
+        int(cfg.get("routes", {}).get("num_routes", 5)),
+        float(cfg.get("routes", {}).get("min_route_m", 500.0)),
+        float(cfg.get("routes", {}).get("max_route_m", 1500.0)),
+        rng,
+    )
+    route_idx, step_in_route = 0, 0
+
+    # One-time PID axes calibration (kept, but you’ll see a warning if not identity)
+    # Build a clean TP from lane center ahead, using our world→ego transform.
+    ego_tf0 = ego.get_transform()
+    world_map = world.get_map()
+    tgt0 = ego_lane_ahead(world_map, ego_tf0, LOOKAHEAD_M)
+    tp_x0, tp_y0 = world_to_ego_xy(tgt0, ego_tf0)
+    tp_x0, tp_y0 = clip_tp(tp_x0, tp_y0, 30.0)
+    tp_raw0 = torch.tensor([[tp_x0, tp_y0]], dtype=torch.float32, device=device)
+
+    vel0 = ego.get_velocity()
+    speed0 = float((vel0.x**2 + vel0.y**2 + vel0.z**2) ** 0.5)
+    speed_raw0 = torch.tensor([[speed0]], dtype=torch.float32, device=device)
+
+    # Need a pred_wp for calibration:
+    with torch.no_grad():
+        speed_norm0 = torch.tensor([[min(max(speed0/12.0, 0.0), 1.0)]], dtype=torch.float32, device=device)
+        cmd_oh0 = _one_hot_command("lanefollow").view(1, -1).to(device)
+        state0 = torch.cat([speed_norm0, tp_raw0, cmd_oh0], dim=1)
+        pred0 = tcp_model(x_probe, state0, tp_raw0)
+        pred_wp0 = pred0["pred_wp"]  # (1,T,2)
+
+    WP_KIND, TP_KIND, steer0 = calibrate_pid_axes(tcp_model, speed_raw0, pred_wp0, tp_raw0)
+    note = "" if (WP_KIND,TP_KIND)==("xy","xy") else "  (NOTE: model uses non-identity axes; applying safe remap)"
+    print(f"[drive_tcp] PID calibration: wp='{WP_KIND}', tp='{TP_KIND}', |steer|≈{steer0:.3f}{note}")
+
+    # Main loop
+    tick_idx = 0
+    snap0 = world.get_snapshot()
+    start_sim_t = snap0.timestamp.elapsed_seconds
+    end_time = start_sim_t + float(cfg["duration_s"])
+
+    # Pacing (sync & not fast)
+    if SYNC and not FAST:
+        dt_wall = 1.0 / FPS
+        next_wall = time.perf_counter()
+
     try:
-        tcp, tcp_hints = _load_tcp_from_cfg(cfg)
-    except Exception as e:
-        print(f"[drive_tcp] Model load error: {e}", file=sys.stderr)
-        return 2
-
-    aim_dist = float(tcp_hints.get("aim_dist", 4.0))
-    cfg_obj = tcp_hints.get("config_obj")
-
-    try:
-        ego_bp_name = cfg.get("ego_blueprint", "vehicle.tesla.model3")
-        ego_bp = world.get_blueprint_library().find(ego_bp_name)
-        ego = world.try_spawn_actor(ego_bp, spawn_points[0])
-        if not ego:
-            raise RuntimeError("Failed to spawn ego at spawn_points[0].")
-        actors.append(ego)
-
-        # Optional background traffic
-        n_traffic = int(cfg.get("traffic_vehicles", 0))
-        if n_traffic > 0:
-            veh_bps = list(world.get_blueprint_library().filter("vehicle.*"))
-            i = 1
-            while i < len(spawn_points) and len(actors) - 1 < n_traffic:
-                bp = veh_bps[(len(actors) - 1) % len(veh_bps)]
-                v = world.try_spawn_actor(bp, spawn_points[i]); i += 1
-                if v:
-                    v.set_autopilot(True, tm.get_port())
-                    actors.append(v)
-
-        # OUTPUTS
-        out_dir = None
-        img_dir = None
-        if LOG_ON:
-            run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
-            try:
-                town_name = town_basename(world.get_map().name)
-            except Exception:
-                town_name = cfg.get("town", "UnknownTown")
-            out_dir = os.path.join(cfg["output_dir"], f"{run_id}__{town_name}__tcp")
-            img_dir = os.path.join(out_dir, "images")
-            os.makedirs(img_dir, exist_ok=True)
-            os.makedirs(out_dir, exist_ok=True)
-
-            meta_path = os.path.join(out_dir, "frames.csv")
-            meta_fp = open(meta_path, "w", newline="")
-            writer = csv.writer(meta_fp)
-            writer.writerow([
-                "world_frame","world_ts",
-                "sensor_frame","sensor_ts",
-                "image_path",
-                "steer","throttle","brake",
-                "speed_mps","x","y","z","yaw_deg",
-                "command","route_idx","step_in_route"
-            ])
-
-            img_writer = AsyncImageWriter(
-                max_queue=256,
-                drop_if_full=True,
-                image_format=img_fmt,
-                jpeg_quality=jpg_q,
-                png_compress_level=png_cl,
-            )
-
-            if meta_dump:
-                write_run_metadata(
-                    out_dir=out_dir,
-                    world=world,
-                    tm_port=TM_PORT,
-                    cfg=cfg,
-                    run_id=run_id,
-                    host=HOST,
-                    rpc_port=RPC_PORT,
-                )
-        else:
-            print("[drive_tcp] logging disabled — no files will be written.")
-
-        # RGB camera
-        cam, q = attach_rgb(world, ego, cfg["camera"])  # q: collections.deque[carla.Image]
-        actors.append(cam)
-
-        # Spectator warm-up
-        spectator = world.get_spectator()
-        for _ in range(120):
-            if SYNC: world.tick()
-            else:    world.wait_for_tick(seconds=1.0)
-            update_spectator(spectator, ego, cam, view_mode)
-            if len(q) > 0: break
-        else:
-            raise RuntimeError("Camera never produced a frame in warm-up")
-
-        # Routes & command planning
-        grp = build_grp(world, sampling_resolution=2.0)
-        rng = random.Random(SEED)
-        routes = pick_routes(
-            world, grp,
-            int(cfg["routes"]["num_routes"]),
-            float(cfg["routes"]["min_route_m"]),
-            float(cfg["routes"]["max_route_m"]),
-            rng,
-        )
-        route_idx, step_in_route = 0, 0
-
-        # Loop control
-        tick_idx = 0
-        snap0 = world.get_snapshot()
-        end_time = snap0.timestamp.elapsed_seconds + float(cfg["duration_s"])
-
-        if SYNC and not fast_mode:
-            dt_wall = 1.0 / FPS
-            next_wall = time.perf_counter()
-
-        next_log_ts = None
-        if LOG_ON and LOG_HZ > 0.0:
-            next_log_ts = snap0.timestamp.elapsed_seconds + (1.0 / LOG_HZ)
-
-        flush_mod = 500
-
         while True:
-            if stop_flag["stop"]:
+            snap = world.get_snapshot()
+            if snap and snap.timestamp.elapsed_seconds >= end_time:
                 break
 
-            snap_now = world.get_snapshot()
-            if snap_now and snap_now.timestamp.elapsed_seconds >= end_time:
-                break
-
-            route = routes[route_idx]
-            cmd_str = next_high_level_command(route, step_in_route)
-
-            img = q[-1] if len(q) > 0 else None
-            if img is None:
-                if SYNC:
-                    if not fast_mode:
-                        next_wall += dt_wall
-                        sleep = next_wall - time.perf_counter()
-                        if sleep > 0:
-                            time.sleep(sleep)
-                        else:
-                            next_wall = time.perf_counter()
-                    world.tick()
-                else:
-                    world.wait_for_tick(seconds=1.0)
+            # Get latest frame; if none, tick & continue
+            if not q:
+                if SYNC: world.tick()
+                else: world.wait_for_tick(seconds=1.0)
                 continue
+            img = q[-1]
 
+            # Measurements
             tr = ego.get_transform()
             vel = ego.get_velocity()
-            speed = float((vel.x*vel.x + vel.y*vel.y + vel.z*vel.z) ** 0.5)
+            speed_mps = float((vel.x*vel.x + vel.y*vel.y + vel.z*vel.z) ** 0.5)
 
-            img_arr = carla_image_to_rgb_array(img)
+            # High-level command; stabilize early seconds as lanefollow
+            sim_t = snap.timestamp.elapsed_seconds
+            route = routes[route_idx]
+            cmd = "lanefollow" if (sim_t - start_sim_t) < STABILIZE_S else next_high_level_command(route, step_in_route)
 
-            # Build a target point ~aim_dist ahead in ego frame
-            aim = aim_dist
-            if hasattr(cfg_obj, 'aim_dist'):
-                try: aim = float(cfg_obj.aim_dist)
-                except Exception: pass
-            try:
-                tgt_world = _closest_target_point_along_route(route, step_in_route, aim, tr.location)
-                tp_xy = _world_to_ego_xy(tr, tgt_world)
-            except Exception:
-                tp_xy = None
-            # Hard fallback: if we failed to compute a route-based target point, aim straight ahead
-            if tp_xy is None:
-                tp_xy = (aim, 0.0)
+            # Target point: lane-ahead in world → ego frame (clean)
+            tgt_loc = ego_lane_ahead(world.get_map(), tr, LOOKAHEAD_M)
+            tp_x_raw, tp_y_raw = world_to_ego_xy(tgt_loc, tr)
+            tp_x_raw, tp_y_raw = clip_tp(tp_x_raw, tp_y_raw, clip_m=30.0)
 
-            try:
-                steer, throttle, brake = tcp.forward(img_arr, cmd_str, speed, tp_xy)
-            except Exception as e:
-                print(f"[drive_tcp] Inference error: {e}", file=sys.stderr)
-                steer, throttle, brake = 0.0, 0.0, 1.0
+            # Image tensor
+            x_img = _carla_img_to_rgb_tensor(img, (IMG_H, IMG_W)).to(device)
 
-            control = carla.VehicleControl()
-            control.steer = float(np.clip(steer, -1.0, 1.0))
-            control.throttle = float(np.clip(throttle, 0.0, 1.0))
-            control.brake = float(np.clip(brake, 0.0, 1.0))
+            # Build state (speed normalized to [0,1])
+            speed_norm = torch.tensor([[min(max(speed_mps/float(SPEED_DIV), 0.0), 1.0)]],
+                                      dtype=torch.float32, device=device)
+            cmd_oh = _one_hot_command(cmd).view(1, -1).to(device)
+            tp_raw = torch.tensor([[tp_x_raw, tp_y_raw]], dtype=torch.float32, device=device)
+            state = torch.cat([speed_norm, tp_raw, cmd_oh], dim=1)
+
+            # Forward
+            with torch.no_grad():
+                pred = tcp_model(x_img, state, tp_raw)
+
+                if CONTROL_MODE == "pid":
+                    # Remap to model’s learned axes (from calibration)
+                    wp_pid = _apply_xy_transform(pred["pred_wp"], WP_KIND)
+                    tp_pid = _apply_xy_transform(tp_raw, TP_KIND)
+                    speed_raw = torch.tensor([[speed_mps]], dtype=torch.float32, device=device)
+                    steer_t, thr_t, brk_t, _ = tcp_model.control_pid(wp_pid, speed_raw, tp_pid)
+                    steer   = float(steer_t)
+                    throttle= float(thr_t)
+                    brake   = float(brk_t)
+                else:
+                    mu, sigma = pred["mu_branches"], pred["sigma_branches"]
+                    thr_t, steer_t, brk_t = tcp_model.get_action(mu[0], sigma[0])
+                    steer   = float(steer_t.item())
+                    throttle= float(thr_t.item())
+                    brake   = float(brk_t.item())
+
+            # Print
+            if (tick_idx % PRINT_EVERY) == 0:
+                cmd_idx = int(torch.argmax(cmd_oh, dim=1).item())
+                if CONTROL_MODE == "policy":
+                    mu_np = mu[0].detach().cpu().numpy(); sg_np = sigma[0].detach().cpu().numpy()
+                    print(
+                        f"[tcp] mode=policy | spd={speed_mps:5.2f} (norm={speed_mps/float(SPEED_DIV):.2f}) | "
+                        f"cmd={CMD_NAMES[cmd_idx]} | tp=({tp_x_raw:.2f},{tp_y_raw:.2f}) | "
+                        f"mu={mu_np.round(3)} sigma={sg_np.round(3)} | "
+                        f"applied: thr={throttle:.3f} steer={steer:.3f} brk={brake:.3f}"
+                    )
+                else:
+                    print(
+                        f"[tcp] mode=pid    | spd={speed_mps:5.2f} | cmd={CMD_NAMES[cmd_idx]} | "
+                        f"tp=({tp_x_raw:.2f},{tp_y_raw:.2f}) [axes {TP_KIND}] | "
+                        f"WP axes={WP_KIND} | applied: thr={throttle:.3f} steer={steer:.3f} brk={brake:.3f}"
+                    )
+
+            # Apply control
+            control = carla.VehicleControl(
+                throttle=float(np.clip(throttle, 0.0, 1.0)),
+                steer=float(np.clip(steer, -1.0, 1.0)),
+                brake=float(np.clip(brake, 0.0, 1.0)),
+            )
             ego.apply_control(control)
 
+            # Debug overlays
+            if DEBUG_DRAW:
+                fwd_tip = ego_forward_tip(tr, 8.0)
+                world.debug.draw_arrow(tr.location, fwd_tip, thickness=0.05,
+                                       arrow_size=0.2, color=carla.Color(0,255,0), life_time=0.1)
+                world.debug.draw_point(tgt_loc, 0.08, carla.Color(0,0,255), 0.2, False)
+
+            # Advance world
             if SYNC:
-                if not fast_mode:
-                    next_wall += dt_wall
+                if not FAST:
+                    # pace to FPS
+                    next_wall += 1.0 / FPS
                     sleep = next_wall - time.perf_counter()
-                    if sleep > 0:
-                        time.sleep(sleep)
-                    else:
-                        next_wall = time.perf_counter()
+                    if sleep > 0: time.sleep(sleep)
+                    else: next_wall = time.perf_counter()
                 world.tick()
-                snap = world.get_snapshot()
             else:
-                snap = world.wait_for_tick(seconds=1.0)
-                if snap is None:
-                    continue
+                world.wait_for_tick(seconds=1.0)
 
             tick_idx += 1
-            world_ts = snap.timestamp.elapsed_seconds
-            world_frame = snap.frame
+            update_spectator(spectator, ego, cam, cfg.get("view","sensor"))
 
-            update_spectator(spectator, ego, cam, view_mode)
-
-            do_log = False
-            if LOG_ON and writer:
-                if LOG_HZ > 0.0:
-                    if world_ts >= next_log_ts:
-                        do_log = True
-                        while next_log_ts <= world_ts:
-                            next_log_ts += (1.0 / LOG_HZ)
-                else:
-                    do_log = (tick_idx % EVERY_N == 0)
-
-            if do_log:
-                img_path = ""
-                if img is not None and img_dir and img_writer:
-                    ext = ".png" if img_fmt == "png" else ".jpg"
-                    img_path = os.path.join(img_dir, f"{world_frame:09d}{ext}")
-                    img_writer.submit(img_path, img)
-
-                yaw = tr.rotation.yaw
-                if writer:
-                    writer.writerow([
-                        world_frame, f"{world_ts:.6f}",
-                        str(img.frame) if img else "", f"{getattr(img, 'timestamp', 0.0):.6f}" if img else "",
-                        img_path,
-                        f"{control.steer:.6f}", f"{control.throttle:.6f}", f"{control.brake:.6f}",
-                        f"{speed:.6f}",
-                        f"{tr.location.x:.3f}", f"{tr.location.y:.3f}", f"{tr.location.z:.3f}",
-                        f"{yaw:.2f}", cmd_str, route_idx, step_in_route
-                    ])
-                    if (tick_idx % flush_mod) == 0:
-                        try: meta_fp.flush()
-                        except Exception: pass
-
-            tgt = routes[route_idx][-1][0].transform.location
-            if tr.location.distance(tgt) < 5.0:
+            # Route bookkeeping (keep it simple)
+            tgt_end = route[-1][0].transform.location
+            if tr.location.distance(tgt_end) < 5.0:
                 route_idx = (route_idx + 1) % len(routes)
                 step_in_route = 0
             else:
                 step_in_route += 1
 
-        if LOG_ON and out_dir:
-            print(f"[drive_tcp] Finished. Wrote to: {out_dir}")
-        else:
-            print("[drive_tcp] Finished. No logging (disabled).")
+        print("[drive_tcp] Finished driving.")
+        return 0
 
+    except KeyboardInterrupt:
+        print("\n[drive_tcp] Stopped by user.")
+        return 0
     except Exception as e:
         print(f"[drive_tcp] Error: {e}", file=sys.stderr)
         return 1
-
     finally:
-        stats = None
-        try:
-            if img_writer:
-                stats = img_writer.close(return_stats=True)
-        except Exception:
-            pass
-        try:
-            if meta_fp:
-                meta_fp.flush(); meta_fp.close()
-        except Exception:
-            pass
+        # Stop sensors, destroy actors, leave server async
         try:
             for a in actors:
                 if a and a.type_id.startswith("sensor."):
@@ -808,14 +500,9 @@ def main() -> int:
             pass
         destroy_actors(reversed(actors))
         try:
-            set_sync(world, tm, int(cfg["fps"]), False)
+            set_sync(world, tm, FPS, False)
         except Exception:
             pass
-        if stats:
-            submitted, written, dropped = stats["submitted"], stats["written"], stats["dropped"]
-            print(f"[drive_tcp] Image I/O: submitted={submitted}, written={written}, dropped={dropped}")
-
-    return 0
 
 
 if __name__ == "__main__":
