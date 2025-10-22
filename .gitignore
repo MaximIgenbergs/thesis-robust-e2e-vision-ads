@@ -186,4 +186,13 @@ models/**/figures/
 # VSCode settings
 .vscode/
 
+
 external/carla-test/runs/**
+
+# Environments
+envs/**
+
+# Runs
+runs/**
+
+sims/udacity/checkpoints/**/training_runs/
