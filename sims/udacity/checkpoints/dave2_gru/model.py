@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import Tuple
 import sys
 from pathlib import Path
-import tensorflow as tf
+import tensorflow as tf # type: ignore
 from tensorflow.keras import layers, models, optimizers # type: ignore
 
 # add project root to path
@@ -77,5 +77,5 @@ def build_dave2_gru(seq_len: int,
 
     model = models.Model(inputs=seq_in, outputs=out, name=f"dave2_gru_T{seq_len}")
     opt = optimizers.Adam(learning_rate=learning_rate)
-    model.compile(optimizer=opt, loss="mse", metrics=[tf.keras.metrics.MeanAbsoluteError(name="mae")])
+    model.compile(optimizer=opt, loss="mse", metrics=[tf.keras.metrics.MeanAbsoluteError(name="acc")])
     return model

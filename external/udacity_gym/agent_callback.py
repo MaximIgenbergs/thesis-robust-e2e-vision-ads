@@ -1,14 +1,31 @@
 import pathlib
-from typing import Callable
+from typing import Callable, Optional
 
 import numpy as np
 import pandas as pd
 import pygame
 import torch
 import torchvision
+import sys
+from pathlib import Path
 
-from udacity_gym import UdacityObservation, UdacitySimulator
-from udacity_gym.logger import CustomLogger
+# add project root & perturbation-drive to path
+ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+PD = ROOT / "external" / "perturbation-drive"
+if str(PD) not in sys.path:
+    sys.path.insert(0, str(PD))
+
+try:
+    # Reuse PD's preview window + overlays
+    from perturbationdrive import ImageCallBack as _PDImageCallBack
+except Exception:
+    _PDImageCallBack = None
+
+
+from external.udacity_gym import UdacityObservation, UdacitySimulator
+from external.udacity_gym.logger import CustomLogger
 
 
 class AgentCallback:
@@ -113,3 +130,61 @@ class TransformObservationCallback(AgentCallback):
         observation.input_image = image
 
         return observation
+
+
+class PDPreviewCallback(AgentCallback):
+    """
+    Preview window callback that reuses PerturbationDrive's ImageCallBack.
+    Call with: preview_cb(observation, display_image_np=<HxWx3 uint8>,
+                          action=<UdacityAction>, perturbation=<str>)
+    """
+    def __init__(self, enabled: bool = True):
+        super().__init__('pd_preview')
+        self.enabled = enabled and (_PDImageCallBack is not None)
+        self.monitor: Optional[_PDImageCallBack] = None
+        if self.enabled:
+            try:
+                self.monitor = _PDImageCallBack()
+                # optional splash if available
+                if hasattr(self.monitor, "display_waiting_screen"):
+                    self.monitor.display_waiting_screen()
+            except Exception:
+                self.monitor = None
+                self.enabled = False
+
+    def __call__(self, observation: UdacityObservation, *args, **kwargs):
+        if not self.enabled or self.monitor is None:
+            return
+
+        img_np = kwargs.get("display_image_np", None)
+        action = kwargs.get("action", None)
+        pert   = kwargs.get("perturbation", "")
+
+        if img_np is None:
+            return
+
+        steer_str = ""
+        thr_str = ""
+        if action is not None:
+            try:
+                steer_str = f"{float(action.steering_angle):.3f}"
+                thr_str   = f"{float(action.throttle):.3f}"
+            except Exception:
+                pass
+
+        # PD preview expects (image, steer_text, throttle_text, perturbation_name)
+        try:
+            self.monitor.display_img(img_np, steer_str, thr_str, pert)
+        except Exception:
+            # Non-fatal — keep driving
+            pass
+
+    def close(self):
+        if self.monitor is not None:
+            try:
+                if hasattr(self.monitor, "display_disconnect_screen"):
+                    self.monitor.display_disconnect_screen()
+                self.monitor.destroy()
+            except Exception:
+                pass
+            self.monitor = None

@@ -196,3 +196,7 @@ envs/**
 runs/**
 
 sims/udacity/checkpoints/**/training_runs/
+
+external/TCP/**
+
+sims/udacity/binaries/**

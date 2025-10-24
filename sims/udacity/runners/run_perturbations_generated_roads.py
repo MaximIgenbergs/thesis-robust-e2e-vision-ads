@@ -47,23 +47,33 @@ def _make_scenarios(waypoints, pert_names: List[str], severities: List[int], epi
 
 def _build_adapter(model_name: str, image_size_hw, ckpt_path: Path | None):
     if model_name == "dave2":
+        from sims.udacity.adapters.dave2_adapter import Dave2Adapter
         return Dave2Adapter(weights=ckpt_path, image_size_hw=image_size_hw, device=None, normalize="imagenet")
-    # elif model_name == "dave2_gru":
-    #     from sims.udacity.adapters.dave2_gru_adapter import Dave2GRUAdapter
-    #     return Dave2GRUAdapter(weights=ckpt_path, image_size_hw=image_size_hw, device=None, normalize="imagenet")
+    elif model_name == "dave2_gru":
+        from sims.udacity.adapters.dave2_gru_adapter import Dave2GRUAdapter
+        return Dave2GRUAdapter(weights=ckpt_path, image_size_hw=image_size_hw, device=None, normalize="imagenet")
     raise ValueError(f"Unknown MODEL_NAME '{model_name}' in sims.udacity.configs.run")
+
 
 
 def main() -> int:
     sim_app = _abs(paths.PD_SIM)
-    ckpt = _abs(paths.DAVE2_CKPT) if getattr(paths, "DAVE2_CKPT", None) else None
+    model_name = getattr(run, "MODEL_NAME", "dave2")
+
+    if model_name == "dave2":
+        ckpt = _abs(paths.DAVE2_CKPT) if getattr(paths, "DAVE2_CKPT", None) else None
+    elif model_name == "dave2_gru":
+        ckpt = _abs(paths.DAVE2_GRU_CKPT) if getattr(paths, "DAVE2_GRU_CKPT", None) else None
+    else:
+        raise ValueError(f"Unknown MODEL_NAME '{model_name}' in sims.udacity.configs.run")
 
     if not sim_app.exists():
         raise FileNotFoundError(f"PD_SIM not found: {sim_app}\nEdit sims/udacity/configs/paths.py")
     if ckpt is not None and not ckpt.exists():
-        raise FileNotFoundError(f"DAVE2_CKPT not found: {ckpt}\nEdit sims/udacity/configs/paths.py or download the file.")
+        raise FileNotFoundError(
+            f"{model_name.upper()}_CKPT not found: {ckpt}\nEdit sims/udacity/configs/paths.py or export the file."
+        )
 
-    model_name = getattr(run, "MODEL_NAME", "dave2")
     runs_root = _abs(paths.RUNS_DIR) / "robustness" / model_name
     adapter = _build_adapter(model_name, image_size_hw=run.IMAGE_SIZE, ckpt_path=ckpt)
 

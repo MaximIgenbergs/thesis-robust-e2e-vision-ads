@@ -8,7 +8,7 @@ VAL_SPLIT   = 0.20
 RANDOM_SEED = 42
 
 # Temporal settings
-SEQ_LEN = 8
+SEQ_LEN = 3
 STRIDE  = 1
 
 # Optimizer / loss

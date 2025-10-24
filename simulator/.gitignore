@@ -1,9 +1,0 @@
-
-/Data
-*.pyc
-*.ckpt
-/model/segmentation/unet/lightning_logs
-/udacity_gym_binaries
-/.idea
-/model/ckpts
-unitylog.txt

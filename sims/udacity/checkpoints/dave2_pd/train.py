@@ -3,14 +3,14 @@ import math
 import tensorflow as tf
 from pathlib import Path
 
-from .config import (
+from sims.udacity.checkpoints.dave2_pd.config import (
     INPUT_SHAPE, NUM_OUTPUTS, INPUTS_GLOB, VAL_SPLIT, RANDOM_SEED,
     LEARNING_RATE, ALPHA_STEER, BATCH_SIZE, EPOCHS, PATIENCE,
     AUGMENTATIONS, RUNS_SUBDIR, RUN_NAME_PREFIX, SAVE_BEST_FILENAME
 )
-from .model import build_model
-from .utils.data import make_filelists, data_generator
-from sims.udacity.checkpoints.common.run_io import resolve_runs_dir, make_run_dir, write_meta, loss_plot
+from sims.udacity.checkpoints.dave2_pd.model import build_model
+from sims.udacity.checkpoints.dave2_pd.utils.data import make_filelists, data_generator
+from sims.udacity.checkpoints.common.run_io import make_run_dir, write_meta, loss_plot
 
 def weighted_mse_factory(alpha: float, num_out: int):
     if num_out == 1:
@@ -32,7 +32,8 @@ def main():
         raise SystemExit(f"No training images found for glob: {INPUTS_GLOB}")
 
     # --- run directory & artifact paths ---
-    runs_base = resolve_runs_dir(model_key=RUN_NAME_PREFIX, fallback_subdir=RUNS_SUBDIR, file=__file__)
+    # Save runs next to this file in "training_runs" directory
+    runs_base = Path(__file__).resolve().parent / "training_runs"
     run_dir   = make_run_dir(runs_base, model_key=RUN_NAME_PREFIX)
     best_path = run_dir / SAVE_BEST_FILENAME
     hist_csv  = run_dir / "history.csv"

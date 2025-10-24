@@ -2,3 +2,6 @@
 	path = external/perturbation-drive
 	url = https://github.com/MaximIgenbergs/perturbation-drive
 	branch = Replication
+[submodule "external/TCP"]
+	path = external/TCP
+	url = https://github.com/OpenDriveLab/TCP.git
