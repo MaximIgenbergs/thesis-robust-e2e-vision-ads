@@ -10,7 +10,53 @@ eventlet.monkey_patch()
 import numpy as np
 from PIL import Image
 from flask import Flask
-from flask_socketio import SocketIO
+# ---- Hard compat for modern Flask/Werkzeug + old flask_socketio ----------------
+import sys, types, flask
+from types import SimpleNamespace
+from werkzeug.local import LocalStack
+
+# 1) Ensure _request_ctx_stack exists AND has a non-None .top with a .session attr
+if not hasattr(flask, "_request_ctx_stack"):
+    flask._request_ctx_stack = LocalStack()
+if flask._request_ctx_stack.top is None:
+    # push a dummy top so flask_socketio can assign .session on it
+    flask._request_ctx_stack.push(SimpleNamespace(session={}))
+
+# 2) Provide werkzeug.serving.run_with_reloader for old imports
+try:
+    from werkzeug.serving import run_with_reloader  # noqa: F401
+except Exception:
+    from werkzeug import _reloader as _wzr
+    shim = types.ModuleType("werkzeug.serving")
+    def run_with_reloader(*args, **kwargs):
+        return _wzr.run_with_reloader(*args, **kwargs)
+    shim.run_with_reloader = run_with_reloader
+    sys.modules["werkzeug.serving"] = shim
+# ------------------------------------------------------------------------------
+
+import flask_socketio as fso
+
+# ---- after: import flask_socketio as fso ----
+# Give flask_socketio a persistent, non-None request ctx stack with a .session
+class _DummyTop:
+    def __init__(self):
+        self.session = {}
+
+class _DummyStack:
+    def __init__(self):
+        self._top = _DummyTop()
+    @property
+    def top(self):
+        # Always return the same object so assignment sticks if they reuse it
+        return self._top
+    def push(self, obj=None):  # no-op
+        pass
+    def pop(self):             # no-op
+        pass
+
+# Overwrite the module-level symbol that flask_socketio uses internally
+fso._request_ctx_stack = _DummyStack()
+
 
 from .action import UdacityAction
 from .logger import CustomLogger
@@ -28,11 +74,12 @@ class UdacityExecutor:
         self.host = host
         self.port = port
         self.app = Flask(__name__)
-        self.sio = SocketIO(
+        self.sio = fso.SocketIO(
             self.app,
             async_mode='eventlet',
             cors_allowed_origins="*",
             transports=['websocket'],
+            manage_session=False,
         )
         # Socket IO callbacks
         self.sio.on('connect')(self.on_connect)
