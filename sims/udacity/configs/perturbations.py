@@ -1,3 +1,6 @@
+SEVERITIES = [1, 2, 3, 4]
+EPISODES = 1 # repeats per (perturb, severity) per road
+
 # Flat list (used if CHUNKS == [])
 LIST = [
     # Weather (dynamic/statics that are commonly used & fast enough)

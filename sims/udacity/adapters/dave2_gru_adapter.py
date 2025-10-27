@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from __future__ import annotations
 from collections import deque
 from pathlib import Path
@@ -7,8 +6,8 @@ from typing import Deque, Optional, Tuple
 import numpy as np
 import tensorflow as tf
 
-from sims.udacity.checkpoints.dave2_gru.model import build_dave2_gru
-from sims.udacity.checkpoints.dave2_gru.config import INPUT_SHAPE, SEQ_LEN  # (H, W, C), T
+from sims.udacity.models.dave2_gru.model import build_dave2_gru
+from sims.udacity.models.dave2_gru.config import INPUT_SHAPE, SEQ_LEN  # (H, W, C), T
 from perturbationdrive import ADS
 
 
