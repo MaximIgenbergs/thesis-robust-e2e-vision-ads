@@ -20,9 +20,9 @@ PD = ROOT / "external" / "perturbation-drive"
 if str(PD) not in sys.path:
     sys.path.insert(0, str(PD))
 
-from sims.udacity.configs import perturbations
-from sims.udacity.configs.run import HOST, PORT
-from sims.udacity.configs.genroads import paths, roads, run
+from sims.udacity.maps.configs import perturbations
+from sims.udacity.maps.configs.run import HOST, PORT
+from sims.udacity.maps.genroads.configs import paths, roads, run
 from sims.udacity.logging.eval_runs import RunLogger, prepare_run_dir, module_public_dict, best_effort_git_sha, pip_freeze
 from sims.udacity.adapters.dave2_adapter import Dave2Adapter
 from sims.udacity.adapters.dave2_gru_adapter import Dave2GRUAdapter
@@ -145,7 +145,7 @@ def main() -> int:
                     # Reconnect for each severity (isolated sessions)
                     for chunk in chunks:
                         for pert in chunk:
-                            for sev in run.SEVERITIES:
+                            for sev in perturbations.SEVERITIES:
                                 ep_idx += 1
                                 meta = {
                                     "road": road_name,
@@ -160,13 +160,13 @@ def main() -> int:
                                     "perturbation": pert,
                                     "severity": int(sev),
                                     "image_size": {"h": run.IMAGE_SIZE[0], "w": run.IMAGE_SIZE[1]},
-                                    "episodes": int(run.EPISODES),
+                                    "episodes": int(perturbations.EPISODES),
                                     "ckpt_name": ckpt_name,
                                 }
                                 eid, ep_dir = logger.new_episode(ep_idx, meta)
                                 log_file = ep_dir / "pd_log.json"
 
-                                scens = _make_scenarios(waypoints, [pert], [sev], run.EPISODES)
+                                scens = _make_scenarios(waypoints, [pert], [sev], perturbations.EPISODES)
                                 t0 = time.perf_counter()
                                 try:
                                     bench.simulate_scenarios(
@@ -204,13 +204,13 @@ def main() -> int:
                                 "perturbation": pert,
                                 "severity": "all",
                                 "image_size": {"h": run.IMAGE_SIZE[0], "w": run.IMAGE_SIZE[1]},
-                                "episodes": int(run.EPISODES),
+                                "episodes": int(perturbations.EPISODES),
                                 "ckpt_name": ckpt_name,
                             }
                             eid, ep_dir = logger.new_episode(ep_idx, meta)
                             log_file = ep_dir / "pd_log.json"
 
-                            scens = _make_scenarios(waypoints, [pert], run.SEVERITIES, run.EPISODES)
+                            scens = _make_scenarios(waypoints, [pert], perturbations.SEVERITIES, perturbations.EPISODES)
                             t0 = time.perf_counter()
                             try:
                                 bench.simulate_scenarios(

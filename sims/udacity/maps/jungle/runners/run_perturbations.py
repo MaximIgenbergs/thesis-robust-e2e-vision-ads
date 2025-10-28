@@ -12,16 +12,16 @@ from typing import List, Union
 import numpy as np
 
 # add project root & perturbation-drive to path
-ROOT = Path(__file__).resolve().parents[3]
+ROOT = Path(__file__).resolve().parents[5]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 PD_DIR = ROOT / "external" / "perturbation-drive"
 if str(PD_DIR) not in sys.path:
     sys.path.insert(0, str(PD_DIR))
 
-from sims.udacity.configs import perturbations
-from sims.udacity.configs.run import HOST, PORT
-from sims.udacity.configs.jungle import paths, run
+from sims.udacity.maps.configs import perturbations
+from sims.udacity.maps.configs.run import HOST, PORT
+from sims.udacity.maps.jungle.configs import paths, run
 from sims.udacity.logging.eval_runs import RunLogger, prepare_run_dir, module_public_dict, best_effort_git_sha, pip_freeze
 from sims.udacity.adapters.dave2_adapter import Dave2Adapter
 from sims.udacity.adapters.dave2_gru_adapter import Dave2GRUAdapter

@@ -1,14 +1,19 @@
 from __future__ import annotations
 import math
 import tensorflow as tf
-from sims.udacity.models.dave2_gru.config import (
-    INPUT_SHAPE, NUM_OUTPUTS, INPUTS_GLOB, VAL_SPLIT, RANDOM_SEED,
-    SEQ_LEN, STRIDE, LEARNING_RATE, ALPHA_STEER,
-    BATCH_SIZE, EPOCHS, PATIENCE, AUGMENTATIONS, MAP_NAME
-)
+import sys
+from pathlib import Path
+
+# add project root to path
+sys.path.append(str(Path(__file__).resolve().parents[4]))
+
 from sims.udacity.models.dave2_gru.model import build_dave2_gru
 from sims.udacity.models.dave2_gru.utils.data_stream import index_by_track, split_tracks, total_sequences, make_sequence_dataset
 from sims.udacity.logging.training_runs import make_run_dir, write_meta, loss_plot
+from sims.udacity.models.dave2_gru.config import (
+    MAP_NAME, MODEL_NAME, INPUTS_GLOB, INPUT_SHAPE, NUM_OUTPUTS, LEARNING_RATE, ALPHA_STEER, VAL_SPLIT, RANDOM_SEED,
+    BATCH_SIZE, EPOCHS, PATIENCE, AUGMENTATIONS, SEQ_LEN, STRIDE
+)
 
 
 def weighted_mse_factory(alpha: float, num_out: int):
@@ -29,11 +34,11 @@ def weighted_mse_factory(alpha: float, num_out: int):
 def main():
     per_track = index_by_track(INPUTS_GLOB)
     if not per_track:
-        raise SystemExit(f"[dave2_gru] No images/jsons found for glob: {INPUTS_GLOB}")
+        raise SystemExit(f"[train:{MODEL_NAME}] No images/jsons found for glob: {INPUTS_GLOB}")
 
     train_ids, val_ids = split_tracks(per_track, VAL_SPLIT, RANDOM_SEED)
     if not train_ids:
-        raise SystemExit("[dave2_gru] Train split empty. Lower VAL_SPLIT or check data.")
+        raise SystemExit("[train:{MODEL_NAME}] Train split empty. Lower VAL_SPLIT or check data.")
 
     ds_train = make_sequence_dataset(
         per_track, train_ids, SEQ_LEN, STRIDE, INPUT_SHAPE, NUM_OUTPUTS, BATCH_SIZE,
@@ -44,7 +49,7 @@ def main():
         repeat=True
     )
 
-    run_dir = make_run_dir(model_key="dave2_gru", map_name=MAP_NAME)
+    run_dir = make_run_dir(model_key=MODEL_NAME, map_name=MAP_NAME)
     best_path = run_dir / "best_model.h5"
     hist_csv  = run_dir / "history.csv"
 
@@ -83,6 +88,9 @@ def main():
     meta = {
         "created_utc": __import__("datetime").datetime.utcnow().isoformat(timespec="seconds") + "Z",
         "framework": "tensorflow-keras",
+        "model": MODEL_NAME,
+        "map": MAP_NAME,
+        "checkpoint_path": str(best_path),
         "input_shape": [SEQ_LEN] + list(INPUT_SHAPE),
         "seed": RANDOM_SEED,
         "val_split": VAL_SPLIT,
@@ -94,16 +102,16 @@ def main():
         "augmentations": AUGMENTATIONS,
         "data": {"inputs_glob": INPUTS_GLOB, "seq_len": SEQ_LEN, "stride": STRIDE},
         "counts": {"train_sequences": int(n_train), "val_sequences": int(n_val)},
-        "map": MAP_NAME,
     }
 
     write_meta(run_dir, meta)
-    loss_png = loss_plot(history, run_dir)
+    
+    loss_png = loss_plot(history, run_dir, title=f"DAVE2-GRU on {MAP_NAME}")
 
-    print(f"[train:dave2_gru] Best model: {best_path}")
-    print(f"[train:dave2_gru] Loss curve: {loss_png}")
-    print(f"[train:dave2_gru] History CSV: {hist_csv}")
-    print(f"[train:dave2_gru] Meta: {run_dir/'meta.json'}")
+    print(f"[train:{MODEL_NAME}] Best model: {best_path}")
+    print(f"[train:{MODEL_NAME}] Loss curve: {loss_png}")
+    print(f"[train:{MODEL_NAME}] History CSV: {hist_csv}")
+    print(f"[train:{MODEL_NAME}] Meta: {run_dir/'meta.json'}")
 
 
 if __name__ == "__main__":

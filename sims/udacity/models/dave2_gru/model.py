@@ -57,7 +57,7 @@ def build_dave2_gru(seq_len: int,
 
     Notes:
     - With seq_len==1 the model reduces to a (nearly) frame-based setup while retaining GRU.
-    - We keep the FC(100)->FC(50) head as in PD’s example and only route their input through GRU.
+    - We keep the FC(100)->FC(50) head as in PD's example and only route their input through GRU.
     """
     # Per-frame CNN
     cnn = build_dave2_backbone((ROW, COL, CH))

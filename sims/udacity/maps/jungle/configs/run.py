@@ -1,0 +1,5 @@
+IMAGE_SIZE = (240, 320) # (H, W) Dave2: (240, 320)
+SHOW_IMAGE = True # simulator live preview
+MODEL_NAME = "dave2_gru" # "dave2", "dave2_gru"
+STEPS = 2000 # max steps per episode
+SAVE_IMAGES = False
