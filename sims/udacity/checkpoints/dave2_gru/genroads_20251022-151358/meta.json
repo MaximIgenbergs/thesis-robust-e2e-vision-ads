@@ -1,0 +1,30 @@
+{
+  "created_utc": "2025-10-22T13:25:15Z",
+  "framework": "tensorflow-keras",
+  "input_shape": [
+    3,
+    120,
+    160,
+    3
+  ],
+  "seed": 42,
+  "val_split": 0.2,
+  "optimizer": {
+    "type": "adam",
+    "lr": 0.0001
+  },
+  "batch_size": 64,
+  "epochs": 50,
+  "patience": 10,
+  "alpha_steer": 0.7,
+  "augmentations": [],
+  "data": {
+    "inputs_glob": "data/udacity/generated_roads/train_dataset_gru/*.jpg",
+    "seq_len": 3,
+    "stride": 1
+  },
+  "counts": {
+    "train_sequences": 9881,
+    "val_sequences": 1138
+  }
+}
