@@ -19,16 +19,16 @@ PD_DIR = ROOT / "external" / "perturbation-drive"
 if str(PD_DIR) not in sys.path:
     sys.path.insert(0, str(PD_DIR))
 
+from external.udacity_gym import UdacitySimulator, UdacityGym, UdacityAction
+from external.udacity_gym.agent_callback import PDPreviewCallback
+from external.udacity_gym.logger import ScenarioOutcomeWriter, ScenarioOutcomeLite, ScenarioLite
+
 from sims.udacity.maps.configs import perturbations
 from sims.udacity.maps.configs.run import HOST, PORT
 from sims.udacity.maps.jungle.configs import paths, run
 from sims.udacity.logging.eval_runs import RunLogger, prepare_run_dir, module_public_dict, best_effort_git_sha, pip_freeze
 from sims.udacity.adapters.dave2_adapter import Dave2Adapter
 from sims.udacity.adapters.dave2_gru_adapter import Dave2GRUAdapter
-
-from external.udacity_gym import UdacitySimulator, UdacityGym, UdacityAction
-from external.udacity_gym.agent_callback import PDPreviewCallback
-from external.udacity_gym.logger import ScenarioOutcomeWriter, ScenarioOutcomeLite, ScenarioLite
 
 from perturbationdrive import ImagePerturbation
 

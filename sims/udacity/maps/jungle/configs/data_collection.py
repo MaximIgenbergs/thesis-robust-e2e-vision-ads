@@ -1,0 +1,3 @@
+TARGET_SECTOR_SPAN = 140  # 140 ~ 2/3 of the jungle track
+MAX_STEPS = 100000
+TARGET_SPEED = 17

@@ -141,7 +141,7 @@ class PDPreviewCallback(AgentCallback):
     def __init__(self, enabled: bool = True):
         super().__init__('pd_preview')
         self.enabled = enabled and (_PDImageCallBack is not None)
-        self.monitor: Optional[_PDImageCallBack] = None
+        self.monitor: Optional[_PDImageCallBack] = None # type: ignore
         if self.enabled:
             try:
                 self.monitor = _PDImageCallBack()
