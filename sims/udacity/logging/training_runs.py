@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 import datetime, json
+import sys
 from pathlib import Path
 from typing import Dict, Optional
 import matplotlib
@@ -13,7 +14,8 @@ def make_run_dir(model_key: str, map_name: str) -> Path:
     Create <CKPTS_DIR>/<model_key>/<map_name>_<YYYYMMDD-HHMMSS>/
     and return the created Path.
     """
-    from sims.udacity.configs.paths import CKPTS_DIR  # imported here to avoid circular import
+
+    from sims.udacity.maps.configs.paths import CKPTS_DIR  # imported here to avoid circular import
 
     base = Path(CKPTS_DIR).expanduser().resolve() / model_key
     base.mkdir(parents=True, exist_ok=True)

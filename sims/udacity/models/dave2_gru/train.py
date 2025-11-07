@@ -8,7 +8,7 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parents[4]))
 
 from sims.udacity.models.dave2_gru.model import build_dave2_gru
-from sims.udacity.models.dave2_gru.utils.data_stream import index_by_track, split_tracks, total_sequences, make_sequence_dataset
+from sims.udacity.models.dave2_gru.utils.data_stream import index_by_track, split_tracks, temporal_split_single_track, total_sequences, make_sequence_dataset
 from sims.udacity.logging.training_runs import make_run_dir, write_meta, loss_plot
 from sims.udacity.models.dave2_gru.config import (
     MAP_NAME, MODEL_NAME, INPUTS_GLOB, INPUT_SHAPE, NUM_OUTPUTS, LEARNING_RATE, ALPHA_STEER, VAL_SPLIT, RANDOM_SEED,
@@ -36,9 +36,14 @@ def main():
     if not per_track:
         raise SystemExit(f"[train:{MODEL_NAME}] No images/jsons found for glob: {INPUTS_GLOB}")
 
-    train_ids, val_ids = split_tracks(per_track, VAL_SPLIT, RANDOM_SEED)
+    if len(per_track) == 1:
+        per_track, train_ids, val_ids = temporal_split_single_track(per_track, seq_len=SEQ_LEN, val_split=VAL_SPLIT)
+    else:
+        train_ids, val_ids = split_tracks(per_track, VAL_SPLIT, RANDOM_SEED)
+
     if not train_ids:
-        raise SystemExit("[train:{MODEL_NAME}] Train split empty. Lower VAL_SPLIT or check data.")
+        raise SystemExit(f"[train:{MODEL_NAME}] Train split empty. "
+                         f"Consider lowering VAL_SPLIT or collecting more data. (Input Data Dir: {INPUTS_GLOB})")
 
     ds_train = make_sequence_dataset(
         per_track, train_ids, SEQ_LEN, STRIDE, INPUT_SHAPE, NUM_OUTPUTS, BATCH_SIZE,
@@ -47,7 +52,7 @@ def main():
     ds_val = make_sequence_dataset(
         per_track, val_ids, SEQ_LEN, STRIDE, INPUT_SHAPE, NUM_OUTPUTS, BATCH_SIZE,
         repeat=True
-    )
+    ) if len(val_ids) > 0 else None
 
     run_dir = make_run_dir(model_key=MODEL_NAME, map_name=MAP_NAME)
     best_path = run_dir / "best_model.h5"
@@ -61,25 +66,26 @@ def main():
 
     # ---- training loop ----
     n_train = total_sequences(per_track, train_ids, SEQ_LEN, STRIDE)
-    n_val   = total_sequences(per_track, val_ids,   SEQ_LEN, STRIDE)
+    n_val   = total_sequences(per_track, val_ids,   SEQ_LEN, STRIDE) if ds_val is not None else 0
     steps_per_epoch = max(1, math.ceil(n_train / BATCH_SIZE))
-    val_steps       = max(1, math.ceil(n_val   / BATCH_SIZE))
+    val_steps       = max(1, math.ceil(n_val   / BATCH_SIZE)) if ds_val is not None else None
+
+    monitor = "val_loss" if ds_val is not None else "loss"
 
     callbacks = [
-        tf.keras.callbacks.ReduceLROnPlateau(monitor="val_loss", factor=0.5, patience=PATIENCE, verbose=1),
-        tf.keras.callbacks.ModelCheckpoint(filepath=str(best_path), monitor="val_loss",
-                                           save_best_only=True, save_weights_only=False, verbose=1),
+        tf.keras.callbacks.ReduceLROnPlateau(monitor=monitor, factor=0.5, patience=PATIENCE, verbose=1),
+        tf.keras.callbacks.ModelCheckpoint(filepath=str(best_path), monitor=monitor, save_best_only=True, save_weights_only=False, verbose=1),
         tf.keras.callbacks.CSVLogger(str(hist_csv)),
-        tf.keras.callbacks.EarlyStopping(monitor="val_loss", patience=PATIENCE, restore_best_weights=True),
+        tf.keras.callbacks.EarlyStopping(monitor=monitor, patience=PATIENCE, restore_best_weights=True),
         tf.keras.callbacks.TerminateOnNaN(),
     ]
 
     history = model.fit(
         ds_train,
-        validation_data=ds_val,
+        validation_data=ds_val if ds_val is not None else None,
         epochs=EPOCHS,
         steps_per_epoch=steps_per_epoch,
-        validation_steps=val_steps,
+        validation_steps=val_steps if val_steps is not None else None,
         shuffle=False,
         callbacks=callbacks,
         verbose=1,

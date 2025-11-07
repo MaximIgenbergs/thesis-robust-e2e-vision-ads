@@ -105,6 +105,11 @@ class PIDUdacityAgent_Angle(UdacityAgent):
 
         self.track = track
 
+        self.angle_ema = 0.0 
+        self.cte_ema = 0.0
+        self.alpha_angle = 0.3
+        self.alpha_cte = 0.4
+
 
     def action(self, observation: UdacityObservation, *args, **kwargs):
         # steer based on angle difference, throttle based on cte
@@ -121,6 +126,12 @@ class PIDUdacityAgent_Angle(UdacityAgent):
 
         cte = observation.cte
         angle_error = -observation.angle_diff
+
+        # self.angle_ema = (1 - self.alpha_angle) * self.angle_ema + self.alpha_angle * angle_error
+        # self.cte_ema   = (1 - self.alpha_cte)   * self.cte_ema   + self.alpha_cte   * cte
+        # angle_error_sm = self.angle_ema
+        # cte_sm         = self.cte_ema
+
 
         diff_err = cte - self.prev_error
 
@@ -153,7 +164,7 @@ class PIDUdacityAgent_Angle(UdacityAgent):
                 'Kp_angle': 0.01,
                 'Kd_angle': 0.002,
                 'Ki_angle': 0.0,
-                'Kp_speed': 0.1,
+                'Kp_speed': 0.15,
                 'Kd_speed': 0.0,
                 'Ki_speed': 0.0
             }
@@ -162,7 +173,9 @@ class PIDUdacityAgent_Angle(UdacityAgent):
          #prev_road_error, prev_angle_error, prev_speed_error, total_road_error, total_angle_error, total_speed_error
          ) \
              = pid_speed21(pid_parameters = pid_parameters,
-                            road_error = observation.cte,
+                         # road_error = cte_sm,
+                         # angle_error = angle_error_sm,
+                           road_error = observation.cte,
                            angle_error = angle_error,
                            speed_error = speed_error,
                            # prev_road_error = self.prev_error,
@@ -224,7 +237,7 @@ def pid_speed21(pid_parameters,
     I_speed = Ki_speed * total_speed_error
     D_speed = Kd_speed * (speed_error - prev_speed_error)
     throttle = P_speed + I_speed + D_speed
-    throttle -= 0.1 * abs(road_error) + 0.05 * steering
+    throttle -= 0.1 * abs(road_error) + 0.05 * abs(steering)
     # throttle = max(-1, min(0.8, throttle))
     throttle = np.clip(throttle,-0.2,1)
     # print(f"s: {steering}, th: {throttle}, kp angle: {P_angle + I_angle + D_angle}, Kp road: {P_road + I_road + D_road}")

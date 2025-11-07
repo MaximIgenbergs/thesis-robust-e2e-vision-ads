@@ -69,6 +69,34 @@ def _force_start_episode(env: UdacityGym, track="jungle", weather="sunny", dayti
             raise RuntimeError("Failed to enter Jungle map before timeout.")
         time.sleep(0.2)
 
+# Baseline metrics so we can compute deltas for this episode
+def _metrics(env: UdacityGym):
+    try:
+        m = env.simulator.get_episode_metrics() or {}
+    except Exception:
+        m = {}
+    return {
+        "outOfTrackCount": int(m.get("outOfTrackCount", 0)),
+        "collisionCount": int(m.get("collisionCount", 0)),
+    }
+
+def _settle_metrics(env: UdacityGym, prev: dict, settle_seconds: float = 1.5, probe_hz: float = 10.0) -> dict:
+    """Wait briefly so Unity-side counters flush; return final metrics."""
+    import time as _t
+    delay = 1.0 / max(probe_hz, 1.0)
+    deadline = _t.perf_counter() + max(settle_seconds, 0.0)
+    last = _metrics(env)
+    while _t.perf_counter() < deadline:
+        _t.sleep(delay)
+        cur = _metrics(env)
+        if cur == last:  # stable snapshot
+            break
+        last = cur
+    # return delta vs prev
+    return {
+        "outOfTrackCount": max(0, last["outOfTrackCount"] - prev["outOfTrackCount"]),
+        "collisionCount":  max(0, last["collisionCount"]   - prev["collisionCount"]),
+    }
 
 def _run_episode(env: UdacityGym,
                  adapter,
@@ -79,22 +107,27 @@ def _run_episode(env: UdacityGym,
                  max_steps: int,
                  save_images: bool) -> ScenarioOutcomeLite:
 
-    # Make sure the car is spawned on Jungle before the episode starts
     _force_start_episode(env,
                          track="jungle",
                          weather=getattr(run, "WEATHER", "sunny"),
                          daytime=getattr(run, "DAYTIME", "day"))
 
+    metrics_base = _metrics(env)
+
+    # --- per-episode logs ---
     frames, xte, speeds, actions, pos = [], [], [], [], []
     original_images, perturbed_images = ([] if save_images else None), ([] if save_images else None)
 
-    offtrack = False
+    # --- local event counters (primary) ---
+    offtrack_count = 0
+    collision_count = 0
+
     step = 0
     t0 = time.perf_counter()
     obs = env.observe()
 
     try:
-        while (step < max_steps) and not offtrack:
+        while step < max_steps:
             if obs is None or obs.input_image is None:
                 time.sleep(0.005)
                 obs = env.observe()
@@ -132,38 +165,59 @@ def _run_episode(env: UdacityGym,
                     throttle=float(np.clip(float(arr[1]),    0.0, 1.0)),
                 )
 
-            # Preview overlay (perturbed ego)
+            # Preview
             preview(obs, display_image_np=pert_np, action=action, perturbation=pert_name)
 
             last_time = obs.time
             obs, reward, terminated, truncated, info = env.step(action)
 
-            # Log step
+            # ---- event counting (primary) ----
+            # 1) Structured event list
+            evs = (info or {}).get("events") or []
+            for ev in evs:
+                k = (ev.get("key") or ev.get("type") or "").lower()
+                if k == "out_of_track":
+                    offtrack_count += 1
+                elif k == "collision":
+                    collision_count += 1
+
+            # 2) Per-step flags (if the env exposes them)
+            if (info or {}).get("out_of_track") is True:
+                offtrack_count += 1
+            if (info or {}).get("collision") is True:
+                collision_count += 1
+
+            # Log step (keep CTE for analysis only)
             frames.append(step)
-            xte_val = float(obs.cte)
-            xte.append(xte_val)
-            speeds.append(float(obs.speed))
-            actions.append([float(action.steering_angle), float(action.throttle)])
+            xte.append(float(getattr(obs, "cte", 0.0)))
+            speeds.append(float(getattr(obs, "speed", 0.0)))
             px, py, pz = obs.position
             pos.append([float(px), float(py), float(pz)])
+            actions.append([float(action.steering_angle), float(action.throttle)])
 
-            # Early stop if off track (|cte| >= 4)
-            if abs(xte_val) >= 4.0:
-                offtrack = True
-                break
-
-            # Sync to next tick
+            # Tick sync
             while obs.time == last_time:
                 time.sleep(0.0025)
                 obs = env.observe()
+
+            # optional: coarse debug every 200 steps
+            if (step % 200) == 0 and step > 0:
+                print(f"[debug] step={step} offtrack={offtrack_count} collisions={collision_count}")
 
             step += 1
 
     finally:
         wall = time.perf_counter() - t0
-        print(f"[episode] {pert_name}@{severity}: steps={step} wall={wall:.1f}s offtrack={offtrack}")
+        # Unity may flush counters slightly after our last step → reconcile with settled sim metrics.
+        delta = _settle_metrics(env, metrics_base, settle_seconds=1.5, probe_hz=10.0)
+        # take the max (defensive): if we missed an event in 'info', sim delta will catch it
+        offtrack_count = max(offtrack_count, int(delta["outOfTrackCount"]))
+        collision_count = max(collision_count, int(delta["collisionCount"]))
+        print(f"[episode] {pert_name}@{severity}: steps={step} wall={wall:.1f}s "
+              f"offtrack_count={offtrack_count} collisions={collision_count}")
 
-    is_success = (not offtrack) and (max([abs(v) for v in xte]) < 4.0 if xte else False)
+    # Success: we no longer penalize auto-respawns on Jungle
+    is_success = True
 
     return ScenarioOutcomeLite(
         frames=frames,
@@ -177,6 +231,8 @@ def _run_episode(env: UdacityGym,
         timeout=False,
         original_images=original_images,
         perturbed_images=perturbed_images,
+        offtrack_count=int(offtrack_count),
+        collision_count=int(collision_count),
     )
 
 

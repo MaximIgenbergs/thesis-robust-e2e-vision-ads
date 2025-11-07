@@ -62,6 +62,8 @@ class ScenarioOutcomeLite:
     # large arrays kept out of JSON unless images=True
     original_images: Optional[List[np.ndarray]] = None
     perturbed_images: Optional[List[np.ndarray]] = None
+    offtrack_count: int = 0
+    collision_count: int = 0
 
 class ScenarioOutcomeWriter:
     """Mirror of PD's ScenarioOutcomeWriter with images save option."""

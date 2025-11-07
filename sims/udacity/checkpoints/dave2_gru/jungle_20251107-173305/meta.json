@@ -1,0 +1,33 @@
+{
+  "created_utc": "2025-11-07T16:48:45Z",
+  "framework": "tensorflow-keras",
+  "model": "dave2_gru",
+  "map": "jungle",
+  "checkpoint_path": "/home/maximigenbergs/thesis-robust-e2e-vision-ads/sims/udacity/checkpoints/dave2_gru/jungle_20251107-173305/best_model.h5",
+  "input_shape": [
+    3,
+    120,
+    160,
+    3
+  ],
+  "seed": 42,
+  "val_split": 0.2,
+  "optimizer": {
+    "type": "adam",
+    "lr": 0.0001
+  },
+  "batch_size": 64,
+  "epochs": 300,
+  "patience": 1000,
+  "alpha_steer": 0.7,
+  "augmentations": [],
+  "data": {
+    "inputs_glob": "/home/maximigenbergs/thesis-robust-e2e-vision-ads/data/udacity/jungle/pid_20251107-160612/*.jpg",
+    "seq_len": 3,
+    "stride": 1
+  },
+  "counts": {
+    "train_sequences": 1897,
+    "val_sequences": 473
+  }
+}

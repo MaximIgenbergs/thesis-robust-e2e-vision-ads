@@ -80,11 +80,70 @@ def index_by_track(inputs_glob: str) -> Dict[int, List[Tuple[int, str, str]]]:
         per_track[tid].sort(key=lambda t: t[0])
     return per_track
 
-def split_tracks(per_track, val_split: float, seed: int = 42):
+def temporal_split_single_track(
+    per_track: Dict[int, List[Tuple[int, str, str]]],
+    seq_len: int,
+    val_split: float
+) -> Tuple[Dict[int, List[Tuple[int, str, str]]], List[int], List[int]]:
+    """
+    When there's only ONE track in the dataset, perform a temporal split inside that track:
+      - Train = first (1 - val_split) portion of frames
+      - Val   = last  val_split portion of frames
+    We enforce that both sides contain at least `seq_len` frames so GRU windows are valid.
+    Returns a NEW per_track dict with two pseudo-tracks {0: train_frames, 1: val_frames}
+    plus corresponding train/val id lists.
+    """
     tids = sorted(per_track.keys())
-    random.Random(seed).shuffle(tids)         # <— shuffle deterministically
-    n_val = max(1, int(len(tids) * val_split))
-    return tids[:-n_val] if n_val < len(tids) else [], tids[-n_val:]
+    assert len(tids) == 1, "temporal_split_single_track expects exactly one track"
+    tid = tids[0]
+    frames = per_track[tid]
+    n = len(frames)
+
+    # Need at least seq_len for each side; otherwise fall back to train-only.
+    if n < 2 * seq_len:
+        # Not enough frames to form valid windows on both sides.
+        return per_track, [tid], []
+
+    # Number of frames to assign to validation
+    n_val_frames = max(seq_len, int(round(n * val_split)))
+    n_val_frames = min(n - seq_len, n_val_frames)  # keep >= seq_len in train
+    cut = n - n_val_frames
+
+    # Build new pseudo-tracks so the window generator won't cross the boundary
+    per_track_new: Dict[int, List[Tuple[int, str, str]]] = {
+        0: frames[:cut],
+        1: frames[cut:],
+    }
+    return per_track_new, [0], [1]
+
+
+def split_tracks(
+    per_track: Dict[int, List[Tuple[int, str, str]]],
+    val_split: float,
+    seed: int = 42
+) -> Tuple[List[int], List[int]]:
+    """
+    Multi-track split: shuffle track IDs and put ~val_split fraction into validation.
+    Guarantees at least 1 train track when len(tids) >= 2.
+    Returns (train_ids, val_ids).
+    """
+    tids = sorted(per_track.keys())
+    if not tids:
+        return [], []
+
+    # Single-track case is handled by the caller (temporal split); return empty and let caller decide.
+    if len(tids) == 1:
+        return [], tids  # sentinel; caller will override with temporal split
+
+    import random
+    rng = random.Random(seed)
+    rng.shuffle(tids)
+
+    n_val = int(round(len(tids) * val_split))
+    n_val = max(1, n_val)                 # at least one val track
+    n_val = min(n_val, len(tids) - 1)     # but keep at least one train track
+
+    return tids[:-n_val], tids[-n_val:]
 
 def count_sequences(n_frames: int, seq_len: int, stride: int) -> int:
     if n_frames < seq_len:
