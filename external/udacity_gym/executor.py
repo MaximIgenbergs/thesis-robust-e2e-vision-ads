@@ -100,9 +100,38 @@ class UdacityExecutor:
             track, weather, daytime = track_info['track'], track_info['weather'], track_info['daytime']
             self.send_track(track, weather, daytime)
             self.sim_state['track'] = None
+        
+        spawn_wp = self.sim_state.get('spawn_waypoint', None)
+        if spawn_wp is not None:
+            payload = {"waypointNumber": str(int(spawn_wp))}
+            self.logger.info(f"emit spawn_car_at_waypoint -> {payload}")
+            # Target the sender (Unity) if we can; otherwise just broadcast.
+            try:
+                from flask import request as _req
+                sid = getattr(_req, "sid", None)
+            except Exception:
+                sid = None
+
+            if sid:
+                self.sio.emit("spawn_car_at_waypoint", data=payload, to=sid, namespace="/")
+            else:
+                self.sio.emit("spawn_car_at_waypoint", data=payload, namespace="/", broadcast=True)
+
+            # guard re-emit shortly after creation to beat late default spawns
+            def _guard_emit():
+                try:
+                    if sid:
+                        self.sio.emit("spawn_car_at_waypoint", data=payload, to=sid, namespace="/")
+                    else:
+                        self.sio.emit("spawn_car_at_waypoint", data=payload, namespace="/", broadcast=True)
+                except Exception:
+                    pass
+            eventlet.spawn_after(0.30, _guard_emit)
+
+            # clear request
+            self.sim_state['spawn_waypoint'] = None
 
     def on_connect(self):
-        self.logger.info("Udacity client connected")
         track_info = self.sim_state.get('track', None)
         # TODO: do it in a better way
         while not track_info:
@@ -168,6 +197,10 @@ class UdacityExecutor:
 
     def close(self):
         self.sio.stop()
+
+    # in UdacityExecutor
+    def request_spawn_waypoint(self, waypoint_idx: int) -> None:
+        self.sim_state['spawn_waypoint'] = int(waypoint_idx)
 
 
 if __name__ == '__main__':

@@ -23,7 +23,7 @@ if str(PD) not in sys.path:
 
 from perturbationdrive import CustomRoadGenerator
 from perturbationdrive.RoadGenerator.Roads.road_visualizer import visualize_road
-from sims.udacity.configs.genroads import roads as R
+from sims.udacity.maps.genroads.configs import roads as R
 
 
 def _generate(gen: CustomRoadGenerator, angles: List[int], segs: List[int], start: Tuple[int,int,int,int]):

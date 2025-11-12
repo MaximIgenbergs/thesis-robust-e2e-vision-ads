@@ -7,7 +7,7 @@ import numpy as np
 import tensorflow as tf
 
 from sims.udacity.models.dave2_gru.model import build_dave2_gru
-from sims.udacity.models.dave2_gru.config import INPUT_SHAPE, SEQ_LEN  # (H, W, C), T
+from sims.udacity.models.dave2_gru.config import INPUT_SHAPE, SEQ_LEN # (H, W, C), T
 from perturbationdrive import ADS
 
 
@@ -25,7 +25,7 @@ class Dave2GRUAdapter(ADS):
         weights: Optional[Path] = None,
         image_size_hw: Tuple[int, int] = (INPUT_SHAPE[0], INPUT_SHAPE[1]),
         device: Optional[str] = None,
-        normalize: str = "imagenet",  # accepted for compatibility, not used
+        normalize: str = "imagenet", # accepted for compatibility, not used
     ) -> None:
         super().__init__()
         self._name = "dave2_gru"
@@ -60,14 +60,14 @@ class Dave2GRUAdapter(ADS):
         else:
             self._buf.append(frame)
 
-        seq = np.stack(list(self._buf), axis=0)              # (T,H,W,C)
-        x = tf.convert_to_tensor(seq[np.newaxis, ...])       # (1,T,H,W,C)
+        seq = np.stack(list(self._buf), axis=0) # (T,H,W,C)
+        x = tf.convert_to_tensor(seq[np.newaxis, ...]) # (1,T,H,W,C)
         y = self.model(x, training=False).numpy()
 
         if y.shape[-1] == 1:
             steer = float(y[0, 0]); throttle = 0.30
         else:
-            steer, throttle = float(y[0, 0]), float(y[0, 1])
+            steer, throttle = float(y[0, 0]), float(y[0, 1]) # throttle too low
 
         return np.asarray([[steer, throttle]], dtype=np.float32)
 
