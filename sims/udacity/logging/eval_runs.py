@@ -46,7 +46,7 @@ def make_run_id(tag: str) -> str:
     return f"{_ts_now()}__{_sanitize_tag(tag)}"
 
 
-def _default_runs_base() -> Path:
+def _default_runs_base() -> Path: # TODO: this is unnecessary, remove it.
     """
     Resolve '<repo_root>/runs' as a sensible default if no base is provided.
     """
@@ -57,12 +57,7 @@ def _default_runs_base() -> Path:
     return repo_root / "runs"
 
 
-def make_runs_root(
-    map_name: str,
-    test_type: str,                 # e.g. "robustness" or "topology"
-    model_name: str,
-    runs_base: Optional[Union[str, Path]] = None,
-) -> Path:
+def make_runs_root(map_name: str, test_type: str, model_name: str, runs_base: Optional[Union[str, Path]] = None) -> Path:
     """
     Build the root dir: <runs_base>/udacity/<map>/<test_type>/<model> and create it.
     If runs_base is None, defaults to '<repo_root>/runs'.
@@ -81,13 +76,7 @@ def make_run_dir(runs_root: Union[str, Path], run_id: str) -> Path:
     return run_dir
 
 
-def prepare_run_dir(
-    map_name: str,
-    test_type: str,
-    model_name: str,
-    tag: str,
-    runs_base: Optional[Union[str, Path]] = None,
-) -> Tuple[str, Path]:
+def prepare_run_dir(map_name: str, test_type: str, model_name: str, tag: str, runs_base: Optional[Union[str, Path]] = None) -> Tuple[str, Path]:
     """
     Convenience: compute runs_root, run_id, and create run_dir.
     Returns (run_id, run_dir).

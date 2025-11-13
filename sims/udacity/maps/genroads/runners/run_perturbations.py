@@ -29,7 +29,8 @@ from sims.udacity.adapters.dave2_gru_adapter import Dave2GRUAdapter
 from perturbationdrive import Scenario, PerturbationDrive
 try:
     from perturbationdrive.RoadGenerator.CustomRoadGenerator import CustomRoadGenerator
-except ImportError:
+except ImportError: # TODO: remove one of the two
+    print("ImportError: falling back to alternative import for CustomRoadGenerator")
     from perturbationdrive import CustomRoadGenerator
 from examples.udacity.udacity_simulator import UdacitySimulator
 
