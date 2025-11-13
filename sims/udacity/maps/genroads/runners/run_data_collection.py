@@ -35,7 +35,7 @@ if str(PD_DIR) not in sys.path:
 # --- configs & helpers ---
 from sims.udacity.maps.configs.run import HOST, PORT
 from sims.udacity.maps.genroads.configs import paths as gen_paths, roads
-from sims.udacity.logging.data_collection import make_timestamped_run_dir, convert_pd_logs_to_pairs
+from sims.udacity.logging.data_collection import make_run_dir, convert_outputs
 
 # --- PerturbationDrive & Udacity wrapper from PD ---
 from perturbationdrive import PerturbationDrive
@@ -63,7 +63,7 @@ def _udacity_sim_path() -> Path:
 def collect_genroads() -> None:
     # Timestamped run dir under DATA_DIR; keep raw PD logs for traceability.
     data_root = Path(gen_paths.DATA_DIR).expanduser().resolve()
-    run_dir   = make_timestamped_run_dir(data_root, prefix="pid")
+    run_dir   = make_run_dir(data_root, prefix="pid")
     raw_pd_dir = run_dir / "raw_pd_logs"
     raw_pd_dir.mkdir(parents=True, exist_ok=True)
 
@@ -119,7 +119,7 @@ def collect_genroads() -> None:
             time.sleep(3.0)
 
     # Convert all PD logs → flat pairs in run_dir
-    convert_pd_logs_to_pairs(pd_logs_dir=raw_pd_dir, out_pairs_dir=run_dir)
+    convert_outputs(pd_logs_dir=raw_pd_dir, out_pairs_dir=run_dir)
 
     print(f"[collect:genroads] done. pairs in: {run_dir}")
 

@@ -1,4 +1,3 @@
-# sims/udacity/logging/data_collection.py
 from __future__ import annotations
 from datetime import datetime
 from pathlib import Path
@@ -8,21 +7,13 @@ import re
 import numpy as np
 from PIL import Image
 
-# ---------- lightweight manifest logger for data collection ----------
-
 def _dump_json(path: Path, obj: Dict[str, Any]) -> None:
     path.write_text(json.dumps(obj, indent=2, sort_keys=True))
 
 class DataRunLogger:
     """
-    Very lightweight run logger for data collection runs.
-
-    Creates <run_dir>/manifest.json with:
-      - schema_version, run_id, timestamp
-      - map_name, source ("jungle" | "genroads" | etc.)
-      - paths: sim_app, data_dir, raw_pd_dir (if any)
-      - frames_written, dropped_frames
-      - extras: free-form dict with small config bits (e.g., sector_span, road_set)
+    Lightweight run logger for data collection runs.
+    - Creates <run_dir>/manifest.json
     """
 
     def __init__(self, run_dir: Path, map_name: str, source: str,
@@ -62,7 +53,7 @@ class DataRunLogger:
         self.state.setdefault("extras", {})[key] = value
         _dump_json(self.manifest_path, self.state)
 
-# ---------- small helpers for frame-pair datasets ----------
+# ---- Helpers ----
 
 class NumpyEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -71,7 +62,7 @@ class NumpyEncoder(json.JSONEncoder):
         if isinstance(obj, np.ndarray):     return obj.tolist()
         return super().default(obj)
 
-def make_timestamped_run_dir(base_dir: Path, prefix: str = "pid") -> Path:
+def make_run_dir(base_dir: Path, prefix: str) -> Path:
     """
     Creates <base_dir>/<prefix>_YYYYMMDD-HHMMSS and returns it.
     """
@@ -80,7 +71,7 @@ def make_timestamped_run_dir(base_dir: Path, prefix: str = "pid") -> Path:
     run_dir.mkdir(parents=True, exist_ok=True)
     return run_dir
 
-def save_image_uint8(img_np: np.ndarray, path: Path) -> None:
+def save_image(img_np: np.ndarray, path: Path) -> None:
     """
     Saves an RGB image (uint8). Grayscale gets stacked to 3 channels.
     """
@@ -91,15 +82,7 @@ def save_image_uint8(img_np: np.ndarray, path: Path) -> None:
         arr = np.stack([arr]*3, axis=-1)
     Image.fromarray(arr).save(str(path), format="JPEG", quality=95)
 
-def write_frame_record(path: Path,
-                       steer: float,
-                       throttle: float,
-                       track_id: int,
-                       topo_id: int,
-                       frame_idx_in_run: int) -> None:
-    """
-    Writes the JSON record_* in the format your trainers consume.
-    """
+def write_frame_record(path: Path, steer: float, throttle: float, track_id: int, topo_id: int, frame_idx_in_run: int) -> None:
     rec: Dict[str, Any] = {
         "user/angle": f"{float(steer)}",
         "user/throttle": f"{float(throttle)}",
@@ -109,7 +92,7 @@ def write_frame_record(path: Path,
     }
     path.write_text(json.dumps(rec, indent=2))
 
-# ---------- PD → frame-pair conversion (used by genroads flow) ----------
+# ---- Data Format Conversion from ScenarioOutcomeWriter in PerturbationDrive ----
 
 _TOPO_PATTERNS = [
     re.compile(r"(?:track|road|map|generated)[-_]?(\d+)", re.IGNORECASE),
@@ -128,15 +111,14 @@ def _infer_topo_id_from_filename(path: Path) -> Optional[int]:
     return None
 
 def _coerce_action(raw) -> Tuple[float, float]:
-    """Accepts [s,t] or [[s,t], ...] as seen in older PD logs."""
+    """Accepts [s,t] or [[s,t], ...]"""
     if isinstance(raw, (list, tuple)) and raw and isinstance(raw[0], (list, tuple)):
         raw = raw[0]
     return float(raw[0]), float(raw[1])
 
-def convert_pd_logs_to_pairs(pd_logs_dir: Path, out_pairs_dir: Path) -> None:
+def convert_outputs(pd_logs_dir: Path, out_pairs_dir: Path) -> None:
     """
-    Converts PD ScenarioOutcomeWriter logs + image folders into your flat frame-pair dataset.
-
+    Converts PerturbationDrive ScenarioOutcomeWriter outputs into the required data format:
     out_pairs_dir/
       image_000001.jpg
       record_000001.json
@@ -146,7 +128,7 @@ def convert_pd_logs_to_pairs(pd_logs_dir: Path, out_pairs_dir: Path) -> None:
 
     json_files: List[Path] = sorted([p for p in pd_logs_dir.iterdir() if p.suffix.lower() == ".json"])
     if not json_files:
-        print(f"[pd→pairs] no JSON logs in {pd_logs_dir}")
+        print(f"[Data Conversion] no JSON logs in {pd_logs_dir}")
         return
 
     start_idx = 1
@@ -157,13 +139,13 @@ def convert_pd_logs_to_pairs(pd_logs_dir: Path, out_pairs_dir: Path) -> None:
         base = jf.with_suffix("")
         image_dir = Path(str(base) + "___0_original")
         if not image_dir.exists():
-            print(f"[pd→pairs:warn] image folder not found for {jf.name}: {image_dir}")
+            print(f"[Data Conversion] image folder not found for {jf.name}: {image_dir}")
             continue
 
         try:
             data = json.loads(jf.read_text())
         except json.JSONDecodeError:
-            print(f"[pd→pairs:warn] json decode error: {jf}")
+            print(f"[Data Conversion] json decode error: {jf}")
             continue
 
         entries = [data] if isinstance(data, dict) else list(data)
@@ -188,13 +170,13 @@ def convert_pd_logs_to_pairs(pd_logs_dir: Path, out_pairs_dir: Path) -> None:
                 try:
                     steer, throttle = _coerce_action(action)
                 except Exception as e:
-                    print(f"[pd→pairs:warn] drop frame (action parse): {e}")
+                    print(f"[Data Conversion] drop frame (action parse): {e}")
                     dropped += 1
                     continue
 
                 src_img = image_dir / f"{frame_name}.jpg"
                 if not src_img.exists():
-                    print(f"[pd→pairs:warn] missing image: {src_img}")
+                    print(f"[Data Conversion] missing image: {src_img}")
                     dropped += 1
                     continue
 
@@ -205,6 +187,6 @@ def convert_pd_logs_to_pairs(pd_logs_dir: Path, out_pairs_dir: Path) -> None:
                 write_frame_record(dst_js, steer, throttle, track_id, topo_id, i)
                 start_idx += 1
 
-            print(f"[pd→pairs:ok] {jf.name}: topo_id={topo_id} track_id={track_id} dropped={dropped}")
+            print(f"[Data Conversion:ok] {jf.name}: topo_id={topo_id} track_id={track_id} dropped={dropped}")
 
-    print(f"[pd→pairs] wrote pairs -> {out_pairs_dir}")
+    print(f"[Data Conversion] wrote data at {out_pairs_dir}")

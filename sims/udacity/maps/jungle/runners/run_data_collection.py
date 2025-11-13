@@ -3,8 +3,7 @@
 Collect nominal training data on the Jungle map using a PID controller.
 
 - Output dir: paths.DATA_DIR / pid_YYYYMMDD-HHMMSS
-- Stops after ~2/3 lap using sector progress (forward span of TARGET_SECTOR_SPAN)
-- Uses sims.udacity.logging.data_collection helpers for images/records + manifest logging.
+- Stops after reaching TARGET_SECTOR_SPAN or MAX_STEPS.
 """
 from __future__ import annotations
 import sys, time, json
@@ -12,30 +11,15 @@ from pathlib import Path
 from typing import Union, Optional, Tuple
 import numpy as np
 
-# --- project roots on sys.path (mirror other runners) ---
 ROOT = Path(__file__).resolve().parents[5]
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
-PD_DIR = ROOT / "external" / "perturbation-drive"
-if str(PD_DIR) not in sys.path:
-    sys.path.insert(0, str(PD_DIR))
+sys.path.insert(0, str(ROOT)) if str(ROOT) not in sys.path else None # add project root to path
 
-# --- imports from your codebase ---
 from external.udacity_gym import UdacitySimulator, UdacityGym, UdacityAction
 from external.udacity_gym.agent import PIDUdacityAgent_Angle
 from sims.udacity.maps.configs.run import HOST, PORT
 from sims.udacity.maps.jungle.configs import paths, run
 from sims.udacity.maps.jungle.configs.data_collection import TARGET_SECTOR_SPAN, MAX_STEPS, TARGET_SPEED
-
-# central logging + i/o helpers
-from sims.udacity.logging.data_collection import (
-    DataRunLogger,
-    make_timestamped_run_dir,
-    save_image_uint8,
-    write_frame_record,
-)
-
-# --------------- helpers ---------------
+from sims.udacity.logging.data_collection import DataRunLogger, make_run_dir, save_image, write_frame_record
 
 def _abs(p: Union[str, Path]) -> Path:
     p = Path(p)
@@ -61,12 +45,9 @@ def _ensure_jungle(env: UdacityGym, weather: str = "sunny", daytime: str = "day"
         time.sleep(0.2)
         obs = env.observe()
 
-# --------------- compact sector progress ---------------
-
 SectorState = Optional[Tuple[int, int, int]]  # (initial, last, progress)
 
-def update_sector_progress(state: SectorState, sector: int,
-                           target_span: int = 140, max_backwrap: int = 200) -> Tuple[bool, SectorState]:
+def update_sector_progress(state: SectorState, sector: int, target_span: int = 140, max_backwrap: int = 200) -> Tuple[bool, SectorState]:
     """Return (should_stop, new_state). Counts only small forward jumps; stops on wrap-around or when progress >= target."""
     s = int(sector)
     if state is None:
@@ -84,15 +65,14 @@ def update_sector_progress(state: SectorState, sector: int,
         last = s
     return (progress >= int(target_span)), (initial, last, progress)
 
-# --------------- main ---------------
 
-def collect_data() -> None:
+def main() -> None:
     sim_app = _abs(getattr(paths, "SIM", getattr(paths, "SIM", "")))
     if not sim_app.exists():
         raise FileNotFoundError(f"SIM not found: {sim_app}\nEdit sims/udacity/maps/jungle/configs/paths.py")
 
     base_dir: Path = Path(paths.DATA_DIR).expanduser().resolve()
-    out_dir = make_timestamped_run_dir(base_dir, prefix="pid")
+    out_dir = make_run_dir(base_dir, prefix="pid")
 
     # manifest logger
     extras = {
@@ -155,19 +135,18 @@ def collect_data() -> None:
                 obs = env.observe()
                 time.sleep(0.0025)
 
-            # write dataset pair
             try:
                 img = np.asarray(obs.input_image, dtype=np.uint8)
                 img_path = out_dir / f"image_{idx:06d}.jpg"
                 js_path  = out_dir / f"record_{idx:06d}.json"
 
-                save_image_uint8(img, img_path)
+                save_image(img, img_path)
                 write_frame_record(
                     js_path,
                     steer=float(action.steering_angle),
                     throttle=float(action.throttle),
-                    track_id=1,       # single long jungle run → stable id
-                    topo_id=1,        # constant topo for jungle as agreed
+                    track_id=1,
+                    topo_id=1,
                     frame_idx_in_run=int(steps),
                 )
                 idx += 1
@@ -191,4 +170,4 @@ def collect_data() -> None:
         print("[collect:jungle] done.")
 
 if __name__ == "__main__":
-    collect_data()
+    main()

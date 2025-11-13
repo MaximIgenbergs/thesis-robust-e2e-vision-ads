@@ -1,3 +1,4 @@
+TRAIN_DIR = "data/udacity/genroads/train_dataset_gru"
 VAL_SPLIT = 0.10
 RANDOM_SEED = 42
 INPUT_SHAPE = (66, 200, 3)  # H, W, C
@@ -10,3 +11,4 @@ AUGMENTATIONS = {
     "brightness": False,
     "flip": False,
 }
+

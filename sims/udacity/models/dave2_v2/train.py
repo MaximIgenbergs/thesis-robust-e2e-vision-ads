@@ -11,10 +11,9 @@ import tensorflow as tf
 import pandas as pd
 from matplotlib import pyplot as plt
 
-from sims.udacity.configs.genroads.paths import TRAIN_IMG_DIR, TRAIN_LOG_PATH, TRAINING_RUNS_DIR
 from sims.udacity.models.dave2_v2.config import (
     INPUT_SHAPE, ALPHA_STEER, LEARNING_RATE, BATCH_SIZE, EPOCHS, PATIENCE,
-    VAL_SPLIT, RANDOM_SEED, AUGMENTATIONS
+    VAL_SPLIT, RANDOM_SEED, AUGMENTATIONS, TRAIN_DIR
 )
 from sims.udacity.models.dave2_v2.model import build_model
 from sims.udacity.models.dave2_v2.utils.data import DrivingDataset
