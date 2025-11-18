@@ -1,13 +1,5 @@
-# sims/udacity/maps/genroads/runners/run_scenarios.py
-
 """
-Scenario-based experiments on genroads.
-
-- Builds roads from angles + segs (CustomRoadGenerator).
-- Runs one controller (model or PID) per scenario.
-- Perturbs steering/throttle at specified waypoint indices.
-- Logs model vs actual actions and a phase tag:
-  "before_setup", "setup", "reaction".
+Perturbs steering/throttle at specified waypoint indices.
 """
 
 from __future__ import annotations
@@ -19,33 +11,25 @@ from enum import Enum
 from pathlib import Path
 from typing import List, Tuple, Union
 
-# project root on path
+import numpy as np
+import gym
+
+# add project root & perturbation-drive to path
 ROOT = Path(__file__).resolve().parents[5]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
-
 PD = ROOT / "external" / "perturbation-drive"
 if str(PD) not in sys.path:
     sys.path.insert(0, str(PD))
 
 from sims.udacity.maps.configs.run import HOST, PORT
-from sims.udacity.maps.configs import perturbations  # for EPISODES if you want to reuse that
 from sims.udacity.maps.genroads.configs import paths, roads, run, scenarios
-from sims.udacity.logging.eval_runs import (
-    RunLogger,
-    prepare_run_dir,
-    module_public_dict,
-    best_effort_git_sha,
-    pip_freeze,
-)
+from sims.udacity.logging.eval_runs import RunLogger, prepare_run_dir, module_public_dict, best_effort_git_sha, pip_freeze
 from sims.udacity.adapters.dave2_adapter import Dave2Adapter
 from sims.udacity.adapters.dave2_gru_adapter import Dave2GRUAdapter
 
-try:
-    from perturbationdrive.RoadGenerator.CustomRoadGenerator import CustomRoadGenerator
-except ImportError:
-    from perturbationdrive import CustomRoadGenerator
-
+from perturbationdrive.RoadGenerator.CustomRoadGenerator import CustomRoadGenerator
+from perturbationdrive import ImageCallBack
 from examples.udacity.udacity_simulator import UdacitySimulator
 
 
@@ -66,9 +50,9 @@ def nearest_wp_index(x: float, y: float, waypoints: List[Tuple[float, float]]) -
     """Simple nearest-neighbour lookup in waypoint space."""
     best_i = 0
     best_d2 = float("inf")
-    for i, w in enumerate(waypoints):
-        dx = w[0] - x
-        dy = w[1] - y
+    for i, (wx, wy) in enumerate(waypoints):
+        dx = wx - x
+        dy = wy - y
         d2 = dx * dx + dy * dy
         if d2 < best_d2:
             best_i = i
@@ -95,21 +79,23 @@ def apply_scenario(
     scenario: scenarios.Scenario,
     wp_idx: int,
     base_action: Tuple[float, float],
-) -> Tuple[Tuple[float, float], Phase, List[str]]:
+) -> Tuple[Tuple[float, float], Phase, List[str], List[scenarios.Perturbation]]:
     """
     Apply all perturbations that are active at the current waypoint index.
 
     Returns:
-      (steer, throttle), phase, active_controls
+      (steer, throttle), phase, active_controls, active_perturbations
     """
     steer, throttle = base_action
     active_controls: List[str] = []
+    active_perturbations: List[scenarios.Perturbation] = []
 
     for p in scenario.perturbations:
         if not (p.start_wp <= wp_idx <= p.end_wp):
             continue
 
         active_controls.append(p.control.value)
+        active_perturbations.append(p)
 
         if p.control == scenarios.Control.STEERING:
             if p.mode == scenarios.Mode.MUL:
@@ -127,80 +113,145 @@ def apply_scenario(
             elif p.mode == scenarios.Mode.SET:
                 throttle = p.factor
 
-    # clamp to [-1, 1] for both (throttle < 0 == braking)
     steer = max(-1.0, min(1.0, steer))
     throttle = max(-1.0, min(1.0, throttle))
 
     phase = classify_phase(wp_idx, scenario)
-    return (steer, throttle), phase, active_controls
+    return (steer, throttle), phase, active_controls, active_perturbations
 
 
-def _extract_position(obs, info) -> Tuple[float, float]:
+def _extract_pid_state(info: dict) -> dict:
     """
-    Helper to get car x,y from obs/info.
-
-    Adjust this to whatever your UdacitySimulator returns.
-    """
-    if hasattr(obs, "x") and hasattr(obs, "y"):
-        return float(obs.x), float(obs.y)
-    if isinstance(obs, dict) and "x" in obs and "y" in obs:
-        return float(obs["x"]), float(obs["y"])
-    if "x" in info and "y" in info:
-        return float(info["x"]), float(info["y"])
-    raise RuntimeError("Could not extract (x, y) from observation/info.")
-
-
-def _extract_pid_state(obs, info) -> dict:
-    """
-    Collect everything a PID might care about (cte, yaw_error, speed, ...).
-    Adapt field names to your env.
+    Collect everything a PID would want to see, directly from info.
     """
     state = {}
-    for key in ("cte", "yaw_error", "heading_error", "speed"):
+    for key in ("cte", "cte_pid", "angle", "speed"):
         if key in info:
             state[key] = info[key]
     return state
 
 
+def format_active_perturbations(perts: List[scenarios.Perturbation]) -> str:
+    """
+    Human-readable summary of what is currently being applied.
+
+    Examples:
+      S*0.70 T*1.20
+      S+0.20
+    """
+    if not perts:
+        return "none"
+
+    parts: List[str] = []
+    for p in perts:
+        if p.control == scenarios.Control.STEERING:
+            ctrl = "S"
+        else:
+            ctrl = "T"
+
+        if p.mode == scenarios.Mode.MUL:
+            op = f"*{p.factor:.2f}"
+        elif p.mode == scenarios.Mode.ADD:
+            # include sign
+            op = f"{p.factor:+.2f}"
+        else:  # SET
+            op = f"={p.factor:.2f}"
+
+        parts.append(f"{ctrl}{op}")
+
+    return " ".join(parts)
+
+
 def run_scenario_episode(
     sim: UdacitySimulator,
     controller,
-    waypoints,
+    track_string: str,
+    waypoints: List[Tuple[float, float]],
     scenario: scenarios.Scenario,
     log_path: Path,
     max_steps: int | None = None,
 ) -> Tuple[str, float]:
     """
     Runs a single scenario episode and writes per-step history to log_path.
+
+    Uses sim.client (UdacityGymEnv_RoadGen) directly and, if enabled,
+    shows a live image preview via ImageCallBack.
     """
+    if sim.client is None:
+        raise RuntimeError("UdacitySimulator.client is None. Did you call sim.connect()?")
+
+    env = sim.client
     history: List[dict] = []
 
-    # Reset the sim. Adjust this to your actual API.
-    obs = sim.reset()
-    done = False
-    step_idx = 0
-
-    start_time = time.perf_counter()
-
+    # Optional preview window
+    monitor: ImageCallBack | None = None
     try:
-        while not done:
-            # controller output (model or PID)
-            model_steer, model_throttle = controller.action(obs)
+        if getattr(sim, "show_image_cb", False):
+            monitor = ImageCallBack()
+            monitor.display_waiting_screen()
 
-            # position and waypoint index
-            info_before = {}
-            x, y = _extract_position(obs, info_before)
+        # Reset to the generated road; same API as in simulate_scanario
+        obs = env.reset(skip_generation=False, track_string=track_string)
+        # Initial observe to get info (position etc.)
+        obs, done, info = env.observe()
+
+        start_time = time.perf_counter()
+        step_idx = 0
+
+        while not done:
+            # Model action – adapter handles image preprocessing internally
+            model_actions = controller.action(obs)
+            model_actions = np.asarray(model_actions, dtype=np.float32)
+
+            # Expect shape (1, 2) or (batch, 2)
+            if model_actions.ndim == 1:
+                model_actions = model_actions.reshape(1, -1)
+
+            model_steer = float(model_actions[0][0])
+            model_throttle = float(model_actions[0][1])
+
+            # Position + waypoint index from info["pos"]
+            pos = info.get("pos")
+
+            # Use the first two entries as (x, y) to match road_points (x, y)
+            x = float(pos[0])
+            y = float(pos[1])
+
             wp_idx = nearest_wp_index(x, y, waypoints)
 
-            # apply scenario
-            (act_steer, act_throttle), phase, active_controls = apply_scenario(
+            # prints current waypoint index
+            print(f"[scenarios:genroads] step={step_idx:04d}  wp_idx={wp_idx:4d}  x={x:7.2f}  y={y:7.2f}", flush=True)
+
+            # Apply scenario
+            (act_steer, act_throttle), phase, active_controls, active_perts = apply_scenario(
                 scenario, wp_idx, (model_steer, model_throttle)
             )
 
-            # step sim (Gym-like assumed; adapt if needed)
-            obs_next, reward, done, info = sim.step((act_steer, act_throttle))
+            actual_actions = np.array([[act_steer, act_throttle]], dtype=np.float32)
 
-            pid_state = _extract_pid_state(obs_next, info)
+            # Clip to action space, same as in simulate_scanario
+            if isinstance(env.action_space, gym.spaces.Box):
+                actual_actions = np.clip(
+                    actual_actions, env.action_space.low, env.action_space.high
+                )
+
+            pert_summary = format_active_perturbations(active_perts)
+
+            # Preview image (show what we actually send to the sim)
+            if monitor is not None:
+                phase_label = phase.value
+                scenario_label = f"{scenario.name} (level {scenario.level}):\nRoad: {scenario.road}, Waypoint: {wp_idx}\nPhase: {phase_label} --> Perturbations: {pert_summary}\nComment: {scenario.comment}"
+                monitor.display_img(
+                    obs,
+                    f"{actual_actions[0][0]: .3f}",
+                    f"{actual_actions[0][1]: .3f}",
+                    scenario_label,
+                )
+
+            # Step env; UdacityGymEnv_RoadGen returns (obs, done, info)
+            obs_next, done, info_next = env.step(actual_actions)
+
+            pid_state = _extract_pid_state(info_next)
 
             history.append(
                 {
@@ -215,28 +266,36 @@ def run_scenario_episode(
                     "delta_steer": float(act_steer - model_steer),
                     "delta_throttle": float(act_throttle - model_throttle),
                     "pid_state": pid_state,
-                    "reward": float(reward) if reward is not None else None,
-                    "info": info,
+                    "reward": None,
+                    "info": info_next,
                 }
             )
 
             obs = obs_next
+            info = info_next
             step_idx += 1
 
             if max_steps is not None and step_idx >= max_steps:
                 break
 
-    except Exception as e:
         wall = time.perf_counter() - start_time
+        with log_path.open("w") as f:
+            json.dump({"steps": history}, f, indent=2)
+        return "ok", wall
+
+    except Exception as e:
+        wall = time.perf_counter() - start_time if "start_time" in locals() else 0.0
         with log_path.open("w") as f:
             json.dump({"steps": history, "error": str(e)}, f, indent=2)
         return f"error:{type(e).__name__}", wall
 
-    wall = time.perf_counter() - start_time
-    with log_path.open("w") as f:
-        json.dump({"steps": history}, f, indent=2)
-
-    return "ok", wall
+    finally:
+        if monitor is not None:
+            try:
+                monitor.display_disconnect_screen()
+                monitor.destroy()
+            except Exception:
+                pass
 
 
 def main() -> int:
@@ -278,8 +337,7 @@ def main() -> int:
         git_info=git_info,
     )
 
-    # NOTE: eval_runs.RunLogger expects cfg_perturbations here.
-    # We just store the scenario config in that slot.
+    # store scenario config in cfg_perturbations slot
     logger.snapshot_configs(
         sim_app=sim_app,
         ckpt=ckpt,
@@ -298,7 +356,7 @@ def main() -> int:
         for road_name, spec in roads.pick():
             angles = spec["angles"]
             segs = spec["segs"]
-            road_scenarios = scenarios.SCENARIOS_BY_ROAD.get(road_name, [])
+            road_scenarios = scenarios.SCENARIOS.get(road_name, [])
             if not road_scenarios:
                 print(f"[scenarios:genroads] road '{road_name}' has no scenarios, skipping.")
                 continue
@@ -313,18 +371,28 @@ def main() -> int:
             )
 
             try:
+                # launches Unity, creates UdacityGymEnv_RoadGen, sets initial_pos
                 sim.connect()
                 starting_pos = sim.initial_pos
 
-                # waypoints; adjust indexing if your waypoints carry more fields
-                wps_raw = roadgen.generate(
+                # Generate road in PerturbationDrive and pull:
+                # - track_string for env.reset(...)
+                # - road_points for waypoint geometry
+                track_string = roadgen.generate(
                     starting_pos=starting_pos,
                     angles=angles,
-                    seg_length=segs,
+                    seg_lengths=segs,  # correct keyword
                 )
-                waypoints = [(w[0], w[1]) for w in wps_raw]  # just x,y for nearest_wp_index
+                road = roadgen.previous_road
+                if road is None or not hasattr(road, "road_points"):
+                    raise RuntimeError(
+                        "CustomRoadGenerator did not populate previous_road. "
+                        "Check PerturbationDrive version / API."
+                    )
 
-                for scen in road_scenarios:
+                waypoints = [(p.x, p.y) for p in road.road_points]
+
+                for scen in (s for s in road_scenarios if getattr(s, "active", False)):
                     ep_idx += 1
 
                     meta = {
@@ -338,24 +406,23 @@ def main() -> int:
                             "speed": starting_pos[3],
                         },
                         "scenario_name": scen.name,
-                        "scenario": scen.to_dict(),        # full scenario content
+                        "scenario": scen.to_dict(),
                         "level": scen.level,
-                        "controller": model_name,           # or "pid" if you swap controller
+                        "controller": model_name,
                         "image_size": {"h": run.IMAGE_SIZE[0], "w": run.IMAGE_SIZE[1]},
                         "episodes": 1,
                         "ckpt_name": ckpt_name,
-                        # these two are for RunLogger.new_episode manifest entries
                         "perturbation": scen.name,
                         "severity": scen.level,
                     }
                     eid, ep_dir = logger.new_episode(ep_idx, meta)
 
-                    # eval_runs.RunLogger assumes the log file is named 'pd_log.json'
                     log_file = ep_dir / "pd_log.json"
 
                     status, wall = run_scenario_episode(
                         sim=sim,
                         controller=adapter,
+                        track_string=track_string,
                         waypoints=waypoints,
                         scenario=scen,
                         log_path=log_file,

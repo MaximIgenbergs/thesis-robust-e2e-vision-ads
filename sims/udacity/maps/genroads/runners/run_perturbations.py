@@ -26,12 +26,9 @@ from sims.udacity.maps.genroads.configs import paths, roads, run
 from sims.udacity.logging.eval_runs import RunLogger, prepare_run_dir, module_public_dict, best_effort_git_sha, pip_freeze
 from sims.udacity.adapters.dave2_adapter import Dave2Adapter
 from sims.udacity.adapters.dave2_gru_adapter import Dave2GRUAdapter
+
 from perturbationdrive import Scenario, PerturbationDrive
-try:
-    from perturbationdrive.RoadGenerator.CustomRoadGenerator import CustomRoadGenerator
-except ImportError: # TODO: remove one of the two
-    print("ImportError: falling back to alternative import for CustomRoadGenerator")
-    from perturbationdrive import CustomRoadGenerator
+from perturbationdrive.RoadGenerator.CustomRoadGenerator import CustomRoadGenerator
 from examples.udacity.udacity_simulator import UdacitySimulator
 
 
