@@ -199,4 +199,11 @@ sims/udacity/checkpoints/**/training_runs/
 
 external/TCP/**
 
-sims/udacity/binaries/**
+**/binaries/**
+
+eval/**
+external/perturbation-drive
+.gitignore
+unitylog.txt
+external/TCP
+external/vision_transformer/**

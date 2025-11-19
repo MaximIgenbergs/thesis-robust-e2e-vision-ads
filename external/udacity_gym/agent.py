@@ -164,7 +164,7 @@ class PIDUdacityAgent_Angle(UdacityAgent):
                 'Kp_angle': 0.01,
                 'Kd_angle': 0.002,
                 'Ki_angle': 0.0,
-                'Kp_speed': 0.15,
+                'Kp_speed': 0.2,
                 'Kd_speed': 0.0,
                 'Ki_speed': 0.0
             }

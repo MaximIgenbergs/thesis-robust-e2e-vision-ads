@@ -1,0 +1,25 @@
+carla_host: localhost
+carla_port: 62000
+
+leaderboard_script: external/TCP/leaderboard/leaderboard/leaderboard_evaluator.py
+routes_file: external/TCP/leaderboard/data/evaluation_routes/routes_lav_valid.xml
+traffic_scenarios_file: external/TCP/leaderboard/data/scenarios/all_towns_traffic_scenarios.json
+
+agent_script: sims/carla/robustness/agents/perturbed_tcp_agent.py
+agent_config: /home/maximigenbergs/Downloads/best_model.ckpt
+
+results_dir: results/carla_pd_scenarios/tcp
+
+
+scenarios:
+  - id: t02_r0_fog_s3
+    route_id: 0
+    town: Town02
+    tcp_pd_func: fog
+    tcp_pd_severity: 3
+
+  - id: t02_r0_clean
+    route_id: 0
+    town: Town02
+    tcp_pd_func: ""
+    tcp_pd_severity: 0

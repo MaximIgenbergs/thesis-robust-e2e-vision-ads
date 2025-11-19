@@ -12,7 +12,7 @@ machine = platform.machine()
 if system == "Darwin":
     SIM = BINARES_DIR / "udacity_macos_silicon/udacity_sim_weather_sky_ready_angles_fortuna.app" 
 elif system == "Linux":
-    SIM = REPO_ROOT / "external/perturbation-drive/examples/udacity/sim/udacity_linux/udacity_binary.x86_64"
+    SIM = BINARES_DIR / "udacity_linux/udacity_binary.x86_64"
 else:
     raise RuntimeError(f"Unsupported platform: {system}")
 

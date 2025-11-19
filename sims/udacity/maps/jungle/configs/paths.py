@@ -27,3 +27,4 @@ DATA_DIR.mkdir(parents=True, exist_ok=True)
 # Checkpoints
 DAVE2_CKPT = CKPTS_DIR / "dave2/jungle_20251107-173326/best_model.h5"
 DAVE2_GRU_CKPT = CKPTS_DIR / "dave2_gru/jungle_20251103-150739/best_model.h5"
+VIT_CKPT = CKPTS_DIR / "vit/jungle_20251119-124028/best_model.ckpt"

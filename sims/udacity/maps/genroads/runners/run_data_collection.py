@@ -15,7 +15,7 @@ Outputs:
     record_000001.json
     ...
 
-No CLI; SIM and DATA_DIR are taken from sims/udacity/maps/genroads/configs/paths.py
+SIM and DATA_DIR are taken from sims/udacity/maps/genroads/configs/paths.py
 """
 
 from __future__ import annotations
@@ -24,7 +24,7 @@ import time
 from pathlib import Path
 from typing import Union
 
-# --- project roots on sys.path (mirror other runners) ---
+# add project root & perturbation-drive to path
 ROOT = Path(__file__).resolve().parents[5]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
@@ -32,19 +32,13 @@ PD_DIR = ROOT / "external" / "perturbation-drive"
 if str(PD_DIR) not in sys.path:
     sys.path.insert(0, str(PD_DIR))
 
-# --- configs & helpers ---
 from sims.udacity.maps.configs.run import HOST, PORT
 from sims.udacity.maps.genroads.configs import paths as gen_paths, roads
 from sims.udacity.logging.data_collection import make_run_dir, convert_outputs
 
-# --- PerturbationDrive & Udacity wrapper from PD ---
 from perturbationdrive import PerturbationDrive
-try:
-    # Prefer the namespaced import if available
-    from perturbationdrive.RoadGenerator.CustomRoadGenerator import CustomRoadGenerator
-except ImportError:
-    from perturbationdrive import CustomRoadGenerator
-from examples.udacity.udacity_simulator import UdacitySimulator  # PD's wrapper (visible UI)
+from perturbationdrive.RoadGenerator.CustomRoadGenerator import CustomRoadGenerator
+from examples.udacity.udacity_simulator import UdacitySimulator
 
 # ---- helpers ----
 
@@ -70,7 +64,7 @@ def collect_genroads() -> None:
     sim_exe = str(_udacity_sim_path())
 
     print(f"[collect:genroads] run_dir={run_dir}")
-    print(f"[collect:genroads] roads set='data_collection'")
+    print("[collect:genroads] roads set='data_collection'") # TODO: what is that. is there a config missing? 
 
     # Iterate deterministic data-collection roads
     for road_name, spec in roads.pick("data_collection"):

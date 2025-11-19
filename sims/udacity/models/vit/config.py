@@ -1,0 +1,9 @@
+DATA_DIR = "/home/maximigenbergs/thesis-robust-e2e-vision-ads/data/udacity/jungle/pid_20251107-160612"
+MAP_NAME = "jungle"
+MODEL_NAME = "vit"
+EPOCHS = 1000
+BATCH_SIZE_TRAIN = 64
+BATCH_SIZE_VAL = 16
+PATIENCE = 25
+ACCELERATOR = "gpu"
+DEVICE = "0"
