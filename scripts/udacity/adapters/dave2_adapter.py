@@ -31,27 +31,27 @@ class Dave2Adapter(ADS):
     def reset(self) -> None:
         return  # not a stateful model, function will not be used
 
-    def action(self, observation: np.ndarray) -> tuple[float, float]:
+    def action(self, observation: np.ndarray) -> np.ndarray:
         """
-        Return the control command for one image.
+        Return the control command for one image as [[steer, throttle]].
         """
         return self.predict(observation)
 
     # Functions
 
-    def __call__(self, frame: np.ndarray) -> tuple[float, float]:
+    def __call__(self, frame: np.ndarray) -> np.ndarray:
         return self.predict(frame)
 
-    def predict(self, image: np.ndarray) -> tuple[float, float]:
+    def predict(self, image: np.ndarray) -> np.ndarray:
         """
-        Run the model on an image and return (steer, throttle).
+        Run the model on an image and return [[steer, throttle]].
         """
         x = self.preprocess(image)
         y = self.model(x, training=False).numpy()
 
         steer = float(y[0, 0])
         throttle = float(y[0, 1])
-        return steer, throttle
+        return np.asarray([[steer, throttle]], dtype=np.float32)
 
     def load_model(self, weights: Optional[Path]) -> tf.keras.Model:  # type: ignore
         """
