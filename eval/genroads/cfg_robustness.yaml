@@ -1,0 +1,236 @@
+experiment:
+  name: "udacity_genroads_robustness"
+  map: "genroads"
+  test_type: "robustness"
+
+  default_model: "dave2_gru" # dave2, dave2_gru, vit <-- can be overridden by --model arg
+
+paths: # repo-relative
+  ckpts_dir: "scripts/udacity/checkpoints"
+  runs_dir: "runs/genroads"
+  data_dir: "data/genroads"
+
+sim:
+  binary: "binaries/genroads/udacity_macos_silicon/udacity_sim_weather_sky_ready_angles_fortuna.app" # "binaries/genroads/udacity_linux/udacity_binary.x86_64"
+  host: "127.0.0.1"
+  port: 9091
+
+  weather: "sunny"
+  daytime: "day"
+
+models:
+  dave2:
+    checkpoint: "dave2/genroads_20251028-145557/best_model.h5"
+    image_size_hw: [120, 160]
+    normalize: "imagenet"
+
+  dave2_gru:
+    checkpoint: "dave2_gru/genroads_20251028-142517/best_model.h5"
+    sequence_length: 3
+    image_size_hw: [120, 160]
+    normalize: "imagenet"
+
+run:
+  image_size_hw: [120, 160]
+  show_image: true
+  reconnect: true # reconnect between severities for stability
+  reconnect_cooldown_s: 8.0 # sleep between reconnects
+  road_cooldown_s: 3.0 # sleep after each road
+
+logging:
+  snapshot_configs: true
+  snapshot_env: true
+  include_git_sha:
+    thesis_repo: true
+    perturbation_drive: true
+
+perturbations:
+  severities: [1, 2, 3, 4]
+  episodes: 1 # runs per (perturb, severity) pair
+
+  # Only loads dynamic masks for perturbations in the current chunk
+  chunks:
+    # Weather
+    - ["dynamic_rain_filter"]
+    - ["dynamic_snow_filter", "frost_filter", "fog_filter"]
+    - ["dynamic_sun_filter"]
+    - ["dynamic_lightning_filter"]
+    - ["dynamic_smoke_filter"]
+
+    # Blur & focus
+    - ["motion_blur", "defocus_blur", "gaussian_blur", "low_pass_filter"]
+
+    # Noise & compression
+    - [
+        "gaussian_noise",
+        "poisson_noise",
+        "impulse_noise",
+        "speckle_noise_filter",
+        "jpeg_filter",
+        "pixelate",
+      ]
+
+    # Color & tone
+    - [
+        "increase_brightness",
+        "contrast",
+        "white_balance_filter",
+        "saturation_filter",
+        "saturation_decrease_filter",
+        "posterize_filter",
+        "histogram_equalisation",
+        "grayscale_filter",
+        "false_color_filter",
+        "high_pass_filter",
+        "low_pass_filter",
+        "phase_scrambling",
+      ]
+
+    # Distortions & graphics
+    - ["elastic", "cutout_filter", "sample_pairing_filter"]
+    - [
+        "splatter_mapping",
+        "dotted_lines_mapping",
+        "zigzag_mapping",
+        "canny_edges_mapping",
+      ]
+
+    # Geometry (safe subset)
+    - ["translate_image", "scale_image"]
+
+    # Overlays
+    - ["dynamic_object_overlay", "static_object_overlay", "reflection_filter"]
+
+  # Used when chunks is empty (loads all dynamic masks once)
+  list:
+    - fog_filter
+    - dynamic_rain_filter
+    - dynamic_snow_filter
+    - dynamic_sun_filter
+    - dynamic_lightning_filter
+    - dynamic_smoke_filter
+
+    - static_rain_filter
+    - static_snow_filter
+    - static_sun_filter
+    - static_lightning_filter
+    - static_smoke_filter
+    - frost_filter
+
+    # Blur / focus
+    - motion_blur
+    - defocus_blur
+    - gaussian_blur
+
+    # Noise & compression
+    - gaussian_noise
+    - poisson_noise
+    - impulse_noise
+    - speckle_noise_filter
+    - jpeg_filter
+    - pixelate
+
+    # Color / tone
+    - increase_brightness
+    - contrast
+    - white_balance_filter
+    - saturation_filter
+    - saturation_decrease_filter
+    - posterize_filter
+    - histogram_equalisation
+    - grayscale_filter
+    - false_color_filter
+    - phase_scrambling
+
+    # Distortions & graphics
+    - elastic
+    - cutout_filter
+    - sample_pairing_filter
+    - splatter_mapping
+    - dotted_lines_mapping
+    - zigzag_mapping
+    - canny_edges_mapping
+
+    # Geometric (safe subset)
+    - translate_image
+    - scale_image
+
+    # Overlays
+    - reflection_filter
+    - dynamic_object_overlay
+    - static_object_overlay
+
+  all:
+    - fog_filter
+    - dynamic_rain_filter
+    - static_rain_filter
+    - dynamic_raindrop_filter
+    - dynamic_snow_filter
+    - static_snow_filter
+    - frost_filter
+    - dynamic_sun_filter
+    - static_sun_filter
+    - dynamic_lightning_filter
+    - static_lightning_filter
+    - dynamic_smoke_filter
+    - static_smoke_filter
+
+    # Blur / focus
+    - defocus_blur
+    - motion_blur
+    - gaussian_blur
+    - low_pass_filter
+
+    # Noise & compression
+    - gaussian_noise
+    - poisson_noise
+    - impulse_noise
+    - speckle_noise_filter
+    - jpeg_filter
+    - pixelate
+
+    # Distortions
+    - elastic
+    - sample_pairing_filter
+
+    # Graphics / occlusions
+    - cutout_filter
+    - splatter_mapping
+    - dotted_lines_mapping
+    - zigzag_mapping
+    - canny_edges_mapping
+
+    # Color / tone
+    - increase_brightness
+    - contrast
+    - white_balance_filter
+    - saturation_filter
+    - saturation_decrease_filter
+    - posterize_filter
+    - histogram_equalisation
+    - grayscale_filter
+    - false_color_filter
+    - high_pass_filter
+    - low_pass_filter
+    - phase_scrambling
+
+    # Geometry
+    - translate_image
+    - scale_image
+
+    # Overlays
+    - reflection_filter
+    - dynamic_object_overlay
+    - static_object_overlay
+
+    # Explicitly excluded:
+    # - zoom_blur
+    # - shear_image
+    # - rotate_image
+    # - cycle_consistent
+    # - candy
+    # - la_muse
+    # - mosaic
+    # - feathers
+    # - the_scream
+    # - udnie

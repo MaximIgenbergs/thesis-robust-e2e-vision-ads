@@ -3,7 +3,7 @@ import tensorflow as tf
 from tensorflow.keras import layers, models, optimizers # type: ignore
 from .config import INPUT_SHAPE, NUM_OUTPUTS, LEARNING_RATE
 
-def build_model(num_outputs: int = NUM_OUTPUTS) -> tf.keras.Model: # type: ignore
+def build_dave2(num_outputs: int = NUM_OUTPUTS) -> tf.keras.Model: # type: ignore
     """PilotNet/DAVE-2 backbone as in PD's example; no behavior changes."""
     row, col, ch = INPUT_SHAPE
     img_in = layers.Input(shape=(row, col, ch), name="img_in")

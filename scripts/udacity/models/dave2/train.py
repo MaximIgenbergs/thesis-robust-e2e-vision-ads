@@ -3,7 +3,7 @@ import math
 from datetime import datetime, timezone
 import tensorflow as tf  # type: ignore
 
-from scripts.udacity.models.dave2.model import build_model
+from scripts.udacity.models.dave2.model import build_dave2
 from scripts.udacity.models.dave2.utils.data import make_filelists, data_generator
 from scripts.udacity.logging.training_runs import make_run_dir, write_meta, loss_plot
 from scripts.udacity.models.dave2.config import MAP_NAME, MODEL_NAME, DATA_DIR, INPUT_SHAPE, NUM_OUTPUTS, LEARNING_RATE, ALPHA_STEER, VAL_SPLIT, RANDOM_SEED, BATCH_SIZE, EPOCHS, PATIENCE, AUGMENTATIONS
@@ -31,7 +31,7 @@ def main():
     best_path = run_dir / "best_model.h5"
     hist_csv = run_dir / "history.csv"
 
-    model = build_model(num_outputs=NUM_OUTPUTS)
+    model = build_dave2(num_outputs=NUM_OUTPUTS)
     opt = tf.keras.optimizers.Adam(learning_rate=LEARNING_RATE)
     model.compile(optimizer=opt, loss=weighted_mse, metrics=[tf.keras.metrics.MeanSquaredError(name="mse")])
     model.summary()
