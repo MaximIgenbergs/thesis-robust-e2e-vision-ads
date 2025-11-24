@@ -1,7 +1,9 @@
 from __future__ import annotations
+
 from collections import deque
 from pathlib import Path
 from typing import Deque, Optional
+
 import numpy as np
 import tensorflow as tf
 
@@ -32,7 +34,7 @@ class Dave2GRUAdapter(ADS):
     def reset(self) -> None:
         self.buffer.clear()
 
-    def action(self, observation: np.ndarray) -> tuple[float, float, float]:
+    def action(self, observation: np.ndarray) -> tuple[float, float]:
         """
         Return the control command for one image.
         """
@@ -40,12 +42,12 @@ class Dave2GRUAdapter(ADS):
 
     # Functions
 
-    def __call__(self, frame: np.ndarray) -> tuple[float, float, float]:
+    def __call__(self, frame: np.ndarray) -> tuple[float, float]:
         return self.predict(frame)
 
-    def predict(self, image: np.ndarray) -> tuple[float, float, float]:
+    def predict(self, image: np.ndarray) -> tuple[float, float]:
         """
-        Run the sequence model on an image and return (steer, throttle, brake).
+        Run the sequence model on an image and return (steer, throttle).
         """
         frame = self.preprocess_frame(image)
 
@@ -55,8 +57,8 @@ class Dave2GRUAdapter(ADS):
         else:
             self.buffer.append(frame)
 
-        seq = np.stack(list(self.buffer), axis=0) # (T, H, W, C)
-        x = tf.convert_to_tensor(seq[np.newaxis, ...]) # (1, T, H, W, C)
+        seq = np.stack(list(self.buffer), axis=0)  # (T, H, W, C)
+        x = tf.convert_to_tensor(seq[np.newaxis, ...])  # (1, T, H, W, C)
         y = self.model(x, training=False).numpy()
 
         if y.shape[-1] == 1:
@@ -66,8 +68,7 @@ class Dave2GRUAdapter(ADS):
             steer = float(y[0, 0])
             throttle = float(y[0, 1])
 
-        brake = 0.0
-        return steer, throttle, brake
+        return steer, throttle
 
     def load_model(self, weights: Optional[Path]) -> tf.keras.Model:  # type: ignore
         """
