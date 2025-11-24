@@ -1,0 +1,89 @@
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Optional
+
+import numpy as np
+import tensorflow as tf
+
+from perturbationdrive import ADS
+from scripts.udacity.models.dave2.model import build_dave2
+
+
+class Dave2Adapter(ADS):
+
+    def __init__(self, weights: Optional[Path] = None, image_size_hw: tuple[int, int] = (66, 200), device: Optional[str] = None, normalize: str = "imagenet") -> None:
+        super().__init__()
+        self._name = "dave2"
+        self.device = device
+        self._normalize = normalize
+
+        h, w = image_size_hw
+        self._input_shape = (int(h), int(w), 3)
+
+        self.model = self.load_model(weights)
+
+    # ADS interface
+
+    def name(self) -> str:
+        return self._name
+
+    def reset(self) -> None: 
+        return # not a stateful model, function wont be used.
+
+    def action(self, observation: np.ndarray) -> tuple[float, float, float]:
+        """
+        Return the control command for one image.
+        """
+        return self.predict(observation)
+
+    # Functions
+
+    def __call__(self, frame: np.ndarray) -> tuple[float, float, float]:
+        return self.predict(frame)
+
+    def predict(self, image: np.ndarray) -> tuple[float, float, float]:
+        """
+        Run the model on an image and return (steer, throttle, brake).
+        """
+        x = self.preprocess(image)
+        y = self.model(x, training=False).numpy()
+
+        steer = float(y[0, 0])
+        throttle = float(y[0, 1])
+        brake = 0.0
+        return steer, throttle, brake
+
+    def load_model(self, weights: Optional[Path]) -> tf.keras.Model:  # type: ignore
+        """
+        Build the model for the configured input shape and load weights if a path is given.
+        """
+        if weights is None:
+            return build_dave2(input_shape=self._input_shape)
+
+        wpath = str(weights)
+        try:
+            return tf.keras.models.load_model(wpath, compile=False)
+        except Exception:
+            model = build_dave2(input_shape=self._input_shape)
+            model.load_weights(wpath)
+            return model
+
+    def preprocess(self, image: np.ndarray) -> tf.Tensor:
+        """
+        Resize and normalize an image to match the training format.
+        """
+        if image.dtype != np.uint8:
+            image = image.astype(np.uint8, copy=False)
+
+        target_h, target_w, _ = self._input_shape
+
+        t = tf.convert_to_tensor(image, dtype=tf.uint8)
+        t = tf.image.resize(
+            t,
+            size=(target_h, target_w),
+            method=tf.image.ResizeMethod.BILINEAR,
+        )
+        t = tf.cast(t, tf.float32) / 127.5 - 1.0
+        t = tf.expand_dims(t, axis=0)
+        return t
