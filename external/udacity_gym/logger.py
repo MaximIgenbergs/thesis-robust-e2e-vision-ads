@@ -53,6 +53,7 @@ class ScenarioOutcomeLite:
     frames: List[int]
     pos: List[List[float]]                  # [[x,y,z], ...]
     xte: List[float]
+    angle_diff: List[float]
     speeds: List[float]
     actions: List[List[float]]              # [[steer, throttle], ...]
     pid_actions: List[List[float]]          # keep empty if unused

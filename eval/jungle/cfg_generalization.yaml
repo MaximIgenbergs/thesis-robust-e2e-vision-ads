@@ -1,0 +1,50 @@
+experiment:
+  name: "udacity_jungle_generalization"
+  map: "jungle" # jungle or jungle_reverse
+  test_type: "generalization"
+
+  default_model: "dave2_gru" # dave2, dave2_gru, vit <-- can be overridden by --model arg
+
+paths: # repo relative
+  ckpts_dir: "scripts/udacity/checkpoints"
+  runs_dir: "runs/jungle"
+  data_dir: "data/jungle"
+
+sim:
+  binary: "binaries/jungle/udacity_macos_silicon/udacity.app" # "binaries/jungle/udacity_linux/udacity.x86_64"
+  host: "127.0.0.1"
+  port: 9091
+
+  weather: "sunny"
+  daytime: "day"
+
+models:
+  dave2:
+    checkpoint: "dave2/jungle_20251107-173326/best_model.h5"
+    image_size_hw: [120, 160]
+    normalize: "imagenet"
+
+  dave2_gru:
+    checkpoint: "dave2_gru/jungle_20251103-150739/best_model.h5"
+    image_size_hw: [120, 160]
+    normalize: "imagenet"
+
+  vit:
+    checkpoint: "vit/jungle_20251119-124028/best_model.ckpt"
+    image_size_hw: [120, 160]
+    normalize: "imagenet"
+
+run:
+  image_size_hw: [120, 160]
+  steps_per_episode: 2000
+  episodes: 1 # amount of runs
+  start_waypoint: 200 # must be between 0 and 999
+  save_images: false
+  show_image: true
+
+logging:
+  snapshot_configs: true
+  snapshot_env: true
+  include_git_sha:
+    thesis_repo: true
+    perturbation_drive: true

@@ -3,7 +3,7 @@ Robustness evaluation of a model on the Udacity jungle map using image perturbat
 
 Arguments:
     --model MODEL_NAME
-        Override experiment.default_model from eval/udacity/jungle/cfg_robustness.yaml.
+        Override experiment.default_model from eval/jungle/cfg_robustness.yaml.
         Examples: --model dave2, --model dave2_gru, --model vit
 """
 
@@ -13,6 +13,16 @@ import time
 from pathlib import Path
 import numpy as np
 import yaml
+
+import sys
+import multiprocessing as mp
+
+if sys.platform == "darwin":
+    try:
+        mp.set_start_method("fork", force=True)
+    except RuntimeError:
+        # start method was already set somewhere else; ignore
+        pass
 
 from external.udacity_gym import UdacitySimulator, UdacityGym, UdacityAction
 from external.udacity_gym.agent_callback import PDPreviewCallback
@@ -43,7 +53,8 @@ def build_adapter(model_name: str, model_cfg: dict, ckpts_dir: Path):
         return (Dave2Adapter(weights=ckpt, image_size_hw=image_size_hw, device=None, normalize=normalize), ckpt)
 
     if model_name == "dave2_gru":
-        return (Dave2GRUAdapter(weights=ckpt, image_size_hw=image_size_hw, device=None, normalize=normalize), ckpt)
+        seq_len = int(model_cfg.get("sequence_length", 3))
+        return (Dave2GRUAdapter(weights=ckpt, image_size_hw=image_size_hw, seq_len=seq_len, device=None, normalize=normalize), ckpt)
 
     raise ValueError(f"Unknown model '{model_name}' in eval/udacity/jungle/cfg_robustness.yaml")
 
@@ -115,6 +126,7 @@ def run_episode(env: UdacityGym, adapter, preview: PDPreviewCallback, controller
 
     frames: list[int] = []
     xte: list[float] = []
+    angle_diff: list[float] = []
     speeds: list[float] = []
     actions: list[list[float]] = []
     pos: list[list[float]] = []
@@ -124,6 +136,7 @@ def run_episode(env: UdacityGym, adapter, preview: PDPreviewCallback, controller
 
     offtrack_count = 0
     collision_count = 0
+    stop_requested = False
 
     step = 0
     t0 = time.perf_counter()
@@ -156,13 +169,13 @@ def run_episode(env: UdacityGym, adapter, preview: PDPreviewCallback, controller
                 thr = out.get("throttle", out.get("accel", out.get("throttle_cmd", 0.0)))
                 action = UdacityAction(
                     steering_angle=float(np.clip(float(steer), -1.0, 1.0)),
-                    throttle=float(np.clip(float(thr), 0.0, 1.0)),
+                    throttle=float(np.clip(float(thr), -1.0, 1.0)),
                 )
             else:
                 arr = np.array(out).reshape(-1)
                 action = UdacityAction(
                     steering_angle=float(np.clip(float(arr[0]), -1.0, 1.0)),
-                    throttle=float(np.clip(float(arr[1]), 0.0, 1.0)),
+                    throttle=float(np.clip(float(arr[1]), -1.0, 1.0)),
                 )
 
             preview(obs, display_image_np=pert_np, action=action, perturbation=pert_name)
@@ -170,21 +183,9 @@ def run_episode(env: UdacityGym, adapter, preview: PDPreviewCallback, controller
             last_time = obs.time
             obs, reward, terminated, truncated, info = env.step(action)
 
-            events = (info or {}).get("events") or []
-            for e in events:
-                key = (e.get("key") or e.get("type") or "").lower()
-                if key == "out_of_track":
-                    offtrack_count += 1
-                elif key == "collision":
-                    collision_count += 1
-
-            if (info or {}).get("out_of_track") is True:
-                offtrack_count += 1
-            if (info or {}).get("collision") is True:
-                collision_count += 1
-
             frames.append(step)
             xte.append(float(getattr(obs, "cte", 0.0)))
+            angle_diff.append(float((obs.get_metrics() or {}).get("angleDiff", 0.0)))
             speeds.append(float(getattr(obs, "speed", 0.0)))
             px, py, pz = obs.position
             pos.append([float(px), float(py), float(pz)])
@@ -194,24 +195,32 @@ def run_episode(env: UdacityGym, adapter, preview: PDPreviewCallback, controller
                 time.sleep(0.0025)
                 obs = env.observe()
 
-            if step > 0 and (step % 200) == 0:
-                print(f"[eval:jungle:robustness][DEBUG] step={step} offtrack={offtrack_count} collisions={collision_count}")
-
             step += 1
 
+    except KeyboardInterrupt:
+        stop_requested = True
+        print(f"\n[eval:jungle:robustness][WARN] episode {pert_name}@{severity} interrupted by user."
+              f"Attempting to finish writing logs...")
     finally:
         wall = time.perf_counter() - t0
         delta = settle_metrics(env, metrics_base, settle_seconds=1.5, probe_hz=10.0)
-        offtrack_count = max(offtrack_count, int(delta["outOfTrackCount"]))
-        collision_count = max(collision_count, int(delta["collisionCount"]))
-        print(f"[eval:jungle:robustness][INFO] episode {pert_name}@{severity}: steps={step} wall={wall:.1f}s offtrack_count={offtrack_count} collisions={collision_count}")
+        offtrack_count = int(delta["outOfTrackCount"])
+        collision_count = int(delta["collisionCount"])
 
-    is_success = True
+        print(
+            f"[eval:jungle:robustness][INFO] episode {pert_name}@{severity}: "
+            f"steps={step} wall={wall:.1f}s "
+            f"offtrack_count={offtrack_count} collisions={collision_count} "
+            f"{'(interrupted)' if stop_requested else ''}"
+        )
+
+    is_success = not stop_requested
 
     return ScenarioOutcomeLite(
         frames=frames,
         pos=pos,
         xte=xte,
+        angle_diff=angle_diff,
         speeds=speeds,
         actions=actions,
         pid_actions=[],
@@ -221,7 +230,7 @@ def run_episode(env: UdacityGym, adapter, preview: PDPreviewCallback, controller
             road=track,
         ),
         isSuccess=bool(is_success),
-        timeout=False,
+        timeout=bool(stop_requested),
         original_images=original_images,
         perturbed_images=perturbed_images,
         offtrack_count=int(offtrack_count),
@@ -276,7 +285,6 @@ def main() -> int:
         map_name=exp_cfg.get("map", "jungle"),
         test_type=exp_cfg.get("test_type", "robustness"),
         model_name=model_name,
-        tag=ckpt_name,
     )
     print(f"[eval:jungle:robustness][INFO] model={model_name} logs -> {run_dir}")
 
@@ -349,10 +357,9 @@ def main() -> int:
                         eid, ep_dir = logger.new_episode(ep_idx, meta)
 
                         writer = ScenarioOutcomeWriter(
-                            str(ep_dir / "logs.json"),
+                            str(ep_dir / "log.json"),
                             overwrite_logs=True,
                         )
-                        log_file = ep_dir / "pd_log.json"
 
                         t0 = time.perf_counter()
                         try:
@@ -371,15 +378,21 @@ def main() -> int:
                             )
                             writer.write([outcome], images=save_images)
 
-                            with log_file.open("w", encoding="utf-8") as f:
-                                f.write("{}\n")
+                            if outcome.timeout:
+                                status = "interrupted"
+                            elif outcome.isSuccess:
+                                status = "ok"
+                            else:
+                                status = "fail_offtrack"
 
-                            status = "ok" if outcome.isSuccess else "fail_offtrack"
                             logger.complete_episode(
                                 eid,
                                 status=status,
                                 wall_time_s=(time.perf_counter() - t0),
                             )
+
+                            if outcome.timeout:
+                                raise KeyboardInterrupt
 
                         except Exception as e:
                             logger.complete_episode(

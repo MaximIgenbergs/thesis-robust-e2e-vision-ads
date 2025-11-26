@@ -1,6 +1,6 @@
 experiment:
   name: "udacity_jungle_robustness"
-  map: "jungle" # jungle, jungle_reverse
+  map: "jungle" # jungle or jungle_reverse
   test_type: "robustness"
 
   default_model: "dave2_gru" # dave2, dave2_gru, vit <-- can be overridden by --model arg
@@ -21,17 +21,18 @@ sim:
 models:
   dave2:
     checkpoint: "dave2/jungle_20251107-173326/best_model.h5"
-    image_size_hw: [240, 320]
+    image_size_hw: [120, 160]
     normalize: "imagenet"
 
   dave2_gru:
     checkpoint: "dave2_gru/jungle_20251103-150739/best_model.h5"
-    image_size_hw: [240, 320]
+    sequence_length: 3
+    image_size_hw: [120, 160]
     normalize: "imagenet"
 
   vit:
     checkpoint: "vit/jungle_20251119-124028/best_model.ckpt"
-    image_size_hw: [240, 320]
+    image_size_hw: [120, 160]
     normalize: "imagenet"
 
 run:

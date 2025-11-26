@@ -179,8 +179,7 @@ def main() -> int:
 
                 adapter.reset()
 
-                if reconnect:
-                    # Reconnect for each (perturbation, severity) pair
+                if reconnect: # Reconnect for each run
                     for chunk in chunks:
                         for pert in chunk:
                             for sev in severities:
@@ -202,7 +201,7 @@ def main() -> int:
                                     "ckpt_name": ckpt_name,
                                 }
                                 eid, ep_dir = logger.new_episode(ep_idx, meta)
-                                log_file = ep_dir / "pd_log.json"
+                                log_file = ep_dir / "log.json"
 
                                 scens = make_scenarios(waypoints, [pert], [sev], episodes)
                                 t0 = time.perf_counter()
@@ -221,8 +220,7 @@ def main() -> int:
                                 time.sleep(reconnect_cooldown_s)
                                 bench.simulator.connect()
                                 adapter.reset()
-                else:
-                    # Single session for all severities
+                else: # Single session for all severities
                     for chunk in chunks:
                         for pert in chunk:
                             ep_idx += 1
@@ -243,7 +241,7 @@ def main() -> int:
                                 "ckpt_name": ckpt_name,
                             }
                             eid, ep_dir = logger.new_episode(ep_idx, meta)
-                            log_file = ep_dir / "pd_log.json"
+                            log_file = ep_dir / "log.json"
 
                             scens = make_scenarios(waypoints, [pert], severities, episodes)
                             t0 = time.perf_counter()
