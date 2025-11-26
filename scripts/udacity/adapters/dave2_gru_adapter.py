@@ -61,13 +61,8 @@ class Dave2GRUAdapter(ADS):
         x = tf.convert_to_tensor(seq[np.newaxis, ...])  # (1, T, H, W, C)
         y = self.model(x, training=False).numpy()
 
-        if y.shape[-1] == 1:
-            steer = float(y[0, 0])
-            throttle = 0.30
-        else:
-            steer = float(y[0, 0])
-            throttle = float(y[0, 1])
-
+        steer = float(y[0, 0])
+        throttle = float(y[-1, 1])
         return np.asarray([[steer, throttle]], dtype=np.float32)
 
     def load_model(self, weights: Optional[Path]) -> tf.keras.Model:  # type: ignore

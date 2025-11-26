@@ -50,7 +50,7 @@ class Dave2Adapter(ADS):
         y = self.model(x, training=False).numpy()
 
         steer = float(y[0, 0])
-        throttle = float(y[0, 1])
+        throttle = float(y[-1, 1])
         return np.asarray([[steer, throttle]], dtype=np.float32)
 
     def load_model(self, weights: Optional[Path]) -> tf.keras.Model:  # type: ignore
