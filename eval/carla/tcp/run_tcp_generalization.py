@@ -36,7 +36,7 @@ def run_eval_set(carla_cfg: Dict[str, Any], agent_cfg: Dict[str, Any], results_r
     print(f"[eval:carla:tcp:generalization][INFO] scenarios: {scenarios_rel}")
     print("[eval:carla:tcp:generalization][INFO] routes_files:")
     for r in routes_rel_list:
-        print(f"[eval:carla:tcp:generalization][INFO] {r}")
+        print(f"[eval:carla:tcp:generalization][INFO] - {r}")
 
     tcp_root = abs_path("external/TCP")
     sr_dir = tcp_root / "scenario_runner"
