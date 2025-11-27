@@ -207,3 +207,6 @@ external/TCP
 external/vision_transformer/**
 
 external/carla-test/runs/**
+
+scripts/carla/checkpoints/**
+scripts/udacity/checkpoints/**
