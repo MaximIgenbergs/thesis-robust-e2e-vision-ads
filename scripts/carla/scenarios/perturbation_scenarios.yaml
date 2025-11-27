@@ -1,0 +1,23 @@
+- id: t02_r0_fog_s4
+  route_id: 0
+  pd_func: fog_filter
+  severity: 2
+  description: Super strong fog
+
+# - id: t02_r0_clean
+#   route_id: 0
+#   pd_func: ""
+#   severity: 0
+#   description: Clean baseline
+
+# - id: t02_r0_fog_s3
+#   route_id: 0
+#   pd_func: fog
+#   severity: 3
+#   description: Strong fog
+
+# - id: t05_r1_noise_s2
+#   route_id: 1
+#   pd_func: gaussian_noise
+#   severity: 2
+#   description: Gaussian noise on RGB camera

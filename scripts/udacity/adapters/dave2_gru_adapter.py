@@ -74,16 +74,12 @@ class Dave2GRUAdapter(ADS):
         """
         Build the model for the configured input shape and sequence length, then load weights.
         """
-        if weights is None:
-            return build_dave2_gru(input_shape=self._input_shape, seq_len=self.seq_len)
-
         wpath = str(weights)
         try:
             return tf.keras.models.load_model(wpath, compile=False)
         except Exception:
-            model = build_dave2_gru(input_shape=self._input_shape, seq_len=self.seq_len)
-            model.load_weights(wpath)
-            return model
+            print(f"[scripts:adapter:dave2_gru][WARN] Failed to load model from {wpath}. Ensure the model architecture matches the weights.")
+            raise
 
     def preprocess_frame(self, image: np.ndarray) -> np.ndarray:
         """

@@ -1,0 +1,17 @@
+carla:
+  host: localhost
+  port: 62100
+
+run:
+  script: external/TCP/leaderboard/leaderboard/leaderboard_evaluator.py
+  routes_file: scripts/carla/routes/routes_lav_valid.xml
+  carla_scenarios_file: scripts/carla/scenarios/all_towns_traffic_scenarios.json
+  perturbation_scenarios_file: scripts/carla/scenarios/perturbation_scenarios.yaml
+
+agent:
+  script: scripts/carla/agents/perturbation_agent.py
+  checkpoint: scripts/carla/checkpoints/tcp_carla_repro/best_model.ckpt
+
+output:
+  results_dir: runs/carla/robustness
+

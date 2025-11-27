@@ -26,5 +26,5 @@ def build_dave2(num_outputs: int = NUM_OUTPUTS) -> tf.keras.Model: # type: ignor
     model = models.Model(inputs=img_in, outputs=out, name="dave2")
     opt = optimizers.Adam(learning_rate=LEARNING_RATE)
 
-    model.compile(optimizer=opt, loss="mse", metrics=[tf.keras.metrics.MeanAbsoluteError(name="mae")]) # PD used "acc" in examples, but that's not meaningful for regression. Use MAE.
+    model.compile(optimizer=opt, loss="mse", metrics=[tf.keras.metrics.MeanAbsoluteError(name="mae")]) # PD used "acc" in examples, but that's not meaningful for regression. So im using MAE.
     return model

@@ -9,6 +9,10 @@ PD_DIR = ROOT / "external" / "perturbation-drive"
 if str(PD_DIR) not in sys.path: 
     sys.path.insert(0, str(PD_DIR))
 
+TCP_ROOT = ROOT / "external" / "TCP" # TODO: could be an issue if loaded every time and wrong venv is selected that doesnt contain anything to do with TCP. lets see. 
+if str(TCP_ROOT) not in sys.path:
+    sys.path.insert(0, str(TCP_ROOT))
+
 def abs_path(p: Optional[Union[str, Path]] = None) -> Path:
     """
     Resolve a path against the repository root.

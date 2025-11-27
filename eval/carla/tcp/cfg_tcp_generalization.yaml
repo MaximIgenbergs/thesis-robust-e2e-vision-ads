@@ -1,0 +1,71 @@
+carla:
+  host: localhost
+  port: 62100
+  launch_script: external/TCP/leaderboard/leaderboard/leaderboard_evaluator.py
+
+  # Leaderboard CLI args (global defaults for all runs)
+  traffic_manager_port: 8000        # --trafficManagerPort
+  traffic_manager_seed: 0           # --trafficManagerSeed
+  timeout: 200.0                    # --timeout
+  debug: 0                          # --debug
+  track: SENSORS                    # --track
+  repetitions: 1                    # --repetitions
+  weather: none                     # --weather
+  resume: false                     # --resume (only passed if true)
+  record_root: ""                   # base dir for --record; "" -> no recording
+
+agent:
+  script: external/TCP/leaderboard/team_code/tcp_agent.py
+  checkpoint: scripts/carla/checkpoints/tcp_carla_repro/best_model.ckpt
+
+output:
+  results_root: runs/carla/generalization/tcp
+
+runs:
+  - id: Town01
+    routes_files:
+      - external/TCP/leaderboard/data/additional_routes/routes_town01_long.xml
+    carla_scenarios_file: external/TCP/leaderboard/data/scenarios/town01_all_scenarios.json
+
+  - id: Town02
+    routes_files:
+      - external/TCP/leaderboard/data/additional_routes/routes_town02_long.xml
+    carla_scenarios_file: external/TCP/leaderboard/data/scenarios/town02_all_scenarios.json
+
+  - id: Town03
+    routes_files:
+      - external/TCP/leaderboard/data/additional_routes/routes_town03_long.xml
+    carla_scenarios_file: external/TCP/leaderboard/data/scenarios/town03_all_scenarios.json
+
+  - id: Town04
+    routes_files:
+      - external/TCP/leaderboard/data/additional_routes/routes_town04_long.xml
+    carla_scenarios_file: external/TCP/leaderboard/data/scenarios/town04_all_scenarios.json
+
+  - id: Town05
+    routes_files:
+      - external/TCP/leaderboard/data/evaluation_routes/routes_town05_long.xml # very challenging, widely used benchmark
+    carla_scenarios_file: external/TCP/leaderboard/data/scenarios/town05_all_scenarios.json
+
+  - id: Town06
+    routes_files:
+      - external/TCP/leaderboard/data/additional_routes/routes_town06_long.xml
+    carla_scenarios_file: external/TCP/leaderboard/data/scenarios/town06_all_scenarios.json
+
+  - id: Town07 # no long routes available
+    routes_files:
+      - external/TCP/leaderboard/data/TCP_training_routes/routes_town07.xml
+      - external/TCP/leaderboard/data/TCP_training_routes/routes_town07_val.xml
+    carla_scenarios_file: external/TCP/leaderboard/data/scenarios/town07_all_scenarios.json
+
+  - id: Town10 # no long routes available
+    routes_files:
+      - external/TCP/leaderboard/data/TCP_training_routes/routes_town10.xml
+      - external/TCP/leaderboard/data/TCP_training_routes/routes_town10_val.xml
+      - external/TCP/leaderboard/data/TCP_training_routes/routes_town10_addition.xml
+    carla_scenarios_file: external/TCP/leaderboard/data/scenarios/town10_all_scenarios.json
+
+  - id: LAV
+    routes_files:
+      - external/TCP/leaderboard/data/evaluation_routes/routes_lav_valid.xml
+    carla_scenarios_file: external/TCP/leaderboard/data/scenarios/all_towns_traffic_scenarios.json

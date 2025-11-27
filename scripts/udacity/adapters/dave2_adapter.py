@@ -57,16 +57,12 @@ class Dave2Adapter(ADS):
         """
         Build the model for the configured input shape and load weights if a path is given.
         """
-        if weights is None:
-            return build_dave2(input_shape=self._input_shape)
-
         wpath = str(weights)
         try:
             return tf.keras.models.load_model(wpath, compile=False)
         except Exception:
-            model = build_dave2(input_shape=self._input_shape)
-            model.load_weights(wpath)
-            return model
+            print(f"[scripts:adapter:dave2][WARN] Failed to load model from {wpath}. Ensure the model architecture matches the weights.")
+            raise
 
     def preprocess(self, image: np.ndarray) -> tf.Tensor:
         """

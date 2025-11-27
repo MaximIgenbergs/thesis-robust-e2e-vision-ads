@@ -11,7 +11,7 @@ paths: # repo relative
   data_dir: "data/jungle"
 
 sim:
-  binary: "binaries/jungle/udacity_macos_silicon/udacity.app" # "binaries/jungle/udacity_linux/udacity.x86_64"
+  binary: "binaries/jungle/udacity_linux/udacity.x86_64"
   host: "127.0.0.1"
   port: 9091
 
@@ -40,6 +40,7 @@ run:
   steps_per_episode: 2000
   save_images: false
   show_image: true
+  timeout_s: 300
 
 logging:
 snapshot_configs: true
@@ -49,8 +50,11 @@ include_git_sha:
   perturbation_drive: true
 
 perturbations:
-  severities: [1, 2, 3, 4]
+  mode: single
+  severities: [2] # [0, 1, 2, 3, 4]
   episodes: 1 # runs per (perturb, severity) pair
+
+  single: frost_filter
 
   chunks: # Only loads dymamic masks of perturbations in current chunk
     # Weather families

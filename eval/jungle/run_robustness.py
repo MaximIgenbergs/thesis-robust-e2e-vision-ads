@@ -21,7 +21,6 @@ if sys.platform == "darwin":
     try:
         mp.set_start_method("fork", force=True)
     except RuntimeError:
-        # start method was already set somewhere else; ignore
         pass
 
 from external.udacity_gym import UdacitySimulator, UdacityGym, UdacityAction
@@ -116,7 +115,7 @@ def settle_metrics(env: UdacityGym, prev: dict, settle_seconds: float = 1.5, pro
     }
 
 
-def run_episode(env: UdacityGym, adapter, preview: PDPreviewCallback, controller: ImagePerturbation, pert_name: str, severity: int, max_steps: int, save_images: bool, track: str, weather: str, daytime: str) -> ScenarioOutcomeLite:
+def run_episode(env: UdacityGym, adapter, preview: PDPreviewCallback, controller: ImagePerturbation, pert_name: str, severity: int, max_steps: int, save_images: bool, track: str, weather: str, daytime: str, timeout_s: float) -> ScenarioOutcomeLite:
     """
     Run a single episode with one (perturbation, severity) pair.
     """
@@ -141,9 +140,18 @@ def run_episode(env: UdacityGym, adapter, preview: PDPreviewCallback, controller
     step = 0
     t0 = time.perf_counter()
     obs = env.observe()
+    timed_out = False
 
     try:
         while step < max_steps:
+            if timeout_s is not None and (time.perf_counter() - t0) > timeout_s:
+                timed_out = True
+                print(
+                    f"[eval:jungle:robustness][INFO] episode {pert_name}@{severity} "
+                    f"timeout after {timeout_s:.1f}s"
+                )
+                break
+
             if obs is None or obs.input_image is None:
                 time.sleep(0.005)
                 obs = env.observe()
@@ -214,7 +222,7 @@ def run_episode(env: UdacityGym, adapter, preview: PDPreviewCallback, controller
             f"{'(interrupted)' if stop_requested else ''}"
         )
 
-    is_success = not stop_requested
+    is_success = not timed_out and not stop_requested
 
     return ScenarioOutcomeLite(
         frames=frames,
@@ -262,7 +270,7 @@ def main() -> int:
 
     model_name = args.model or exp_cfg.get("default_model", "dave2")
     if model_name not in models_cfg:
-        raise ValueError(f"Model '{model_name}' not defined under models in eval/udacity/jungle/cfg_robustness.yaml")
+        raise ValueError(f"Model '{model_name}' not defined under models in eval/jungle/cfg_robustness.yaml")
 
     ckpts_dir = abs_path(paths_cfg["ckpts_dir"])
     runs_root = abs_path(paths_cfg["runs_dir"])
@@ -274,10 +282,10 @@ def main() -> int:
 
     sim_app = abs_path(sim_cfg["binary"])
     if not sim_app.exists():
-        raise FileNotFoundError(f"SIM not found: {sim_app}\nEdit sim.binary in eval/udacity/jungle/cfg_robustness.yaml")
+        raise FileNotFoundError(f"SIM not found: {sim_app}\nEdit sim.binary in eval/jungle/cfg_robustness.yaml")
 
     if ckpt is not None and not ckpt.exists():
-        raise FileNotFoundError(f"{model_name.upper()} checkpoint not found: {ckpt}\nEdit models.*.checkpoint in eval/udacity/jungle/cfg_robustness.yaml"
+        raise FileNotFoundError(f"{model_name.upper()} checkpoint not found: {ckpt}\nEdit models.*.checkpoint in eval/jungle/cfg_robustness.yaml"
         )
 
     ckpt_name = ckpt.stem if ckpt is not None else model_name
@@ -312,13 +320,22 @@ def main() -> int:
     )
     logger.snapshot_env(pip_freeze())
 
-    chunks: list[list[str]] = pert_cfg.get("chunks") or [pert_cfg["list"]]
+    mode = pert_cfg.get("mode", "chunks" if "chunks" in pert_cfg else "list")
+    if mode == "single":
+        single = pert_cfg["single"]
+        perturbations: list[list[str]] = [[single]]
+    elif mode == "list":
+        perturbations = [pert_cfg["list"]]
+    else:  # "chunks"
+        perturbations = pert_cfg.get("chunks") or [pert_cfg["list"]]
+
     severities = list(pert_cfg.get("severities", [1, 2, 3, 4]))
     episodes = int(pert_cfg.get("episodes", 1))
     max_steps = int(run_cfg.get("steps_per_episode", 2000))
     save_images = bool(run_cfg.get("save_images", False))
     show_image = bool(run_cfg.get("show_image", True))
     image_size_hw = tuple(run_cfg.get("image_size_hw", [240, 320]))
+    timeout_s = float(run_cfg.get("timeout_s", 300.0))
 
     sim = UdacitySimulator(str(sim_app), sim_cfg["host"], int(sim_cfg["port"]))
     env = UdacityGym(simulator=sim)
@@ -334,7 +351,7 @@ def main() -> int:
     ep_idx = 0
 
     try:
-        for chunk in chunks:
+        for chunk in perturbations:
             controller = ImagePerturbation(funcs=list(chunk), image_size=image_size_hw)
 
             force_start_episode(env, track=track, weather=weather, daytime=daytime)
@@ -375,6 +392,7 @@ def main() -> int:
                                 track=track,
                                 weather=weather,
                                 daytime=daytime,
+                                timeout_s=timeout_s,
                             )
                             writer.write([outcome], images=save_images)
 

@@ -2,7 +2,6 @@ from __future__ import annotations
 import tensorflow as tf  # type: ignore
 from tensorflow.keras import layers, models, optimizers  # type: ignore
 
-
 def build_dave2_backbone(image_shape: tuple[int, int, int]) -> tf.keras.Model:  # type: ignore
     """
     Dave2-like CNN backbone that maps a single frame to a feature vector.
