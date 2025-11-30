@@ -210,3 +210,6 @@ external/carla-test/runs/**
 
 scripts/carla/checkpoints/**
 scripts/udacity/checkpoints/**
+
+scripts_old/**
+eval_old/**
