@@ -21,7 +21,7 @@ from scripts import abs_path
 HOST = "127.0.0.1"
 PORT = 9091
 
-def _ensure_jungle(env: UdacityGym, weather: str = "sunny", daytime: str = "day", timeout_s: float = 30.0) -> None:
+def initialize_jungle(env: UdacityGym, weather: str = "sunny", daytime: str = "day", timeout_s: float = 30.0) -> None:
     env.reset(track="jungle", weather=weather, daytime=daytime)
     t0 = time.perf_counter()
     last_emit = 0.0
@@ -85,7 +85,7 @@ def main() -> None:
     env = UdacityGym(simulator=sim)
     sim.start()
 
-    _ensure_jungle(env, weather=extras["weather"], daytime=extras["daytime"])
+    initialize_jungle(env, weather=extras["weather"], daytime=extras["daytime"])
 
     agent = PIDUdacityAgent_Angle(
         target_speed=TARGET_SPEED, track="jungle",
@@ -97,7 +97,7 @@ def main() -> None:
     obs = env.observe()
     sector_state: SectorState = None
 
-    print(f"[collect:jungle] writing to: {out_dir}")
+    print(f"[scripts:jungle:collection] writing to: {out_dir}")
     try:
         while steps < MAX_STEPS:
             if obs is None or obs.input_image is None:
@@ -115,7 +115,7 @@ def main() -> None:
             )
             if should_stop:
                 progress = sector_state[2] if sector_state is not None else 0
-                print(f"[collect:jungle] sector span reached ({progress} >= {TARGET_SECTOR_SPAN}); stopping.")
+                print(f"[scripts:jungle:collection] sector span reached ({progress} >= {TARGET_SECTOR_SPAN}); stopping.")
                 break
 
             action = agent(obs)
@@ -153,17 +153,17 @@ def main() -> None:
 
             steps += 1
 
-        print(f"[collect:jungle] wrote {idx} frames (dropped {dropped}) -> {out_dir}")
+        print(f"[scripts:jungle:collection] wrote {idx} frames (dropped {dropped}) -> {out_dir}")
 
     except KeyboardInterrupt:
-        print("\n[collect:jungle] Ctrl-C — stopping.")
+        print("\n[scripts:jungle:collection] Ctrl-C — stopping.")
     finally:
         try:
             sim.close()
             env.close()
         except Exception:
             pass
-        print("[collect:jungle] done.")
+        print("[scripts:jungle:collection] done.")
 
 if __name__ == "__main__":
     main()
