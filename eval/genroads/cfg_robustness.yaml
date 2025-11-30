@@ -1,20 +1,17 @@
 experiment:
-  name: "udacity_genroads_robustness"
   map: "genroads"
   test_type: "robustness"
 
   default_model: "dave2_gru" # dave2, dave2_gru, vit <-- can be overridden by --model arg
 
-paths: # repo-relative
+paths:
   ckpts_dir: "scripts/udacity/checkpoints"
   runs_dir: "runs/genroads"
-  data_dir: "data/genroads"
 
 sim:
   binary: "binaries/genroads/udacity_macos_silicon/udacity_sim_weather_sky_ready_angles_fortuna.app" # "binaries/genroads/udacity_linux/udacity_binary.x86_64"
   host: "127.0.0.1"
   port: 9091
-
   weather: "sunny"
   daytime: "day"
 

@@ -48,7 +48,7 @@ def build_adapter(model_name: str, model_cfg: dict, ckpts_dir: Path):
         seq_len = int(model_cfg.get("sequence_length", 3))
         return (Dave2GRUAdapter(weights=ckpt, image_size_hw=image_size_hw, seq_len=seq_len, device=None, normalize=normalize), ckpt)
 
-    raise ValueError(f"Unknown model '{model_name}' in cfg_robustness.yaml")
+    raise ValueError(f"Unknown model '{model_name}' in eval/genroads/cfg_robustness.yaml")
 
 
 def make_scenarios(waypoints, pert_names: List[str], severities: List[int], episodes: int) -> List[Scenario]:
@@ -76,7 +76,7 @@ def main() -> int:
         type=str,
         default=None,
         help=(
-            "Override experiment.default_model from cfg_robustness.yaml. "
+            "Override experiment.default_model from eval/genroads/cfg_robustness.yaml. "
             "Examples: --model dave2, --model dave2_gru, --model vit"
         ),
     )
@@ -93,7 +93,7 @@ def main() -> int:
 
     model_name = args.model or exp_cfg.get("default_model", "dave2")
     if model_name not in models_cfg:
-        raise ValueError(f"Model '{model_name}' not defined under models in cfg_robustness.yaml")
+        raise ValueError(f"Model '{model_name}' not defined under models in eval/genroads/cfg_robustness.yaml")
 
     ckpts_dir = abs_path(paths_cfg["ckpts_dir"])
     runs_root = abs_path(paths_cfg["runs_dir"])
@@ -105,12 +105,12 @@ def main() -> int:
 
     sim_app = abs_path(sim_cfg["binary"])
     if not sim_app.exists():
-        raise FileNotFoundError(f"SIM not found: {sim_app}\nEdit sim.binary in cfg_robustness.yaml")
+        raise FileNotFoundError(f"SIM not found: {sim_app}\nEdit sim.binary in eval/genroads/cfg_robustness.yaml")
 
     if ckpt is not None and not ckpt.exists():
         raise FileNotFoundError(
             f"{model_name.upper()} checkpoint not found: {ckpt}\n"
-            "Edit models.*.checkpoint in cfg_robustness.yaml"
+            "Edit models.*.checkpoint in eval/genroads/cfg_robustness.yaml"
         )
 
     ckpt_name = ckpt.stem if ckpt is not None else model_name

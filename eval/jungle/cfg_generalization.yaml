@@ -1,11 +1,10 @@
 experiment:
-  name: "udacity_jungle_generalization"
   map: "jungle" # jungle or jungle_reverse
   test_type: "generalization"
 
   default_model: "dave2_gru" # dave2, dave2_gru, vit <-- can be overridden by --model arg
 
-paths: # repo relative
+paths:
   ckpts_dir: "scripts/udacity/checkpoints"
   runs_dir: "runs/jungle"
   data_dir: "data/jungle"
@@ -14,7 +13,6 @@ sim:
   binary: "binaries/jungle/udacity_macos_silicon/udacity.app" # "binaries/jungle/udacity_linux/udacity.x86_64"
   host: "127.0.0.1"
   port: 9091
-
   weather: "sunny"
   daytime: "day"
 

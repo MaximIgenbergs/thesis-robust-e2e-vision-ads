@@ -1,0 +1,45 @@
+c:
+  - name: "fullspeed before turn"
+    active: false
+    road: "c"
+    level: 1
+    comment: "Max acceleration before turn 1"
+    perturbations:
+      - control: "throttle"
+        mode: "set"
+        factor: 1.0
+        start_wp: 4
+        end_wp: 30
+        comment: "Speeds up into the curve until WP 30."
+
+  - name: "fullspeed before turn"
+    active: false
+    road: "c"
+    level: 2
+    comment: "Max acceleration before turn 1"
+    perturbations:
+      - control: "throttle"
+        mode: "set"
+        factor: 1.0
+        start_wp: 4
+        end_wp: 50
+        comment: "Speeds up into the curve until WP 50."
+
+  - name: "Accelerate and kick steering"
+    active: true
+    road: "c"
+    level: 1
+    comment: "Short steering kick before turn after accelerating"
+    perturbations:
+      - control: "steering"
+        mode: "set"
+        factor: 0.6 # kick to the right
+        start_wp: 90
+        end_wp: 95
+        comment: "Short steering kick to the right."
+      - control: "throttle"
+        mode: "set"
+        factor: 1.0 # full throttle
+        start_wp: 4
+        end_wp: 20
+        comment: "Speeds up into the curve until WP 20."
