@@ -2,7 +2,6 @@ from __future__ import annotations
 import math
 import csv
 from datetime import datetime, timezone
-
 import numpy as np
 import torch
 from tqdm.auto import tqdm
@@ -126,24 +125,18 @@ def main():
         history["val_loss"].append(val_loss)
         history["val_rmse"].append(val_rmse)
 
-        print(
-            f"[scripts:train:{MODEL_NAME}][INFO] "
-            f"Epoch {epoch}/{EPOCHS} loss={train_loss:.6f} rmse={train_rmse:.6f} val_loss={val_loss:.6f} val_rmse={val_rmse:.6f}"
-        )
+        print(f"[scripts:train:{MODEL_NAME}][INFO] Epoch {epoch}/{EPOCHS} loss={train_loss:.6f} rmse={train_rmse:.6f} val_loss={val_loss:.6f} val_rmse={val_rmse:.6f}")
 
         if val_loss < best_val_loss:
             best_val_loss = val_loss
             epochs_without_improvement = 0
             torch.save(model.state_dict(), best_path)
-            print(f"[scripts:train:{MODEL_NAME}][INFO] New best model saved to {best_path}")
+            print(f"[scripts:train:{MODEL_NAME}][INFO] Epoch {epoch}/{EPOCHS} New best model saved to {best_path}")
         else:
             epochs_without_improvement += 1
 
         if epochs_without_improvement >= PATIENCE:
-            print(
-                f"[scripts:train:{MODEL_NAME}][INFO] "
-                f"Early stopping after {epoch} epochs (no improvement for {PATIENCE} epochs)."
-            )
+            print(f"[scripts:train:{MODEL_NAME}][INFO] Epoch {epoch}/{EPOCHS} Early stopping after {epoch} epochs (no improvement for {PATIENCE} epochs).")
             break
 
     with hist_csv.open("w", newline="", encoding="utf-8") as f:
