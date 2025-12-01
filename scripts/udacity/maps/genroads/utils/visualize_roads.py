@@ -1,5 +1,5 @@
 """
-Visualize Udacity roads defined in scripts/udacity/maps/genroads/configs/roads.yaml.
+Visualize Udacity roads defined in ROADS_PATH.
 Edit SET_NAME below to choose which set from roads.yaml to visualize.
 """
 
@@ -12,7 +12,6 @@ from scripts import abs_path
 from perturbationdrive import CustomRoadGenerator
 from perturbationdrive.RoadGenerator.Roads.road_visualizer import visualize_road
 
-# Name of the set defined under `sets:` in roads.yaml, e.g. "all", "baseline10", "trio", "data_collection".
 SET_NAME = "all"
 
 ROADS_PATH = abs_path("scripts/udacity/maps/genroads/configs/roads.yaml")
@@ -70,7 +69,7 @@ def visualize_set(set_name: str, roads_def: Dict[str, Dict[str, Any]], sets_def:
 
     for road_name in sets_def[set_name]:
         if road_name not in roads_def:
-            raise KeyError(f"Road '{road_name}' referenced in set '{set_name}' but not defined under 'roads' in roads.yaml")
+            raise KeyError(f"Road '{road_name}' referenced in set '{set_name}' but not defined in the 'roads' section of {ROADS_PATH}")
         visualize(road_name, roads_def[road_name])
 
 
