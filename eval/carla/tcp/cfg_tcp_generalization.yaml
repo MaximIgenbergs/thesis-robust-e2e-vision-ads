@@ -16,13 +16,11 @@ carla:
 
 agent:
   script: external/TCP/leaderboard/team_code/tcp_agent.py
-  checkpoint: scripts/carla/checkpoints/tcp_carla_repro/best_model.ckpt
+  checkpoint: checkpoints/tcp/best_model.ckpt
 
-output:
-  results_root: /media/maximigenbergs/Elements/maximigenbergs/runs/carla/generalization/tcp
+logging:
+  runs_dir: /media/maximigenbergs/Elements/maximigenbergs/runs/carla/generalization/tcp
 
-# For generalization testing, we only care about the long routes, as they develop into unseen scenarios
-# Town 7 and Town 10 dont have any long routes available, so we dont include them
 runs:
   - id: Town01
     routes_files:

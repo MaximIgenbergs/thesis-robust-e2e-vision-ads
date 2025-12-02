@@ -1,22 +1,14 @@
-experiment:
+udacity:
   map: "genroads"
-  test_type: "generalization"
-
-  default_model: "dave2_gru" # dave2, dave2_gru, vit <-- can be overridden by --model arg
-
-paths:
-  ckpts_dir: "scripts/udacity/checkpoints"
-  runs_dir: "runs/genroads"
-  scenarios_path: "scripts/udacity/maps/genroads/configs/scenarios.yaml"
-
-sim:
-  binary: "binaries/genroads/udacity_macos_silicon/udacity_sim_weather_sky_ready_angles_fortuna.app" # "binaries/genroads/udacity_linux/udacity_binary.x86_64"
+  binary: "binaries/genroads/udacity_linux/udacity_binary.x86_64"
   host: "127.0.0.1"
   port: 9091
   weather: "sunny"
   daytime: "day"
 
 models:
+  default_model: "dave2_gru"
+
   dave2:
     checkpoint: "dave2/genroads_20251028-145557/best_model.h5"
     image_size_hw: [120, 160]
@@ -28,13 +20,20 @@ models:
     image_size_hw: [120, 160]
     normalize: "imagenet"
 
+  vit:
+    checkpoint: "vit/genroads_20251202-152358/best_model.ckpt"
+    image_size_hw: [160, 160]
+    normalize: "imagenet"
+
 run:
   image_size_hw: [120, 160]
   show_image: true
   max_steps: null # null = no limit
   road_cooldown_s: 3.0 # cooldown between roads (seconds)
+  scenarios_path: "scripts/udacity/maps/genroads/configs/scenarios.yaml"
 
 logging:
+  runs_dir: "runs/genroads"
   snapshot_configs: true
   snapshot_env: true
   include_git_sha:

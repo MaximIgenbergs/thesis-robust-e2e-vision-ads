@@ -1,11 +1,7 @@
 from __future__ import annotations
 
 """
-TCP robustness evaluation in CARLA.
-
-- Reads eval/carla/tcp/cfg_tcp_robustness.yaml
-- Loads perturbation scenarios from scripts/carla/scenarios/perturbation_scenarios.yaml
-- For each scenario, sets TCP_PD_FUNC / TCP_PD_SEVERITY and calls the Leaderboard
+TCP robustness evaluation in CARLA using PerturbationDrive.
 """
 
 import os
@@ -13,16 +9,35 @@ import subprocess
 import sys
 from pathlib import Path
 from typing import Any, Dict, List
-import yaml
 
 from scripts import abs_path, load_cfg
 
 
-def load_perturbation_scenarios(path: Path) -> List[Dict[str, Any]]:
-    with path.open("r", encoding="utf-8") as f:
-        data = yaml.safe_load(f)
-    # expect a top-level list of {id, route_id, pd_func, severity}
-    return list(data)
+def build_perturbation_scenarios(pert_cfg: Dict[str, Any]) -> List[Dict[str, Any]]:
+    scenarios: List[Dict[str, Any]] = []
+
+    if pert_cfg.get("baseline", False):
+        scenarios.append({"id": "baseline", "route_id": 0, "pd_func": "", "severity": 0})
+
+    severities = pert_cfg.get("severities", [])
+    episodes = int(pert_cfg.get("episodes", 1))
+    chunks = pert_cfg.get("chunks", [])
+
+    for chunk in chunks:
+        for pd_func in chunk:
+            for severity in severities:
+                for ep in range(episodes):
+                    scen_id = f"{pd_func}_s{severity}"
+                    if episodes > 1:
+                        scen_id = f"{scen_id}_ep{ep}"
+                    scenarios.append({
+                        "id": scen_id,
+                        "route_id": 0,
+                        "pd_func": pd_func,
+                        "severity": int(severity),
+                    })
+
+    return scenarios
 
 
 def run_scenario(carla_cfg: Dict[str, Any], run_cfg: Dict[str, Any], agent_cfg: Dict[str, Any], results_dir: Path, scenario: Dict[str, Any]) -> None:
@@ -51,7 +66,7 @@ def run_scenario(carla_cfg: Dict[str, Any], run_cfg: Dict[str, Any], agent_cfg: 
     env["ROUTES"] = run_cfg["routes_file"]
     env["SCENARIOS"] = run_cfg["carla_scenarios_file"]
 
-    # CARLA
+    # CARLA connection
     env["CARLA_HOST"] = carla_cfg["host"]
     env["CARLA_PORT"] = str(carla_cfg["port"])
 
@@ -62,7 +77,7 @@ def run_scenario(carla_cfg: Dict[str, Any], run_cfg: Dict[str, Any], agent_cfg: 
     # Where TCP / Leaderboard writes results
     env["SAVE_PATH"] = str(scenario_dir)
 
-    leaderboard_script = abs_path(run_cfg["script"])
+    leaderboard_script = abs_path(carla_cfg.get("launch_script"))
     routes_file = abs_path(run_cfg["routes_file"])
     carla_scenarios_file = abs_path(run_cfg["carla_scenarios_file"])
 
@@ -74,14 +89,25 @@ def run_scenario(carla_cfg: Dict[str, Any], run_cfg: Dict[str, Any], agent_cfg: 
         str(leaderboard_script),
         "--host", carla_cfg["host"],
         "--port", str(carla_cfg["port"]),
-        "--repetitions=1",
-        "--track", "SENSORS",
+        f"--trafficManagerPort={carla_cfg['traffic_manager_port']}",
+        f"--trafficManagerSeed={carla_cfg['traffic_manager_seed']}",
+        f"--timeout={carla_cfg['timeout']}",
+        "--track", str(carla_cfg["track"]),
+        f"--repetitions={carla_cfg['repetitions']}",
         f"--routes={routes_file}",
         f"--scenarios={carla_scenarios_file}",
         f"--agent={agent_script}",
         f"--agent-config={agent_checkpoint}",
-        "--debug=0",
+        f"--debug={carla_cfg['debug']}",
     ]
+
+    # Optional flags
+    if carla_cfg.get("resume", False):
+        cmd.append("--resume")
+
+    record_root = str(carla_cfg.get("record_root", "")).strip()
+    if record_root:
+        cmd.append(f"--record={record_root}")
 
     print("[eval:carla:tcp:robustness][INFO] command:")
     print(" ", " ".join(cmd))
@@ -95,11 +121,12 @@ def main() -> int:
     carla_cfg = cfg["carla"]
     run_cfg = cfg["run"]
     agent_cfg = cfg["agent"]
-    out_cfg = cfg["output"]
+    logging_cfg = cfg["logging"]
+    pert_cfg = cfg["perturbations"]
 
-    results_dir = abs_path(out_cfg["results_dir"])
-    pert_file = abs_path(run_cfg["perturbation_scenarios_file"])
-    scenarios = load_perturbation_scenarios(pert_file)
+    results_dir = abs_path(logging_cfg["runs_dir"])
+
+    scenarios = build_perturbation_scenarios(pert_cfg)
 
     for scenario in scenarios:
         run_scenario(carla_cfg, run_cfg, agent_cfg, results_dir, scenario)

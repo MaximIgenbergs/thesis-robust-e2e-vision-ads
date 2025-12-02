@@ -1,17 +1,59 @@
 carla:
   host: localhost
   port: 62100
+  launch_script: external/TCP/leaderboard/leaderboard/leaderboard_evaluator.py
 
-run:
-  script: external/TCP/leaderboard/leaderboard/leaderboard_evaluator.py
-  routes_file: scripts/carla/routes/routes_lav_valid.xml
-  carla_scenarios_file: scripts/carla/scenarios/all_towns_traffic_scenarios.json
-  perturbation_scenarios_file: scripts/carla/scenarios/perturbation_scenarios.yaml
+  # Leaderboard CLI args
+  traffic_manager_port: 8000
+  traffic_manager_seed: 0
+  timeout: 200.0  # communication timeout, not car timeout
+  debug: 0
+  track: SENSORS
+  repetitions: 1
+  weather: none   # weather is defined in routes
+  resume: false
+  record_root: "" # "" -> no recording
 
 agent:
   script: scripts/carla/agents/perturbation_agent.py
-  checkpoint: scripts/carla/checkpoints/tcp_carla_repro/best_model.ckpt
+  checkpoint: checkpoints/tcp/best_model.ckpt
 
-output:
-  results_dir: runs/carla/robustness
+run:
+  test_type: "robustness"
+  routes_file: scripts/carla/routes/routes_robustness.xml
+  carla_scenarios_file: external/TCP/leaderboard/data/scenarios/all_towns_traffic_scenarios.json
 
+logging:
+  runs_dir: /media/maximigenbergs/Elements/maximigenbergs/runs/carla/robustness/tcp
+
+perturbations:
+  baseline: true
+  severities: [2, 4]
+  episodes: 1
+
+  chunks:
+    # Category C: Weather Perturbations
+    - ["dynamic_rain_filter"]
+    - ["dynamic_snow_filter", "frost_filter", "fog_filter"]
+    - ["dynamic_sun_filter"]
+    - ["dynamic_lightning_filter"]
+    - ["dynamic_smoke_filter"]
+
+    # Category B: Blur and Focus Perturbations
+    - ["motion_blur", "defocus_blur", "gaussian_blur"]
+
+    # Category A: Noise Perturbations
+    - ["gaussian_noise", "poisson_noise", "impulse_noise", "speckle_noise_filter", "jpeg_filter", "pixelate"]
+
+    # Category G: Color & Tone Adjustments
+    - ["increase_brightness", "contrast", "white_balance_filter", "saturation_filter", "saturation_decrease_filter", "posterize_filter", "histogram_equalisation", "grayscale_filter", "low_pass_filter", "phase_scrambling"]
+
+    # Category D/F: Distortion Perturbations & Graphic Patterns
+    - ["elastic", "cutout_filter", "sample_pairing_filter"]
+    - ["splatter_mapping", "dotted_lines_mapping", "zigzag_mapping", "canny_edges_mapping"]
+
+    # Category E: Affine Transformations
+    - ["translate_image", "scale_image"]
+
+    # Overlays (Occlusions)
+    - ["dynamic_object_overlay", "static_object_overlay"]

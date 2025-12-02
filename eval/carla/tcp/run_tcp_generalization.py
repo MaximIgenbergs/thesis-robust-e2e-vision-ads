@@ -74,8 +74,9 @@ def run_eval_set(carla_cfg: Dict[str, Any], agent_cfg: Dict[str, Any], results_r
 
         env = os.environ.copy()
 
+        # TCP / Leaderboard deps in PYTHONPATH
         extra_path = os.pathsep.join([str(sr_dir), str(lb_dir), str(tcp_root)])
-        env["PYTHONPATH"] = extra_path + os.pathsep + env.get("PYTHONPATH", "") # TCP / Leaderboard deps in PYTHONPATH
+        env["PYTHONPATH"] = extra_path + os.pathsep + env.get("PYTHONPATH", "")
         env["ROUTES"] = str(routes_file)
         env["SCENARIOS"] = str(carla_scenarios_file)
         env["CARLA_HOST"] = host
@@ -134,12 +135,13 @@ def main() -> int:
 
     carla_cfg: Dict[str, Any] = cfg["carla"]
     agent_cfg: Dict[str, Any] = cfg["agent"]
-    out_cfg: Dict[str, Any] = cfg["output"]
+    logging_cfg: Dict[str, Any] = cfg["logging"]
 
-    results_root = abs_path(out_cfg["results_root"])
+    results_root = abs_path(logging_cfg["runs_dir"])
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     results_root = results_root / ts
     results_root.mkdir(parents=True, exist_ok=True)
+
     runs: List[Dict[str, Any]] = cfg["runs"]
 
     for run_def in runs:

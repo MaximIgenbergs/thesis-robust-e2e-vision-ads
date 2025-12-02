@@ -10,9 +10,7 @@ Arguments:
 from __future__ import annotations
 import argparse
 import time
-from pathlib import Path
 import numpy as np
-import yaml
 
 from external.udacity_gym import UdacitySimulator, UdacityGym, UdacityAction
 from external.udacity_gym.agent_callback import PDPreviewCallback
@@ -82,7 +80,7 @@ def settle_metrics(env: UdacityGym, prev: dict, settle_seconds: float = 1.5, pro
     }
 
 
-def run_episode(env: UdacityGym, adapter, preview: PDPreviewCallback, controller: ImagePerturbation, pert_name: str, severity: int, max_steps: int, save_images: bool, track: str, weather: str, daytime: str, timeout_s: float) -> ScenarioOutcomeLite:
+def run_episode(env: UdacityGym, adapter, preview: PDPreviewCallback, controller: ImagePerturbation | None, pert_name: str, severity: int, max_steps: int, save_images: bool, track: str, weather: str, daytime: str, timeout_s: float) -> ScenarioOutcomeLite:
     """
     Run a single episode with one (perturbation, severity) pair.
     """
@@ -125,7 +123,10 @@ def run_episode(env: UdacityGym, adapter, preview: PDPreviewCallback, controller
             if save_images:
                 original_images.append(img_np)
 
-            pert_np = controller.perturbation(img_np, pert_name, int(severity))
+            if controller is not None and pert_name:
+                pert_np = controller.perturbation(img_np, pert_name, int(severity))
+            else:
+                pert_np = img_np # Baseline: no perturbation, use original image
             if save_images:
                 perturbed_images.append(pert_np)
 
@@ -217,45 +218,49 @@ def main() -> int:
 
     cfg = load_cfg("eval/jungle/cfg_robustness.yaml")
 
-    exp_cfg = cfg["experiment"]
-    paths_cfg = cfg["paths"]
-    sim_cfg = cfg["sim"]
+    udacity_cfg = cfg["udacity"]
     models_cfg = cfg["models"]
     run_cfg = cfg["run"]
+    logging_cfg = cfg["logging"]
     pert_cfg = cfg["perturbations"]
+    baseline = bool(pert_cfg.get("baseline", False))
 
-    model_name = args.model or exp_cfg.get("default_model", "dave2")
-    if model_name not in models_cfg:
+
+    model_defs = {k: v for k, v in models_cfg.items() if k != "default_model"}
+
+    model_name = args.model or models_cfg.get("default_model", "dave2")
+    if model_name not in model_defs:
         raise ValueError(f"Model '{model_name}' not defined under models in eval/jungle/cfg_robustness.yaml")
 
-    ckpts_dir = abs_path(paths_cfg["ckpts_dir"])
-    runs_root = abs_path(paths_cfg["runs_dir"])
-    data_dir = abs_path(paths_cfg["data_dir"])
-    data_dir.mkdir(parents=True, exist_ok=True)
-    runs_root.mkdir(parents=True, exist_ok=True)
+    adapter, ckpt = build_adapter(model_name, model_defs[model_name])
 
-    adapter, ckpt = build_adapter(model_name, models_cfg[model_name], ckpts_dir)
-
-    sim_app = abs_path(sim_cfg["binary"])
+    sim_app = abs_path(udacity_cfg["binary"])
     if not sim_app.exists():
-        raise FileNotFoundError(f"SIM not found: {sim_app}\nEdit sim.binary in eval/jungle/cfg_robustness.yaml")
+        raise FileNotFoundError(f"SIM not found: {sim_app}\nEdit udacity.binary in eval/jungle/cfg_robustness.yaml")
 
     if ckpt is not None and not ckpt.exists():
-        raise FileNotFoundError(f"{model_name.upper()} checkpoint not found: {ckpt}\nEdit models.*.checkpoint in eval/jungle/cfg_robustness.yaml"
-        )
+        raise FileNotFoundError(f"{model_name.upper()} checkpoint not found: {ckpt}\nEdit models.{model_name}.checkpoint in eval/jungle/cfg_robustness.yaml")
+
+    runs_root = abs_path(logging_cfg["runs_dir"])
+    runs_root.mkdir(parents=True, exist_ok=True)
 
     ckpt_name = ckpt.stem if ckpt is not None else model_name
     _, run_dir = prepare_run_dir(
-        map_name=exp_cfg.get("map", "jungle"),
-        test_type=exp_cfg.get("test_type", "robustness"),
+        map_name=udacity_cfg.get("map", "jungle"),
+        test_type="robustness",
         model_name=model_name,
+        runs_root=runs_root,
     )
     print(f"[eval:jungle:robustness][INFO] model={model_name} logs -> {run_dir}")
 
-    git_info = {
-        "thesis_sha": best_effort_git_sha(abs_path("")),
-        "perturbation_drive_sha": best_effort_git_sha(abs_path("external/perturbation-drive")),
-    }
+    include_git = logging_cfg.get("include_git_sha", {})
+    git_info = {}
+
+    if include_git.get("thesis_repo", True):
+        git_info["thesis_sha"] = best_effort_git_sha(abs_path(""))
+
+    if include_git.get("perturbation_drive", True):
+        git_info["perturbation_drive_sha"] = best_effort_git_sha(abs_path("external/perturbation-drive"))
 
     logger = RunLogger(
         run_dir=run_dir,
@@ -265,26 +270,22 @@ def main() -> int:
         git_info=git_info,
     )
 
-    logger.snapshot_configs(
-        sim_app=str(sim_app),
-        ckpt=str(ckpt) if ckpt else None,
-        cfg_paths=paths_cfg,
-        cfg_roads={"map": exp_cfg.get("map", "jungle")},
-        cfg_perturbations=pert_cfg,
-        cfg_run=run_cfg,
-        cfg_host_port={"host": sim_cfg["host"], "port": sim_cfg["port"]},
-    )
-    logger.snapshot_env(pip_freeze())
+    if logging_cfg.get("snapshot_configs", True):
+        logger.snapshot_configs(
+            sim_app=str(sim_app),
+            ckpt=str(ckpt) if ckpt else None,
+            cfg_logging=logging_cfg,
+            cfg_udacity=udacity_cfg,
+            cfg_models=models_cfg,
+            cfg_perturbations=pert_cfg,
+            cfg_run=run_cfg,
+            cfg_host_port={"host": udacity_cfg["host"], "port": udacity_cfg["port"]},
+        )
 
-    mode = pert_cfg.get("mode", "chunks" if "chunks" in pert_cfg else "list")
-    if mode == "single":
-        single = pert_cfg["single"]
-        perturbations: list[list[str]] = [[single]]
-    elif mode == "list":
-        perturbations = [pert_cfg["list"]]
-    else:  # "chunks"
-        perturbations = pert_cfg.get("chunks") or [pert_cfg["list"]]
+    if logging_cfg.get("snapshot_env", True):
+        logger.snapshot_env(pip_freeze())
 
+    chunks: list[list[str]] = pert_cfg.get("chunks")
     severities = list(pert_cfg.get("severities", [1, 2, 3, 4]))
     episodes = int(pert_cfg.get("episodes", 1))
     max_steps = int(run_cfg.get("steps_per_episode", 2000))
@@ -293,21 +294,91 @@ def main() -> int:
     image_size_hw = tuple(run_cfg.get("image_size_hw", [240, 320]))
     timeout_s = float(run_cfg.get("timeout_s", 300.0))
 
-    sim = UdacitySimulator(str(sim_app), sim_cfg["host"], int(sim_cfg["port"]))
+    sim = UdacitySimulator(str(sim_app), udacity_cfg["host"], int(udacity_cfg["port"]))
     env = UdacityGym(simulator=sim)
     sim.start()
 
-    track = exp_cfg.get("map", "jungle")
-    weather = sim_cfg.get("weather", "sunny")
-    daytime = sim_cfg.get("daytime", "day")
+    track = udacity_cfg.get("map", "jungle")
+    weather = udacity_cfg.get("weather", "sunny")
+    daytime = udacity_cfg.get("daytime", "day")
 
     force_start_episode(env, track=track, weather=weather, daytime=daytime)
     preview = PDPreviewCallback(enabled=show_image)
 
     ep_idx = 0
 
+    # Baseline: one run on the jungle map without any perturbation
+    if baseline:
+        ep_idx += 1
+        meta = {
+            "road": track,
+            "angles": None,
+            "segs": None,
+            "start": None,
+            "perturbation": None,
+            "severity": 0,
+            "image_size": {"h": image_size_hw[0], "w": image_size_hw[1]},
+            "episodes": 1,
+            "ckpt_name": ckpt_name,
+        }
+        eid, ep_dir = logger.new_episode(ep_idx, meta)
+
+        writer = ScenarioOutcomeWriter(
+            str(ep_dir / "log.json"),
+            overwrite_logs=True,
+        )
+
+        t0 = time.perf_counter()
+        try:
+            outcome = run_episode(
+                env=env,
+                adapter=adapter,
+                preview=preview,
+                controller=None,  # no perturbation
+                pert_name="",
+                severity=0,
+                max_steps=max_steps,
+                save_images=save_images,
+                track=track,
+                weather=weather,
+                daytime=daytime,
+                timeout_s=timeout_s,
+            )
+            writer.write([outcome], images=save_images)
+
+            if outcome.timeout:
+                status = "interrupted"
+            elif outcome.isSuccess:
+                status = "ok"
+            else:
+                status = "fail_offtrack"
+
+            logger.complete_episode(
+                eid,
+                status=status,
+                wall_time_s=(time.perf_counter() - t0),
+            )
+
+            if outcome.timeout:
+                raise KeyboardInterrupt
+
+        except Exception as e:
+            logger.complete_episode(
+                eid,
+                status=f"error:{type(e).__name__}",
+                wall_time_s=(time.perf_counter() - t0),
+            )
+            raise
+
+        try:
+            adapter.reset()
+        except Exception:
+            pass
+
+        force_start_episode(env, track=track, weather=weather, daytime=daytime)
+
     try:
-        for chunk in perturbations:
+        for chunk in chunks:
             controller = ImagePerturbation(funcs=list(chunk), image_size=image_size_hw)
 
             force_start_episode(env, track=track, weather=weather, daytime=daytime)
