@@ -16,15 +16,7 @@ from pathlib import Path
 from datetime import datetime
 from typing import Any, Dict, List
 
-import yaml
-
-from scripts import abs_path
-
-
-def load_cfg() -> Dict[str, Any]:
-    cfg_path = Path(__file__).with_name("cfg_tcp_generalization.yaml")
-    with cfg_path.open("r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
+from scripts import abs_path, load_cfg
 
 
 def run_eval_set(carla_cfg: Dict[str, Any], agent_cfg: Dict[str, Any], results_root: Path, run_def: Dict[str, Any]) -> None:
@@ -138,7 +130,7 @@ def run_eval_set(carla_cfg: Dict[str, Any], agent_cfg: Dict[str, Any], results_r
 
 
 def main() -> int:
-    cfg = load_cfg()
+    cfg = load_cfg("eval/carla/tcp/cfg_tcp_generalization.yaml")
 
     carla_cfg: Dict[str, Any] = cfg["carla"]
     agent_cfg: Dict[str, Any] = cfg["agent"]

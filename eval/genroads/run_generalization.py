@@ -23,37 +23,14 @@ import gym
 import numpy as np
 import yaml
 
-from scripts import abs_path
-from scripts.udacity.adapters.dave2_adapter import Dave2Adapter
-from scripts.udacity.adapters.dave2_gru_adapter import Dave2GRUAdapter
+from scripts.udacity.adapters.utils.build_adapter import build_adapter
 from scripts.udacity.logging.eval_runs import RunLogger, prepare_run_dir, best_effort_git_sha, pip_freeze
-from scripts.udacity.maps.genroads.configs import roads
+from scripts.udacity.maps.genroads.roads.load_roads import load_roads
+from scripts import abs_path, load_cfg
 
 from perturbationdrive.RoadGenerator.CustomRoadGenerator import CustomRoadGenerator
 from examples.udacity.udacity_simulator import UdacitySimulator
 from perturbationdrive import ImageCallBack
-
-
-def load_cfg() -> Dict[str, Any]:
-    cfg_path = Path(__file__).with_name("cfg_generalization.yaml")
-    with cfg_path.open("r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
-
-
-def build_adapter(model_name: str, model_cfg: Dict[str, Any], ckpts_dir: Path):
-    ckpt_rel = model_cfg.get("checkpoint")
-    ckpt = abs_path(ckpts_dir / ckpt_rel) if ckpt_rel else None
-
-    image_size_hw = tuple(model_cfg.get("image_size_hw", [240, 320]))
-    normalize = model_cfg.get("normalize", "imagenet")
-    seq_len = int(model_cfg.get("sequence_length", 3))
-
-    if model_name == "dave2":
-        return Dave2Adapter(weights=ckpt, image_size_hw=image_size_hw, device=None, normalize=normalize), ckpt
-    if model_name == "dave2_gru":
-        return Dave2GRUAdapter(weights=ckpt, image_size_hw=image_size_hw, seq_len=seq_len, device=None, normalize=normalize), ckpt
-
-    raise ValueError(f"Unknown model '{model_name}' in eval/genroads/cfg_generalization.yaml")
 
 
 def nearest_wp_index(x: float, y: float, waypoints: Sequence[Tuple[float, float]]) -> int:
@@ -288,13 +265,21 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    cfg = load_cfg()
+    cfg = load_cfg("eval/genroads/cfg_generalization.yaml")
 
     exp_cfg = cfg["experiment"]
     paths_cfg = cfg["paths"]
     sim_cfg = cfg["sim"]
     models_cfg = cfg["models"]
     run_cfg = cfg["run"]
+
+    roads_yaml = abs_path("scripts/udacity/maps/genroads/configs/roads.yaml")
+    roads_def, road_sets = load_roads(roads_yaml)
+
+    road_set_id = exp_cfg.get("road_set")
+    if not road_set_id or road_set_id not in road_sets:
+        raise KeyError(f"experiment.road_set='{road_set_id}' is invalid in eval/genroads/cfg_generalization.yaml.\nKnown sets: {list(road_sets.keys())}")
+    selected_roads: List[str] = list(road_sets[road_set_id])
 
     model_name = args.model or exp_cfg.get("default_model", "dave2")
     if model_name not in models_cfg:
@@ -334,7 +319,7 @@ def main() -> int:
         sim_app=str(sim_app),
         ckpt=str(ckpt) if ckpt else None,
         cfg_paths=paths_cfg,
-        cfg_roads={road_name: spec for road_name, spec in roads.pick()},
+        cfg_roads={road_name: roads_def[road_name] for road_name in selected_roads},
         cfg_perturbations=scenarios_by_road,
         cfg_run=run_cfg,
         cfg_host_port={"host": sim_cfg["host"], "port": sim_cfg["port"]},
@@ -350,7 +335,8 @@ def main() -> int:
     show_image = bool(run_cfg.get("show_image", True))
 
     try:
-        for road_name, spec in roads.pick():
+        for road_name in selected_roads:
+            spec = roads_def[road_name]
             angles = spec["angles"]
             segs = spec["segs"]
             road_scenarios: List[Dict[str, Any]] = scenarios_by_road.get(road_name, [])

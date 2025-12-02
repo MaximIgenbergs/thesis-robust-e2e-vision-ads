@@ -7,6 +7,11 @@ import re
 import numpy as np
 from PIL import Image
 
+# ---- Configuration for standalone execution ----
+
+PD_LOGS_DIR = Path("/home/maximigenbergs/thesis-robust-e2e-vision-ads/data/genroads/pid_20251029-175400/raw_pd_logs")
+OUT_PAIRS_DIR = Path("/home/maximigenbergs/thesis-robust-e2e-vision-ads/data/genroads/pid_20251029-175400")
+
 def _dump_json(path: Path, obj: Dict[str, Any]) -> None:
     path.write_text(json.dumps(obj, indent=2, sort_keys=True))
 
@@ -79,7 +84,7 @@ def save_image(img_np: np.ndarray, path: Path) -> None:
     if arr.dtype != np.uint8:
         arr = arr.astype(np.uint8)
     if arr.ndim == 2:
-        arr = np.stack([arr]*3, axis=-1)
+        arr = np.stack([arr] * 3, axis=-1)
     Image.fromarray(arr).save(str(path), format="JPEG", quality=95)
 
 def write_frame_record(path: Path, steer: float, throttle: float, track_id: int, topo_id: int, frame_idx_in_run: int) -> None:
@@ -87,8 +92,8 @@ def write_frame_record(path: Path, steer: float, throttle: float, track_id: int,
         "user/angle": f"{float(steer)}",
         "user/throttle": f"{float(throttle)}",
         "meta/track_id": int(track_id),
-        "meta/topo_id":  int(topo_id),
-        "meta/frame":    int(frame_idx_in_run),
+        "meta/topo_id": int(topo_id),
+        "meta/frame": int(frame_idx_in_run),
     }
     path.write_text(json.dumps(rec, indent=2))
 
@@ -116,6 +121,35 @@ def _coerce_action(raw) -> Tuple[float, float]:
         raw = raw[0]
     return float(raw[0]), float(raw[1])
 
+def _find_image_dir_for_log(jf: Path) -> Optional[Path]:
+    """
+    Map a ScenarioOutcomeWriter JSON filename to its image directory.
+
+    Example:
+      jf.name = 'udacity_road_swiggly_056_logs_2025_10_29_18_04_24.json'
+      -> 'udacity_road_swiggly_056___0_original'
+    """
+    stem = jf.stem  # e.g. 'udacity_road_swiggly_056_logs_2025_10_29_18_04_24'
+
+    # Strip '_logs_...' suffix if present
+    logs_idx = stem.find("_logs_")
+    if logs_idx != -1:
+        base_stem = stem[:logs_idx]  # 'udacity_road_swiggly_056'
+    else:
+        base_stem = stem
+
+    # Primary candidate: without the logs suffix
+    candidate = jf.parent / f"{base_stem}___0_original"
+    if candidate.exists():
+        return candidate
+
+    # Fallback: old behavior (full stem)
+    fallback = jf.parent / f"{stem}___0_original"
+    if fallback.exists():
+        return fallback
+
+    return None
+
 def convert_outputs(pd_logs_dir: Path, out_pairs_dir: Path) -> None:
     """
     Converts PerturbationDrive ScenarioOutcomeWriter outputs into the required data format:
@@ -126,7 +160,9 @@ def convert_outputs(pd_logs_dir: Path, out_pairs_dir: Path) -> None:
     """
     out_pairs_dir.mkdir(parents=True, exist_ok=True)
 
-    json_files: List[Path] = sorted([p for p in pd_logs_dir.iterdir() if p.suffix.lower() == ".json"])
+    json_files: List[Path] = sorted(
+        [p for p in pd_logs_dir.iterdir() if p.suffix.lower() == ".json"]
+    )
     if not json_files:
         print(f"[Data Conversion] no JSON logs in {pd_logs_dir}")
         return
@@ -136,10 +172,12 @@ def convert_outputs(pd_logs_dir: Path, out_pairs_dir: Path) -> None:
     run_uid_counter = 0
 
     for jf in json_files:
-        base = jf.with_suffix("")
-        image_dir = Path(str(base) + "___0_original")
-        if not image_dir.exists():
-            print(f"[Data Conversion] image folder not found for {jf.name}: {image_dir}")
+        image_dir = _find_image_dir_for_log(jf)
+        if image_dir is None:
+            print(
+                f"[Data Conversion] image folder not found for {jf.name} "
+                f"(tried stems based on {jf.stem})"
+            )
             continue
 
         try:
@@ -181,12 +219,23 @@ def convert_outputs(pd_logs_dir: Path, out_pairs_dir: Path) -> None:
                     continue
 
                 dst_img = out_pairs_dir / f"image_{start_idx:06d}.jpg"
-                dst_js  = out_pairs_dir / f"record_{start_idx:06d}.json"
+                dst_js = out_pairs_dir / f"record_{start_idx:06d}.json"
 
                 dst_img.write_bytes(src_img.read_bytes())
                 write_frame_record(dst_js, steer, throttle, track_id, topo_id, i)
                 start_idx += 1
 
-            print(f"[Data Conversion:ok] {jf.name}: topo_id={topo_id} track_id={track_id} dropped={dropped}")
+            print(
+                f"[Data Conversion:ok] {jf.name}: topo_id={topo_id} "
+                f"track_id={track_id} dropped={dropped}"
+            )
 
     print(f"[Data Conversion] wrote data at {out_pairs_dir}")
+
+def main() -> None:
+    print(f"[Data Conversion] pd_logs_dir  = {PD_LOGS_DIR}")
+    print(f"[Data Conversion] out_pairs_dir = {OUT_PAIRS_DIR}")
+    convert_outputs(PD_LOGS_DIR, OUT_PAIRS_DIR)
+
+if __name__ == "__main__":
+    main()

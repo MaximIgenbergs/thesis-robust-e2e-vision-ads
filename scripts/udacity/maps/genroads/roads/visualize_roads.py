@@ -9,6 +9,7 @@ from typing import List, Tuple, Dict, Any
 import yaml
 
 from scripts import abs_path
+from scripts.udacity.maps.genroads.roads.load_roads import load_roads
 from perturbationdrive import CustomRoadGenerator
 from perturbationdrive.RoadGenerator.Roads.road_visualizer import visualize_road
 
@@ -19,33 +20,6 @@ ROADS_PATH = abs_path("scripts/udacity/maps/genroads/configs/roads.yaml")
 # Default starting pose used for visualization (x, y, yaw_deg, speed)
 # Exact numbers don't matter for visualization; adjust if you care about absolute position.
 DEFAULT_START: Tuple[int, int, int, int] = (0, 0, 0, 10)
-
-
-def load_roads(yaml_path: Path) -> tuple[Dict[str, Dict[str, Any]], Dict[str, List[str]]]:
-    if not yaml_path.exists():
-        raise FileNotFoundError(f"roads.yaml not found at: {yaml_path}")
-
-    with yaml_path.open("r", encoding="utf-8") as f:
-        cfg = yaml.safe_load(f) or {}
-
-    roads_def = cfg.get("roads") or {}
-    sets_def = cfg.get("sets") or {}
-
-    if not roads_def:
-        raise ValueError(f"No 'roads' section in {yaml_path}")
-    if not sets_def:
-        raise ValueError(f"No 'sets' section in {yaml_path}")
-
-    # Basic validation
-    for name, spec in roads_def.items():
-        angles = spec.get("angles")
-        segs = spec.get("segs")
-        if not isinstance(angles, list) or not isinstance(segs, list):
-            raise ValueError(f"[road:{name}] 'angles' and 'segs' must be lists (file: {yaml_path})")
-        if len(angles) != len(segs):
-            raise ValueError(f"[road:{name}] length mismatch: angles({len(angles)}) != segs({len(segs)}) (file: {yaml_path})")
-
-    return roads_def, sets_def
 
 
 def generate(gen: CustomRoadGenerator, angles: List[int], segs: List[int], start: Tuple[int, int, int, int]):

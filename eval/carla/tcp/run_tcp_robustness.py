@@ -13,16 +13,9 @@ import subprocess
 import sys
 from pathlib import Path
 from typing import Any, Dict, List
-
 import yaml
 
-from scripts import abs_path
-
-
-def load_cfg() -> Dict[str, Any]:
-    cfg_path = Path(__file__).with_name("cfg_tcp_robustness.yaml")
-    with cfg_path.open("r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
+from scripts import abs_path, load_cfg
 
 
 def load_perturbation_scenarios(path: Path) -> List[Dict[str, Any]]:
@@ -97,7 +90,7 @@ def run_scenario(carla_cfg: Dict[str, Any], run_cfg: Dict[str, Any], agent_cfg: 
 
 
 def main() -> int:
-    cfg = load_cfg()
+    cfg = load_cfg("eval/carla/tcp/cfg_tcp_robustness.yaml")
 
     carla_cfg = cfg["carla"]
     run_cfg = cfg["run"]

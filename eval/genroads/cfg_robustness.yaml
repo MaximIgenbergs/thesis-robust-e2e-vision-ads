@@ -1,8 +1,8 @@
 experiment:
   map: "genroads"
   test_type: "robustness"
-
   default_model: "dave2_gru" # dave2, dave2_gru, vit <-- can be overridden by --model arg
+  road_set: "robustness"
 
 paths:
   ckpts_dir: "scripts/udacity/checkpoints"
@@ -47,117 +47,35 @@ perturbations:
 
   # Only loads dynamic masks for perturbations in the current chunk
   chunks:
-    # Weather
+    # Category C: Weather Perturbations
     - ["dynamic_rain_filter"]
     - ["dynamic_snow_filter", "frost_filter", "fog_filter"]
     - ["dynamic_sun_filter"]
     - ["dynamic_lightning_filter"]
     - ["dynamic_smoke_filter"]
 
-    # Blur & focus
+    # Category B: Blur and Focus Perturbations
     - ["motion_blur", "defocus_blur", "gaussian_blur", "low_pass_filter"]
 
-    # Noise & compression
-    - [
-        "gaussian_noise",
-        "poisson_noise",
-        "impulse_noise",
-        "speckle_noise_filter",
-        "jpeg_filter",
-        "pixelate",
-      ]
+    # Category A: Noise Perturbations
+    - ["gaussian_noise", "poisson_noise", "impulse_noise", "speckle_noise_filter", "jpeg_filter", "pixelate"]
 
-    # Color & tone
-    - [
-        "increase_brightness",
-        "contrast",
-        "white_balance_filter",
-        "saturation_filter",
-        "saturation_decrease_filter",
-        "posterize_filter",
-        "histogram_equalisation",
-        "grayscale_filter",
-        "false_color_filter",
-        "high_pass_filter",
-        "low_pass_filter",
-        "phase_scrambling",
-      ]
+    # Category G: Color & Tone Adjustments
+    - ["increase_brightness", "contrast", "white_balance_filter", "saturation_filter", "saturation_decrease_filter", "posterize_filter", "histogram_equalisation", "grayscale_filter", "low_pass_filter", "phase_scrambling"]
 
-    # Distortions & graphics
+    # Category D/F: Distortion Perturbations & Graphic Patterns
     - ["elastic", "cutout_filter", "sample_pairing_filter"]
-    - [
-        "splatter_mapping",
-        "dotted_lines_mapping",
-        "zigzag_mapping",
-        "canny_edges_mapping",
-      ]
+    - ["splatter_mapping", "dotted_lines_mapping", "zigzag_mapping", "canny_edges_mapping"]
 
-    # Geometry (safe subset)
+    # Category E: Affine Transformations
     - ["translate_image", "scale_image"]
 
-    # Overlays
-    - ["dynamic_object_overlay", "static_object_overlay", "reflection_filter"]
+    # Overlays (Occlusions)
+    - ["dynamic_object_overlay", "static_object_overlay"]
+
 
   # Used when chunks is empty (loads all dynamic masks once)
   list:
-    - fog_filter
-    - dynamic_rain_filter
-    - dynamic_snow_filter
-    - dynamic_sun_filter
-    - dynamic_lightning_filter
-    - dynamic_smoke_filter
-
-    - static_rain_filter
-    - static_snow_filter
-    - static_sun_filter
-    - static_lightning_filter
-    - static_smoke_filter
-    - frost_filter
-
-    # Blur / focus
-    - motion_blur
-    - defocus_blur
-    - gaussian_blur
-
-    # Noise & compression
-    - gaussian_noise
-    - poisson_noise
-    - impulse_noise
-    - speckle_noise_filter
-    - jpeg_filter
-    - pixelate
-
-    # Color / tone
-    - increase_brightness
-    - contrast
-    - white_balance_filter
-    - saturation_filter
-    - saturation_decrease_filter
-    - posterize_filter
-    - histogram_equalisation
-    - grayscale_filter
-    - false_color_filter
-    - phase_scrambling
-
-    # Distortions & graphics
-    - elastic
-    - cutout_filter
-    - sample_pairing_filter
-    - splatter_mapping
-    - dotted_lines_mapping
-    - zigzag_mapping
-    - canny_edges_mapping
-
-    # Geometric (safe subset)
-    - translate_image
-    - scale_image
-
-    # Overlays
-    - reflection_filter
-    - dynamic_object_overlay
-    - static_object_overlay
-
-  all:
     - fog_filter
     - dynamic_rain_filter
     - static_rain_filter
@@ -171,33 +89,23 @@ perturbations:
     - static_lightning_filter
     - dynamic_smoke_filter
     - static_smoke_filter
-
-    # Blur / focus
     - defocus_blur
     - motion_blur
     - gaussian_blur
     - low_pass_filter
-
-    # Noise & compression
     - gaussian_noise
     - poisson_noise
     - impulse_noise
     - speckle_noise_filter
     - jpeg_filter
     - pixelate
-
-    # Distortions
     - elastic
     - sample_pairing_filter
-
-    # Graphics / occlusions
     - cutout_filter
     - splatter_mapping
     - dotted_lines_mapping
     - zigzag_mapping
     - canny_edges_mapping
-
-    # Color / tone
     - increase_brightness
     - contrast
     - white_balance_filter
@@ -210,12 +118,8 @@ perturbations:
     - high_pass_filter
     - low_pass_filter
     - phase_scrambling
-
-    # Geometry
     - translate_image
     - scale_image
-
-    # Overlays
     - reflection_filter
     - dynamic_object_overlay
     - static_object_overlay

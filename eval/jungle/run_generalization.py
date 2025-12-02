@@ -20,32 +20,12 @@ from external.udacity_gym import UdacitySimulator, UdacityGym, UdacityAction
 from external.udacity_gym.agent_callback import PDPreviewCallback
 from external.udacity_gym.logger import ScenarioOutcomeWriter, ScenarioOutcomeLite, ScenarioLite
 
-from scripts import ROOT, abs_path
+from scripts import ROOT, abs_path, load_cfg
+from scripts.udacity.adapters.utils.build_adapter import build_adapter
 from scripts.udacity.adapters.dave2_adapter import Dave2Adapter
 from scripts.udacity.adapters.dave2_gru_adapter import Dave2GRUAdapter
+from scripts.udacity.adapters.vit_adapter import ViTAdapter
 from scripts.udacity.logging.eval_runs import RunLogger, prepare_run_dir, best_effort_git_sha, pip_freeze
-
-
-def load_cfg() -> dict:
-    cfg_path = Path(__file__).with_name("cfg_generalization.yaml")
-    with cfg_path.open("r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
-
-
-def build_adapter(model_name: str, model_cfg: dict, ckpts_dir: Path):
-    ckpt_rel = model_cfg.get("checkpoint")
-    ckpt = abs_path(ckpts_dir / ckpt_rel) if ckpt_rel else None
-
-    image_size_hw = tuple(model_cfg.get("image_size_hw", [240, 320]))
-    normalize = model_cfg.get("normalize", "imagenet")
-
-    if model_name == "dave2":
-        return (Dave2Adapter(weights=ckpt, image_size_hw=image_size_hw, device=None, normalize=normalize), ckpt)
-
-    if model_name == "dave2_gru":
-        return (Dave2GRUAdapter(weights=ckpt, image_size_hw=image_size_hw, device=None, normalize=normalize), ckpt)
-
-    raise ValueError(f"Model '{model_name}' not defined under models in cfg_generalization.yaml")
 
 
 def force_start_episode(env: UdacityGym, track: str, weather: str, daytime: str, timeout_s: float = 30.0) -> None:
@@ -242,10 +222,7 @@ def run_episode(env: UdacityGym, adapter, preview: PDPreviewCallback, max_steps:
         delta = settle_metrics(env, metrics_base, settle_seconds=1.5, probe_hz=10.0)
         offtrack_count = max(offtrack_count, int(delta["outOfTrackCount"]))
         collision_count = max(collision_count, int(delta["collisionCount"]))
-        print(
-            f"[eval:jungle:generalization][INFO] episode: steps={step} wall={wall:.1f}s "
-            f"offtrack_count={offtrack_count} collisions={collision_count}"
-        )
+        print(f"[eval:jungle:generalization][INFO] episode: steps={step} wall={wall:.1f}s offtrack_count={offtrack_count} collisions={collision_count}")
 
     return ScenarioOutcomeLite(
         frames=frames,
@@ -274,14 +251,11 @@ def main() -> int:
         "--model",
         type=str,
         default=None,
-        help=(
-            "Override experiment.default_model from eval/jungle/cfg_generalization.yaml. "
-            "Examples: --model dave2, --model dave2_gru"
-        ),
+        help=("Override experiment.default_model from eval/jungle/cfg_generalization.yaml.\nExamples: --model dave2, --model dave2_gru"),
     )
     args = parser.parse_args()
 
-    cfg = load_cfg()
+    cfg = load_cfg("eval/jungle/cfg_generalization.yaml")
 
     exp_cfg = cfg["experiment"]
     paths_cfg = cfg["paths"]

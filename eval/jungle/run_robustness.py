@@ -14,48 +14,15 @@ from pathlib import Path
 import numpy as np
 import yaml
 
-import sys
-import multiprocessing as mp
-
-if sys.platform == "darwin":
-    try:
-        mp.set_start_method("fork", force=True)
-    except RuntimeError:
-        pass
-
 from external.udacity_gym import UdacitySimulator, UdacityGym, UdacityAction
 from external.udacity_gym.agent_callback import PDPreviewCallback
 from external.udacity_gym.logger import ScenarioOutcomeWriter, ScenarioOutcomeLite, ScenarioLite
 
 from scripts.udacity.logging.eval_runs import RunLogger, prepare_run_dir, best_effort_git_sha, pip_freeze
-from scripts.udacity.adapters.dave2_adapter import Dave2Adapter
-from scripts.udacity.adapters.dave2_gru_adapter import Dave2GRUAdapter
-from scripts import abs_path
+from scripts.udacity.adapters.utils.build_adapter import build_adapter
+from scripts import abs_path, load_cfg
 
 from perturbationdrive import ImagePerturbation
-
-
-def load_cfg() -> dict:
-    cfg_path = Path(__file__).with_name("cfg_robustness.yaml")
-    with cfg_path.open("r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
-
-
-def build_adapter(model_name: str, model_cfg: dict, ckpts_dir: Path):
-    ckpt_rel = model_cfg.get("checkpoint")
-    ckpt = abs_path(ckpts_dir / ckpt_rel) if ckpt_rel else None
-
-    image_size_hw = tuple(model_cfg.get("image_size_hw", [240, 320]))
-    normalize = model_cfg.get("normalize", "imagenet")
-
-    if model_name == "dave2":
-        return (Dave2Adapter(weights=ckpt, image_size_hw=image_size_hw, device=None, normalize=normalize), ckpt)
-
-    if model_name == "dave2_gru":
-        seq_len = int(model_cfg.get("sequence_length", 3))
-        return (Dave2GRUAdapter(weights=ckpt, image_size_hw=image_size_hw, seq_len=seq_len, device=None, normalize=normalize), ckpt)
-
-    raise ValueError(f"Unknown model '{model_name}' in eval/udacity/jungle/cfg_robustness.yaml")
 
 
 def force_start_episode(env: UdacityGym, track: str = "jungle", weather: str = "sunny", daytime: str = "day", timeout_s: float = 30.0) -> None:
@@ -146,10 +113,7 @@ def run_episode(env: UdacityGym, adapter, preview: PDPreviewCallback, controller
         while step < max_steps:
             if timeout_s is not None and (time.perf_counter() - t0) > timeout_s:
                 timed_out = True
-                print(
-                    f"[eval:jungle:robustness][INFO] episode {pert_name}@{severity} "
-                    f"timeout after {timeout_s:.1f}s"
-                )
+                print(f"[eval:jungle:robustness][INFO] episode {pert_name}@{severity} timeout after {timeout_s:.1f}s")
                 break
 
             if obs is None or obs.input_image is None:
@@ -215,12 +179,7 @@ def run_episode(env: UdacityGym, adapter, preview: PDPreviewCallback, controller
         offtrack_count = int(delta["outOfTrackCount"])
         collision_count = int(delta["collisionCount"])
 
-        print(
-            f"[eval:jungle:robustness][INFO] episode {pert_name}@{severity}: "
-            f"steps={step} wall={wall:.1f}s "
-            f"offtrack_count={offtrack_count} collisions={collision_count} "
-            f"{'(interrupted)' if stop_requested else ''}"
-        )
+        print(f"[eval:jungle:robustness][INFO] episode {pert_name}@{severity}: steps={step} wall={wall:.1f}s offtrack_count={offtrack_count} collisions={collision_count} {'(interrupted)' if stop_requested else ''}")
 
     is_success = not timed_out and not stop_requested
 
@@ -252,14 +211,11 @@ def main() -> int:
         "--model",
         type=str,
         default=None,
-        help=(
-            "Override experiment.default_model from eval/udacity/jungle/cfg_robustness.yaml. "
-            "Examples: --model dave2, --model dave2_gru, --model vit"
-        ),
+        help=("Override experiment.default_model from eval/udacity/jungle/cfg_robustness.yaml.\nExamples: --model dave2, --model dave2_gru, --model vit"),
     )
     args = parser.parse_args()
 
-    cfg = load_cfg()
+    cfg = load_cfg("eval/jungle/cfg_robustness.yaml")
 
     exp_cfg = cfg["experiment"]
     paths_cfg = cfg["paths"]

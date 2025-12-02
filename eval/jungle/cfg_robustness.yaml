@@ -29,8 +29,8 @@ models:
     normalize: "imagenet"
 
   vit:
-    checkpoint: "vit/jungle_20251119-124028/best_model.ckpt"
-    image_size_hw: [120, 160]
+    checkpoint: "vit/jungle_20251201-132938/best_model.ckpt"
+    image_size_hw: [160, 160]
     normalize: "imagenet"
 
 run:

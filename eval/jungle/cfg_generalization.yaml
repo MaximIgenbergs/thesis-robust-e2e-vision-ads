@@ -28,12 +28,12 @@ models:
     normalize: "imagenet"
 
   vit:
-    checkpoint: "vit/jungle_20251119-124028/best_model.ckpt"
+    checkpoint: "vit/jungle_20251201-132938/best_model.ckpt"
     image_size_hw: [120, 160]
     normalize: "imagenet"
 
 run:
-  image_size_hw: [120, 160]
+  image_size_hw: [240, 320]
   steps_per_episode: 2000
   episodes: 1 # amount of runs
   start_waypoint: 200 # must be between 0 and 999

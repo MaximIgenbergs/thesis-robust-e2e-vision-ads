@@ -247,61 +247,61 @@ sets:
 
   # Full data-collection set (random + circles + swiggly)
   data_collection:
-    - random_000
-    - random_001
-    - random_002
-    - random_003
-    - random_004
-    - random_005
-    - random_006
-    - random_007
-    - random_008
-    - random_009
-    - random_010
-    - random_011
-    - random_012
-    - random_013
-    - random_014
-    - random_015
-    - random_016
-    - random_017
-    - simple_018
-    - simple_019
-    - simple_020
-    - simple_021
-    - simple_022
-    - simple_023
-    - simple_024
-    - simple_025
-    - simple_026
-    - simple_027
-    - simple_028
-    - simple_029
-    - simple_030
-    - simple_031
-    - simple_032
-    - simple_033
-    - simple_034
-    - simple_035
-    - simple_036
-    - simple_037
-    - swiggly_038
-    - swiggly_039
-    - swiggly_040
-    - swiggly_041
-    - swiggly_042
-    - swiggly_043
-    - swiggly_044
-    - swiggly_045
-    - swiggly_046
-    - swiggly_047
-    - swiggly_048
-    - swiggly_049
-    - swiggly_050
-    - swiggly_051
-    - swiggly_052
-    - swiggly_053
-    - swiggly_054
+    # - random_000
+    # - random_001
+    # - random_002
+    # - random_003
+    # - random_004
+    # - random_005
+    # - random_006
+    # - random_007
+    # - random_008
+    # - random_009
+    # - random_010
+    # - random_011
+    # - random_012
+    # - random_013
+    # - random_014
+    # - random_015
+    # - random_016
+    # - random_017
+    # - simple_018
+    # - simple_019
+    # - simple_020
+    # - simple_021
+    # - simple_022
+    # - simple_023
+    # - simple_024
+    # - simple_025
+    # - simple_026
+    # - simple_027
+    # - simple_028
+    # - simple_029
+    # - simple_030
+    # - simple_031
+    # - simple_032
+    # - simple_033
+    # - simple_034
+    # - simple_035
+    # - simple_036
+    # - simple_037
+    # - swiggly_038
+    # - swiggly_039
+    # - swiggly_040
+    # - swiggly_041
+    # - swiggly_042
+    # - swiggly_043
+    # - swiggly_044
+    # - swiggly_045
+    # - swiggly_046
+    # - swiggly_047
+    # - swiggly_048
+    # - swiggly_049
+    # - swiggly_050
+    # - swiggly_051
+    # - swiggly_052
+    # - swiggly_053
+    # - swiggly_054
     - swiggly_055
     - swiggly_056
     - swiggly_057

@@ -8,7 +8,8 @@ from __future__ import annotations
 import time
 from pathlib import Path
 
-from scripts.udacity.maps.genroads.configs import paths, roads
+from scripts.udacity.maps.genroads.configs import paths
+from scripts.udacity.maps.genroads.roads.load_roads import load_roads
 from scripts.udacity.logging.data_collection import make_run_dir, convert_outputs
 
 from perturbationdrive import PerturbationDrive
@@ -18,6 +19,8 @@ from scripts import abs_path
 
 HOST = "127.0.0.1"
 PORT = 9091
+ROADS_PATH = abs_path("scripts/udacity/maps/genroads/roads/roads.yaml")
+ROADS_SET = "data_collection"
 
 
 def main() -> None:
@@ -32,10 +35,18 @@ def main() -> None:
 
     print(f"[scripts:genroads:collection] run_dir: {run_dir}")
 
-    roads_set = "data_collection"
-    print(f"[scripts:genroads:collection] roads_set: {roads_set}")
+    # Load roads + sets from YAML
+    roads_def, road_sets = load_roads(ROADS_PATH)
 
-    for road_name, spec in roads.pick(roads_set):
+    print(f"[scripts:genroads:collection] roads_set: {ROADS_SET}")
+
+    if ROADS_SET not in road_sets:
+        raise KeyError(f"Unknown road set '{ROADS_SET}' in {ROADS_PATH}. Known sets: {list(road_sets.keys())}")
+
+    selected_roads = list(road_sets[ROADS_SET])
+
+    for road_name in selected_roads:
+        spec = roads_def[road_name]
         angles = spec["angles"]
         segs = spec["segs"]
 
