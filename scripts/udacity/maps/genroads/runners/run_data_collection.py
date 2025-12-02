@@ -10,7 +10,7 @@ from pathlib import Path
 
 from scripts.udacity.maps.genroads.configs import paths
 from scripts.udacity.maps.genroads.roads.load_roads import load_roads
-from scripts.udacity.logging.data_collection import make_run_dir, convert_outputs
+from scripts.udacity.logging.data_collection_runs import make_run_dir, convert_outputs
 
 from perturbationdrive import PerturbationDrive
 from perturbationdrive.RoadGenerator.CustomRoadGenerator import CustomRoadGenerator

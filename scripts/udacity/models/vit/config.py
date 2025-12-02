@@ -6,7 +6,7 @@ MODEL_NAME = "vit"
 
 # genroads
 MAP_NAME = "genroads"
-DATA_DIR = "/home/maximigenbergs/thesis-robust-e2e-vision-ads/data/TBD"
+DATA_DIR = "/home/maximigenbergs/thesis-robust-e2e-vision-ads/data/genroads/pid_20251201-163211"
 
 INPUT_SHAPE = (160, 160, 3)  # (H, W, C), matches VisionTransformer(image_size=160)
 NUM_OUTPUTS = 2

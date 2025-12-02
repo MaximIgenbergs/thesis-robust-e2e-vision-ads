@@ -4,7 +4,7 @@ from typing import Union, Optional
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
-CKPTS_DIR = ROOT / "scripts" / "udacity" / "checkpoints"
+CKPTS_DIR = ROOT / "checkpoints"
 
 PD_DIR = ROOT / "external" / "perturbation-drive"
 if str(PD_DIR) not in sys.path: 

@@ -15,7 +15,7 @@ from external.udacity_gym.agent import PIDUdacityAgent_Angle
 
 from scripts.udacity.maps.jungle.configs import paths, run
 from scripts.udacity.maps.jungle.configs.data_collection import TARGET_SECTOR_SPAN, MAX_STEPS, TARGET_SPEED
-from scripts.udacity.logging.data_collection import DataRunLogger, make_run_dir, save_image, write_frame_record
+from scripts.udacity.logging.data_collection_runs import DataRunLogger, make_run_dir, save_image, write_frame_record
 from scripts import abs_path
 
 HOST = "127.0.0.1"
