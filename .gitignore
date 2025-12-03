@@ -192,6 +192,7 @@ envs/**
 runs/**
 
 unitylog.txt
+external/foresee/**
 
 # old code
 sims/**
