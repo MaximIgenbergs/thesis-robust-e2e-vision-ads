@@ -53,7 +53,7 @@ def main() -> int:
     pert_cfg = cfg["perturbations"]
     baseline = bool(pert_cfg.get("baseline", False))
 
-    roads_yaml = abs_path("scripts/udacity/maps/genroads/configs/roads.yaml")
+    roads_yaml = abs_path("scripts/udacity/maps/genroads/roads/roads.yaml") # TODO: maybe not hardcode this path?
     roads_def, road_sets = load_roads(roads_yaml)
 
     road_set_id = run_cfg.get("road_set")
@@ -74,23 +74,14 @@ def main() -> int:
         raise FileNotFoundError(f"SIM not found: {sim_app}\nEdit udacity.binary in eval/genroads/cfg_robustness.yaml")
 
     if ckpt is not None and not ckpt.exists():
-        raise FileNotFoundError(
-            f"{model_name.upper()} checkpoint not found: {ckpt}\n"
-            f"Edit models.{model_name}.checkpoint in eval/genroads/cfg_robustness.yaml"
-        )
+        raise FileNotFoundError(f"{model_name.upper()} checkpoint not found: {ckpt}\nEdit models.{model_name}.checkpoint in eval/genroads/cfg_robustness.yaml")
 
     runs_root = abs_path(logging_cfg["runs_dir"])
-    runs_root.mkdir(parents=True, exist_ok=True)
 
     ckpt_name = ckpt.stem if ckpt is not None else model_name
     map_name = udacity_cfg.get("map", "genroads")
 
-    _, run_dir = prepare_run_dir(
-        map_name=map_name,
-        test_type="robustness",
-        model_name=model_name,
-        runs_root=runs_root,
-    )
+    _, run_dir = prepare_run_dir(model_name=model_name, runs_root=runs_root)
     print(f"[eval:genroads:robustness][INFO] model={model_name} logs -> {run_dir}")
 
     include_git = logging_cfg.get("include_git_sha", {})

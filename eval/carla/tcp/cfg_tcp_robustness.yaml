@@ -12,14 +12,12 @@ carla:
   repetitions: 1
   weather: none   # weather is defined in routes
   resume: false
-  record_root: "" # "" -> no recording
 
 agent:
   script: scripts/carla/agents/perturbation_agent.py
   checkpoint: checkpoints/tcp/best_model.ckpt
 
 run:
-  test_type: "robustness"
   routes_file: scripts/carla/routes/routes_robustness.xml
   carla_scenarios_file: external/TCP/leaderboard/data/scenarios/all_towns_traffic_scenarios.json
 

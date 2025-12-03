@@ -303,12 +303,11 @@ def main() -> int:
         scenarios_by_road = yaml.safe_load(f) or {}
 
     runs_root = abs_path(logging_cfg["runs_dir"])
-    runs_root.mkdir(parents=True, exist_ok=True)
 
     ckpt_name = ckpt.stem if ckpt is not None else model_name
     map_name = udacity_cfg.get("map", "genroads")
 
-    _, run_dir = prepare_run_dir(map_name=map_name, test_type="generalization", model_name=model_name, runs_root=runs_root)
+    _, run_dir = prepare_run_dir(model_name=model_name, runs_root=runs_root)
     print(f"[eval:genroads:generalization][INFO] model={model_name} logs -> {run_dir}")
 
     include_git = logging_cfg.get("include_git_sha", {})

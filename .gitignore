@@ -185,31 +185,16 @@ models/**/figures/
 # VSCode settings
 .vscode/
 
-# Environments
+binaries/**
+checkpoints/**
+data/**
 envs/**
-
-# Runs
 runs/**
 
-# Data
-data/**
-
-scripts/udacity/checkpoints/**/training_runs/
-
-external/TCP/**
-
-**/binaries/**
-
-external/perturbation-drive
-.gitignore
 unitylog.txt
-external/TCP
-external/vision_transformer/**
 
-external/carla-test/runs/**
-
-scripts/carla/checkpoints/**
-scripts/udacity/checkpoints/**
-
+# old code
+sims/**
 scripts_old/**
 eval_old/**
+external/carla-test/**

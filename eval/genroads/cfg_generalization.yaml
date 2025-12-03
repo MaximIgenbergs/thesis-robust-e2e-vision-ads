@@ -33,7 +33,7 @@ run:
   scenarios_path: "scripts/udacity/maps/genroads/configs/scenarios.yaml"
 
 logging:
-  runs_dir: "runs/genroads"
+  runs_dir: "runs/genroads/generalization"
   snapshot_configs: true
   snapshot_env: true
   include_git_sha:

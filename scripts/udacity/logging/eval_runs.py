@@ -38,15 +38,6 @@ def make_run_id(model_name: str) -> str:
     return f"{model_name}_{ts}"
 
 
-def make_runs_root(map_name: str, test_type: str) -> Path:
-    """
-    Create and return <ROOT>/runs/<map_name>/<test_type>.
-    """
-    root = ROOT / "runs" / map_name / test_type
-    root.mkdir(parents=True, exist_ok=True)
-    return root
-
-
 def make_run_dir(runs_root: Path, run_id: str) -> Path:
     """
     Create <runs_root>/<run_id>/episodes and return the run_dir path.
@@ -56,7 +47,7 @@ def make_run_dir(runs_root: Path, run_id: str) -> Path:
     return run_dir
 
 
-def prepare_run_dir(map_name: str, test_type: str, model_name: str) -> tuple[str, Path]:
+def prepare_run_dir(model_name: str, runs_root: Path | str) -> tuple[str, Path]:
     """
     Create a fresh run directory under <ROOT>/runs.
 
@@ -65,10 +56,13 @@ def prepare_run_dir(map_name: str, test_type: str, model_name: str) -> tuple[str
     Returns:
         (run_id, run_dir)
     """
-    runs_root = make_runs_root(map_name=map_name, test_type=test_type)
+    runs_root_path = Path(runs_root)
+    runs_root_path.mkdir(parents=True, exist_ok=True)
+
     run_id = make_run_id(model_name)
-    run_dir = make_run_dir(runs_root, run_id)
+    run_dir = make_run_dir(runs_root_path, run_id)
     return run_id, run_dir
+
 
 
 def best_effort_git_sha(repo_root: Path | str) -> str | None:

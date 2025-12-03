@@ -12,7 +12,6 @@ carla:
   repetitions: 1
   weather: none # weather is defined in routes
   resume: false
-  record_root: "" # "" -> no recording
 
 agent:
   script: external/TCP/leaderboard/team_code/tcp_agent.py

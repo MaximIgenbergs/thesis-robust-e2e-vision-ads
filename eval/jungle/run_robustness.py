@@ -242,15 +242,9 @@ def main() -> int:
         raise FileNotFoundError(f"{model_name.upper()} checkpoint not found: {ckpt}\nEdit models.{model_name}.checkpoint in eval/jungle/cfg_robustness.yaml")
 
     runs_root = abs_path(logging_cfg["runs_dir"])
-    runs_root.mkdir(parents=True, exist_ok=True)
 
     ckpt_name = ckpt.stem if ckpt is not None else model_name
-    _, run_dir = prepare_run_dir(
-        map_name=udacity_cfg.get("map", "jungle"),
-        test_type="robustness",
-        model_name=model_name,
-        runs_root=runs_root,
-    )
+    _, run_dir = prepare_run_dir(model_name=model_name, runs_root=runs_root)
     print(f"[eval:jungle:robustness][INFO] model={model_name} logs -> {run_dir}")
 
     include_git = logging_cfg.get("include_git_sha", {})

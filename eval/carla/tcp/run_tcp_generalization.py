@@ -50,7 +50,6 @@ def run_eval_set(carla_cfg: Dict[str, Any], agent_cfg: Dict[str, Any], results_r
     repetitions = str(carla_cfg.get("repetitions", 1))
     weather = str(carla_cfg.get("weather", "none"))
     resume_flag = bool(carla_cfg.get("resume", False))
-    record_root = carla_cfg.get("record_root", "")
 
     for routes_rel in routes_rel_list:
         routes_file = abs_path(routes_rel)
@@ -61,16 +60,9 @@ def run_eval_set(carla_cfg: Dict[str, Any], agent_cfg: Dict[str, Any], results_r
 
         checkpoint_path = results_dir / "simulation_results.json"
 
-        record_dir: Path | None = None # Optional recording directory (if enabled in config)
-        if record_root:
-            record_dir = abs_path(record_root) / run_id / routes_stem
-            record_dir.mkdir(parents=True, exist_ok=True)
-
         print(f"[eval:carla:tcp:generalization][INFO] routes: {routes_file}")
         print(f"[eval:carla:tcp:generalization][INFO] results_dir: {results_dir}")
         print(f"[eval:carla:tcp:generalization][INFO] simulation_results: {checkpoint_path}")
-        if record_dir is not None:
-            print(f"[eval:carla:tcp:generalization][INFO] record_dir: {record_dir}")
 
         env = os.environ.copy()
 
@@ -118,8 +110,6 @@ def run_eval_set(carla_cfg: Dict[str, Any], agent_cfg: Dict[str, Any], results_r
             str(checkpoint_path),
         ]
 
-        if record_dir is not None: # Only pass --record if you actually want CARLA recordings
-            cmd.extend(["--record", str(record_dir)])
 
         if resume_flag:
             cmd.extend(["--resume", "True"])

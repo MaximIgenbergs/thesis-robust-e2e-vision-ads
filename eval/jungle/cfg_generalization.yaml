@@ -32,7 +32,7 @@ run:
   show_image: true
 
 logging:
-  runs_dir: "runs/jungle"
+  runs_dir: "runs/jungle/generalization"
   snapshot_configs: true
   snapshot_env: true
   include_git_sha:

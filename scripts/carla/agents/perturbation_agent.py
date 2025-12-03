@@ -20,8 +20,44 @@ from team_code.tcp_agent import TCPAgent as BaseTCPAgent  # type: ignore
 from perturbationdrive import ImagePerturbation
 
 
-def get_entry_point() -> str: # Required by CARLA Leaderboard to find the agent class
+def get_entry_point() -> str:  # Required by CARLA Leaderboard to find the agent class
     return "PerturbationAgent"
+
+
+def convert_to_carla_img(img: np.ndarray) -> np.ndarray:
+    """
+    Normalize PD output to uint8 RGB in [0, 255].
+
+    - Accepts HxW, HxWx1, HxWx3, HxWx4
+    - Handles float images in [0,1] or [0,255] and integer types.
+    """
+    if not isinstance(img, np.ndarray):
+        raise TypeError(f"PD output is not a numpy array (got {type(img)})")
+
+    if img.ndim == 2:
+        img = np.repeat(img[..., None], 3, axis=2)
+    elif img.ndim == 3:
+        if img.shape[2] == 1:
+            img = np.repeat(img, 3, axis=2)
+        elif img.shape[2] == 4:
+            img = img[:, :, :3]
+        elif img.shape[2] != 3:
+            raise ValueError(f"Unexpected channel count in PD output: {img.shape[2]}")
+    else:
+        raise ValueError(f"Unexpected PD output shape: {img.shape}")
+
+    if img.dtype == np.uint8:
+        return img
+
+    img = img.astype(np.float64, copy=False)
+    vmin = np.nanmin(img)
+    vmax = np.nanmax(img)
+
+    if vmin >= 0.0 and vmax <= 1.0:
+        img = img * 255.0
+
+    img = np.clip(img, 0.0, 255.0)
+    return img.astype(np.uint8)
 
 
 class PerturbationAgent(BaseTCPAgent):
@@ -31,8 +67,8 @@ class PerturbationAgent(BaseTCPAgent):
 
     def setup(self, path_to_conf_file: str) -> None:
         super().setup(path_to_conf_file)
+        self._pd_warned = False  # for one-time warning
         self._configure_pd()
-
 
     def _configure_pd(self) -> None:
         func = os.environ.get("TCP_PD_FUNC", "").strip()
@@ -48,7 +84,7 @@ class PerturbationAgent(BaseTCPAgent):
             self.pd_controller = None
             self.pd_func = ""
             self.pd_severity = 0
-            print(f"[PerturbationAgent] PD disabled (func='{func}', severity={severity}).")
+            print(f"[scripts:carla:perturbation_agent] PD disabled (func='{func}', severity={severity}).")
             return
 
         # TCP RGB sensor is 256x900 (see tcp_agent.py)
@@ -57,7 +93,7 @@ class PerturbationAgent(BaseTCPAgent):
         self.pd_severity = severity
         self.pd_enabled = True
 
-        print(f"[PerturbationAgent] PD enabled: func={func}, severity={severity}")
+        print(f"[scripts:carla:perturbation_agent] PD enabled: func={func}, severity={severity}")
 
     # ------------------------------------------------------------------ #
 
@@ -69,9 +105,20 @@ class PerturbationAgent(BaseTCPAgent):
         bgr = image_bgra[:, :, :3]
         rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
 
-        pert_rgb = self.pd_controller.perturbation(
-            rgb, self.pd_func, int(self.pd_severity)
-        )
+        try:
+            pert_rgb = self.pd_controller.perturbation(rgb, self.pd_func, int(self.pd_severity))
+            # avoid CV_64F / Poisson issues
+            pert_rgb = convert_to_carla_img(pert_rgb)
+        except Exception as e:
+            # One-time warning, then just fall back to clean frames
+            if not self._pd_warned:
+                print(
+                    "[scripts:carla:perturbation_agent] WARNING: PerturbationDrive failed, falling back to clean images for this and subsequent frames.\n"
+                    f"    func={self.pd_func}, severity={self.pd_severity}, error={repr(e)}\n"
+                    "    HINT: working directory needs to be external/perturbation-drive."
+                )
+                self._pd_warned = True
+            return image_bgra
 
         pert_bgr = cv2.cvtColor(pert_rgb, cv2.COLOR_RGB2BGR)
         out = image_bgra.copy()
