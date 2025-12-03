@@ -18,14 +18,14 @@ agent:
   checkpoint: checkpoints/tcp/best_model.ckpt
 
 run:
-  routes_file: scripts/carla/routes/routes_robustness.xml
+  routes_file: /home/maximigenbergs/thesis-robust-e2e-vision-ads/external/TCP/leaderboard/data/training_routes/routes_town01_short.xml # scripts/carla/routes/routes_robustness.xml
   carla_scenarios_file: external/TCP/leaderboard/data/scenarios/all_towns_traffic_scenarios.json
 
 logging:
   runs_dir: /media/maximigenbergs/Elements/maximigenbergs/runs/carla/robustness/tcp
 
 perturbations:
-  baseline: true
+  baseline: false
   severities: [2, 4]
   episodes: 1
 
