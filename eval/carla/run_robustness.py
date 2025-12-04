@@ -62,7 +62,7 @@ def run_scenario(model_name: str, carla_cfg: Dict[str, Any], run_cfg: Dict[str, 
     routes_file = abs_path(routes_rel)
     carla_scenarios_file = abs_path(run_cfg["carla_scenarios_file"])
 
-    scenario_dir = results_root / model_name / scen_id
+    scenario_dir = results_root / scen_id
     scenario_dir.mkdir(parents=True, exist_ok=True)
 
     checkpoint_path = scenario_dir / "simulation_results.json"
@@ -179,7 +179,7 @@ def main() -> int:
 
     results_root = abs_path(logging_cfg["runs_dir"])
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-    results_root = results_root / ts
+    results_root = results_root / model_name / ts
     results_root.mkdir(parents=True, exist_ok=True)
 
     scenarios = build_perturbation_scenarios(pert_cfg)
