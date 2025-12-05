@@ -34,7 +34,7 @@ run:
   road_cooldown_s: 3.0 # sleep after each road
 
 logging:
-  runs_dir: "runs/genroads/robustness"
+  runs_dir: "/media/maximigenbergs/Elements/maximigenbergs/runs/genroads/robustness"
   snapshot_configs: true
   snapshot_env: true
   include_git_sha:
