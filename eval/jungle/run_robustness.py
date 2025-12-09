@@ -199,6 +199,11 @@ def run_episode(
     obs = env.observe()
     prev_sector: int | None = None  # for wrap-aware end detection
 
+    # NEW: state for event de-duplication
+    seen_events: set[tuple[str, str]] = set()
+    last_flag_out = False
+    last_flag_collision = False
+
     try:
         while True:
             # Per-segment timeout
@@ -254,11 +259,17 @@ def run_episode(
             last_time = obs.time
             obs, reward, terminated, truncated, info = env.step(action)
 
-            # Log discrete events with timestamps for offline metrics
+            # Log discrete events with timestamps for offline metrics (deduplicated)
             events = (info or {}).get("events") or []
             for e in events:
                 key = (e.get("key") or e.get("type") or "").lower()
                 if key in ("out_of_track", "collision"):
+                    ts = str(e.get("timestamp", ""))
+                    ident = (ts, key)
+                    if ident in seen_events:
+                        continue
+                    seen_events.add(ident)
+
                     events_log.append(
                         {
                             "step": int(step),
@@ -272,8 +283,9 @@ def run_episode(
                     elif key == "collision":
                         collision_count += 1
 
-            # Compatibility with possible boolean flags in info
-            if (info or {}).get("out_of_track") is True:
+            # Compatibility with possible boolean flags in info (only count rising edge)
+            flag_out = (info or {}).get("out_of_track") is True
+            if flag_out and not last_flag_out:
                 events_log.append(
                     {
                         "step": int(step),
@@ -283,7 +295,10 @@ def run_episode(
                     }
                 )
                 offtrack_count += 1
-            if (info or {}).get("collision") is True:
+            last_flag_out = flag_out
+
+            flag_collision = (info or {}).get("collision") is True
+            if flag_collision and not last_flag_collision:
                 events_log.append(
                     {
                         "step": int(step),
@@ -293,6 +308,7 @@ def run_episode(
                     }
                 )
                 collision_count += 1
+            last_flag_collision = flag_collision
 
             frames.append(step)
             xte.append(float(getattr(obs, "cte", 0.0)))
@@ -391,7 +407,6 @@ def run_episode(
     )
 
     return outcome, events_log
-
 
 
 def main() -> int:
@@ -678,7 +693,7 @@ def main() -> int:
                                     end_waypoint=seg_end_wp,
                                 )
 
-                                # optional: tag events with segment_id
+                                # tag events with segment_id
                                 for e in events_log:
                                     e.setdefault("segment_id", seg_id)
                                 all_outcomes.append(outcome)
@@ -721,7 +736,6 @@ def main() -> int:
                                 wall_time_s=(time.perf_counter() - t0),
                             )
                             raise
-
 
     except KeyboardInterrupt:
         print("\n[eval:jungle:robustness][WARN] Ctrl-C — stopping.")
