@@ -623,40 +623,45 @@ def main() -> int:
 
             for pert in chunk:
                 for sev in severities:
-                    for seg in segments:
-                        start_wp = seg["start_waypoint"]
-                        seg_id = seg["id"]
-                        seg_end_wp = seg["end_waypoint"]
-                        seg_timeout_s = seg["timeout_s"]
+                    for _ in range(episodes):
+                        ep_idx += 1
 
-                        for _ in range(episodes):
-                            ep_idx += 1
-                            meta = {
-                                "road": track,
-                                "angles": None,
-                                "segs": None,
-                                "start": int(start_wp) if start_wp is not None else None,
-                                "segment_id": seg_id,
-                                "segment_end_waypoint": seg_end_wp,
-                                "segment_timeout_s": float(seg_timeout_s),
-                                "perturbation": pert,
-                                "severity": int(sev),
-                                "image_size": {
-                                    "h": image_size_hw[0],
-                                    "w": image_size_hw[1],
-                                },
-                                "episodes": int(episodes),
-                                "ckpt_name": ckpt_name,
-                            }
-                            eid, ep_dir = logger.new_episode(ep_idx, meta)
+                        # episode-level meta (covers all segments)
+                        meta = {
+                            "road": track,
+                            "angles": None,
+                            "segs": [s["id"] for s in segments],
+                            "start": None,
+                            "segment_id": None,
+                            "segment_end_waypoint": None,
+                            "segment_timeout_s": float(default_timeout_s),
+                            "perturbation": pert,
+                            "severity": int(sev),
+                            "image_size": {
+                                "h": image_size_hw[0],
+                                "w": image_size_hw[1],
+                            },
+                            "episodes": int(episodes),
+                            "ckpt_name": ckpt_name,
+                        }
+                        eid, ep_dir = logger.new_episode(ep_idx, meta)
 
-                            writer = ScenarioOutcomeWriter(
-                                str(ep_dir / "log.json"),
-                                overwrite_logs=True,
-                            )
+                        writer = ScenarioOutcomeWriter(
+                            str(ep_dir / "log.json"),
+                            overwrite_logs=True,
+                        )
 
-                            t0 = time.perf_counter()
-                            try:
+                        all_outcomes: List[ScenarioOutcomeLite] = []
+                        all_events: List[Dict[str, Any]] = []
+
+                        t0 = time.perf_counter()
+                        try:
+                            for seg in segments:
+                                start_wp = seg["start_waypoint"]
+                                seg_id = seg["id"]
+                                seg_end_wp = seg["end_waypoint"]
+                                seg_timeout_s = seg["timeout_s"]
+
                                 outcome, events_log = run_episode(
                                     env=env,
                                     adapter=adapter,
@@ -672,44 +677,51 @@ def main() -> int:
                                     start_waypoint=start_wp,
                                     end_waypoint=seg_end_wp,
                                 )
-                                writer.write([outcome], images=save_images)
 
-                                events_path = ep_dir / "events.json"
-                                events_path.write_text(
-                                    json.dumps(events_log, indent=2, sort_keys=True),
-                                    encoding="utf-8",
-                                )
+                                # optional: tag events with segment_id
+                                for e in events_log:
+                                    e.setdefault("segment_id", seg_id)
+                                all_outcomes.append(outcome)
+                                all_events.extend(events_log)
 
-                                if outcome.timeout:
-                                    status = "interrupted"
-                                elif outcome.isSuccess:
-                                    status = "ok"
-                                else:
-                                    status = "fail_offtrack"
+                                try:
+                                    adapter.reset()
+                                except Exception:
+                                    pass
 
-                                logger.complete_episode(
-                                    eid,
-                                    status=status,
-                                    wall_time_s=(time.perf_counter() - t0),
-                                )
+                                force_start_episode(env, track=track, weather=weather, daytime=daytime)
 
-                                if outcome.timeout:
-                                    raise KeyboardInterrupt
+                            # write all segments into one log.json
+                            writer.write(all_outcomes, images=save_images)
 
-                            except Exception as e:
-                                logger.complete_episode(
-                                    eid,
-                                    status=f"error:{type(e).__name__}",
-                                    wall_time_s=(time.perf_counter() - t0),
-                                )
-                                raise
+                            events_path = ep_dir / "events.json"
+                            events_path.write_text(
+                                json.dumps(all_events, indent=2, sort_keys=True),
+                                encoding="utf-8",
+                            )
 
-                            try:
-                                adapter.reset()
-                            except Exception:
-                                pass
+                            # basic status: if any segment timed out -> interrupted, else if all success -> ok, else fail_offtrack
+                            if any(o.timeout for o in all_outcomes):
+                                status = "interrupted"
+                            elif all(o.isSuccess for o in all_outcomes):
+                                status = "ok"
+                            else:
+                                status = "fail_offtrack"
 
-                            force_start_episode(env, track=track, weather=weather, daytime=daytime)
+                            logger.complete_episode(
+                                eid,
+                                status=status,
+                                wall_time_s=(time.perf_counter() - t0),
+                            )
+
+                        except Exception as e:
+                            logger.complete_episode(
+                                eid,
+                                status=f"error:{type(e).__name__}",
+                                wall_time_s=(time.perf_counter() - t0),
+                            )
+                            raise
+
 
     except KeyboardInterrupt:
         print("\n[eval:jungle:robustness][WARN] Ctrl-C — stopping.")
