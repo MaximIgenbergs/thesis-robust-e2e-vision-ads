@@ -127,7 +127,7 @@ def main() -> int:
     reconnect_cooldown_s = float(run_cfg.get("reconnect_cooldown_s", 8.0))
     road_cooldown_s = float(run_cfg.get("road_cooldown_s", 3.0))
 
-    roadgen = CustomRoadGenerator()
+    roadgen = CustomRoadGenerator(num_control_nodes=10)
     ep_idx = 0
 
     try:

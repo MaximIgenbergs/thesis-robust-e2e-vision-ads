@@ -3,7 +3,7 @@ import sys
 from typing import Union, Optional
 import yaml
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path("/home/maximigenbergs/thesis-robust-e2e-vision-ads")
 CKPTS_DIR = ROOT / "checkpoints"
 
 PD_DIR = ROOT / "external" / "perturbation-drive"

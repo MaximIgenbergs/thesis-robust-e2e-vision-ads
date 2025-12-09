@@ -66,19 +66,19 @@ class Dave2Adapter(ADS):
 
     def preprocess(self, image: np.ndarray) -> tf.Tensor:
         """
-        Resize and normalize an image to match the training format.
+        Resize an image to match the training format.
+        The model's own Lambda layer (t/255.0) does the normalization.
         """
         if image.dtype != np.uint8:
             image = image.astype(np.uint8, copy=False)
 
         target_h, target_w, _ = self._input_shape
 
-        t = tf.convert_to_tensor(image, dtype=tf.uint8)
+        t = tf.convert_to_tensor(image, dtype=tf.float32)
         t = tf.image.resize(
             t,
             size=(target_h, target_w),
             method=tf.image.ResizeMethod.BILINEAR,
         )
-        t = tf.cast(t, tf.float32) / 127.5 - 1.0
         t = tf.expand_dims(t, axis=0)
         return t

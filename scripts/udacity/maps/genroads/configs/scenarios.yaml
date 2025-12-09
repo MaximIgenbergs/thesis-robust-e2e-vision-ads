@@ -1,45 +1,277 @@
+# Control-space generalization scenarios for genroads.
+# Only non–data-collection roads: straight, a, b, c.
+
+straight:
+  # 1) Speed generalization on a long straight
+
+  - name: "Straight high-speed baseline"
+    active: true
+    road: "straight"
+    level: 1
+    comment: "Long full-throttle straight; tests pure speed generalization without topology changes."
+    perturbations:
+      - control: "throttle"
+        mode: "set"
+        factor: 1.0
+        start_wp: 5
+        end_wp: 80
+        comment: "Hold full throttle over most of the straight."
+
+  - name: "Straight extreme high-speed"
+    active: true
+    road: "straight"
+    level: 2
+    comment: "Even longer full-throttle phase so the car reaches very high speed before any natural slowing."
+    perturbations:
+      - control: "throttle"
+        mode: "set"
+        factor: 1.0
+        start_wp: 5
+        end_wp: 140
+        comment: "Full throttle almost for the full straight."
+
+  # 2) Off-center lane position on the straight
+
+  - name: "Straight right drift"
+    active: true
+    road: "straight"
+    level: 1
+    comment: "Small constant steering bias to the right; car slowly drifts to the right edge and must be recovered."
+    perturbations:
+      - control: "steering"
+        mode: "add"
+        factor: 0.15
+        start_wp: 20
+        end_wp: 140
+        comment: "Mild right bias over a long distance; tune factor so car ends up clearly off-center."
+
+  - name: "Straight left drift"
+    active: true
+    road: "straight"
+    level: 2
+    comment: "Mirror of right drift: car is gradually pushed to the left side of the lane."
+    perturbations:
+      - control: "steering"
+        mode: "add"
+        factor: -0.15
+        start_wp: 20
+        end_wp: 140
+        comment: "Mild left bias over a long distance."
+
+  # 3) Fast lane change oscillation
+
+  - name: "Straight lane-change oscillation"
+    active: true
+    road: "straight"
+    level: 3
+    comment: "Short, aggressive S-shaped steering sequence at high speed; tests stability after a fast lane change."
+    perturbations:
+      - control: "throttle"
+        mode: "set"
+        factor: 1.0
+        start_wp: 5
+        end_wp: 80
+        comment: "Accelerate hard first."
+      - control: "steering"
+        mode: "set"
+        factor: 0.5        # first quick move (direction arbitrary; tune sign)
+        start_wp: 40
+        end_wp: 50
+        comment: "Fast steering towards one side."
+      - control: "steering"
+        mode: "set"
+        factor: -0.5       # counter-swing back
+        start_wp: 50
+        end_wp: 60
+        comment: "Fast steering back, creating an S-manoeuvre."
+
+# ---------------------------------------------------------------------------
+
+a:
+  # Road a: long straight, then tight right, left, right, and a series of lefts (very challenging S).
+
+  - name: "Overspeed into first right (a)"
+    active: true
+    road: "a"
+    level: 1
+    comment: "Moderate overspeed before the first tight right-hand curve after a long straight."
+    perturbations:
+      - control: "throttle"
+        mode: "set"
+        factor: 1.0
+        start_wp: 5
+        end_wp: 70
+        comment: "Use most of the initial straight to build speed."
+
+  - name: "Extreme overspeed into first right (a)"
+    active: true
+    road: "a"
+    level: 2
+    comment: "Extreme overspeed; you expect the model to struggle with stability and lane-keeping in the first right."
+    perturbations:
+      - control: "throttle"
+        mode: "set"
+        factor: 1.0
+        start_wp: 5
+        end_wp: 110
+        comment: "Hold full throttle much deeper into the approach to the right turn."
+
+  - name: "Off-center entry into first right (a)"
+    active: true
+    road: "a"
+    level: 3
+    comment: "Steering bias on the straight so the car is laterally shifted when it reaches the first right-hand turn."
+    perturbations:
+      - control: "steering"
+        mode: "add"
+        factor: 0.15       # bias; tune sign to place the car on the 'wrong' side before the corner
+        start_wp: 20
+        end_wp: 80
+        comment: "Slow drift off the PID centerline before the curve."
+
+  - name: "Inside kick at apex of first right (a)"
+    active: true
+    road: "a"
+    level: 4
+    comment: "Short steering kick near the apex of the first right; tests recovery from a sudden disturbance mid-corner."
+    perturbations:
+      - control: "steering"
+        mode: "set"
+        factor: 0.6        # kick into or out of the curve; pick sign visually
+        start_wp: 90
+        end_wp: 95
+        comment: "Short strong steering kick around the expected apex."
+
+# ---------------------------------------------------------------------------
+
+b:
+  # Road b: mirror of a with first big turn to the left.
+
+  - name: "Overspeed into first left (b)"
+    active: true
+    road: "b"
+    level: 1
+    comment: "Moderate overspeed before the first tight left-hand curve after the long straight."
+    perturbations:
+      - control: "throttle"
+        mode: "set"
+        factor: 1.0
+        start_wp: 5
+        end_wp: 70
+        comment: "Use most of the initial straight to build speed."
+
+  - name: "Extreme overspeed into first left (b)"
+    active: true
+    road: "b"
+    level: 2
+    comment: "Extreme overspeed; tests whether the model can keep control when entering a sharp left with too much speed."
+    perturbations:
+      - control: "throttle"
+        mode: "set"
+        factor: 1.0
+        start_wp: 5
+        end_wp: 110
+        comment: "Full throttle very deep into the approach to the left turn."
+
+  - name: "Off-center entry into first left (b)"
+    active: true
+    road: "b"
+    level: 3
+    comment: "Steering bias on the straight so the car arrives shifted laterally at the first left-hand curve."
+    perturbations:
+      - control: "steering"
+        mode: "add"
+        factor: -0.15      # drift to opposite side compared to a; tune sign visually
+        start_wp: 20
+        end_wp: 80
+        comment: "Slow drift away from the ideal centerline before the curve."
+
+  - name: "Inside kick at apex of first left (b)"
+    active: true
+    road: "b"
+    level: 4
+    comment: "Short steering kick near the apex of the first left; mirror of road a scenario."
+    perturbations:
+      - control: "steering"
+        mode: "set"
+        factor: -0.6       # choose sign so the kick is into the left-hand curve
+        start_wp: 90
+        end_wp: 95
+        comment: "Short strong steering kick around the apex."
+
+# ---------------------------------------------------------------------------
+
 c:
-  - name: "fullspeed before turn"
-    active: false
+  # Road c: long straight, then right-left-right chicane and then a left + double left.
+  # This combines overspeed + deliberate off-PID positions.
+
+  - name: "Fullspeed before first chicane (c)"
+    active: true
     road: "c"
     level: 1
-    comment: "Max acceleration before turn 1"
+    comment: "Moderate overspeed before the first right-left chicane; tests speed generalization with complex topology."
     perturbations:
       - control: "throttle"
         mode: "set"
         factor: 1.0
         start_wp: 4
         end_wp: 30
-        comment: "Speeds up into the curve until WP 30."
+        comment: "Build up speed along the initial straight before the first right turn."
 
-  - name: "fullspeed before turn"
-    active: false
+  - name: "Extreme fullspeed into chicane (c)"
+    active: true
     road: "c"
     level: 2
-    comment: "Max acceleration before turn 1"
+    comment: "Very aggressive overspeed: car is still at full throttle when entering the chicane."
     perturbations:
       - control: "throttle"
         mode: "set"
         factor: 1.0
         start_wp: 4
         end_wp: 50
-        comment: "Speeds up into the curve until WP 50."
+        comment: "Hold full throttle well into the first chicane turn."
 
-  - name: "Accelerate and kick steering"
+  - name: "Accelerate and kick steering into first right (c)"
     active: true
     road: "c"
-    level: 1
-    comment: "Short steering kick before turn after accelerating"
+    level: 3
+    comment: "Combination: overspeed on the straight plus a steering kick just before/into the first right."
+    perturbations:
+      - control: "throttle"
+        mode: "set"
+        factor: 1.0
+        start_wp: 4
+        end_wp: 20
+        comment: "Accelerate hard out of the start."
+      - control: "steering"
+        mode: "set"
+        factor: 0.6        # kick to the right; tune sign with visualization
+        start_wp: 90
+        end_wp: 95
+        comment: "Short, strong steering kick before the first right in the chicane."
+
+  - name: "Off-center before second left (c)"
+    active: true
+    road: "c"
+    level: 4
+    comment: "Mild steering bias in the early chicane so the car is laterally misaligned when entering the later left-hand turn."
+    perturbations:
+      - control: "steering"
+        mode: "add"
+        factor: 0.15
+        start_wp: 40
+        end_wp: 80
+        comment: "Push the vehicle slowly off the PID path in the first part of the chicane."
+
+  - name: "Late kick in final left (c)"
+    active: true
+    road: "c"
+    level: 5
+    comment: "Short steering kick in the last left-hand section; tests recovery from a disturbance late in a complex sequence."
     perturbations:
       - control: "steering"
         mode: "set"
-        factor: 0.6 # kick to the right
-        start_wp: 90
-        end_wp: 95
-        comment: "Short steering kick to the right."
-      - control: "throttle"
-        mode: "set"
-        factor: 1.0 # full throttle
-        start_wp: 4
-        end_wp: 20
-        comment: "Speeds up into the curve until WP 20."
+        factor: -0.6       # choose sign so the kick is clearly visible in the last left section
+        start_wp: 120
+        end_wp: 125
+        comment: "Short aggressive steering pulse in the last left turn."

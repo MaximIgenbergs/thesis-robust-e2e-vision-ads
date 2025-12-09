@@ -37,7 +37,7 @@ logging:
 
 perturbations:
   baseline: true
-  severities: [2, 4]
+  severities: []
   episodes: 1
 
   chunks:

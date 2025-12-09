@@ -42,8 +42,7 @@ logging:
     perturbation_drive: true
 
 perturbations:
-  baseline: true
-  severities: [1, 2, 3, 4]
+  severities: [2, 4]
   episodes: 1 # runs per (perturbation, severity) pair
 
   # Only loads dynamic masks for perturbations in the current chunk

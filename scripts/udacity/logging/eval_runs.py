@@ -142,11 +142,14 @@ class RunLogger:
         self,
         sim_app: Path | str,
         ckpt: Path | str | None,
-        cfg_paths: dict[str, Any],
-        cfg_roads: dict[str, Any],
-        cfg_perturbations: dict[str, Any],
-        cfg_run: dict[str, Any],
-        cfg_host_port: dict[str, Any],
+        cfg_logging: dict[str, Any] | None = None,
+        cfg_udacity: dict[str, Any] | None = None,
+        cfg_models: dict[str, Any] | None = None,
+        cfg_roads: dict[str, Any] | None = None,
+        cfg_perturbations: dict[str, Any] | None = None,
+        cfg_segments: dict[str, Any] | None = None,
+        cfg_run: dict[str, Any] | None = None,
+        cfg_host_port: dict[str, Any] | None = None,
     ) -> None:
         """
         Write config_snapshot.json with sim path + config blocks.
@@ -157,9 +160,12 @@ class RunLogger:
                 "checkpoint": str(ckpt) if ckpt else None,
             },
             "configs": {
-                "paths": cfg_paths,
+                "logging": cfg_logging,
+                "udacity": cfg_udacity,
+                "models": cfg_models,
                 "roads": cfg_roads,
                 "perturbations": cfg_perturbations,
+                "segments": cfg_segments,
                 "run": cfg_run,
                 "host_port": cfg_host_port,
             },

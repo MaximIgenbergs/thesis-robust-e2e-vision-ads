@@ -31,8 +31,30 @@ run:
   save_images: false
   show_image: true
 
+segments:
+  - id: "segment_01_after_uphill"
+    start_waypoint: 0
+    end_waypoint: 340
+    timeout_s: 300
+
+  - id: "segment_02_flat"
+    start_waypoint: 341
+    end_waypoint: 999
+    timeout_s: 300
+    
+# jungle_reverse:
+  # - id: "segment_01"
+  #   start_waypoint: 0
+  #   end_waypoint: 340
+  #   timeout_s: 300
+
+  # - id: "segment_02"
+  #   start_waypoint: 341
+  #   end_waypoint: 999
+  #   timeout_s: 300
+
 logging:
-  runs_dir: "runs/jungle/generalization"
+  runs_dir: "/media/maximigenbergs/Elements/maximigenbergs/runs/jungle/generalization"
   snapshot_configs: true
   snapshot_env: true
   include_git_sha:

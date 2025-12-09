@@ -1,4 +1,5 @@
-cd ~/thesis-robust-e2e-vision-ads/external/perturbation-drive
+python3.9 -m venv envs/.venv-jungle
+cd external/perturbation-drive
 pip install -r requirements_macos.txt # select the correct requirements file for your OS
 pip install --only-binary=:all: "grpcio==1.56.2" "h5py==3.10.0" --no-cache # to avoid building from source
 pip install "python-socketio==4.5.1" "python-engineio==3.13.2"
