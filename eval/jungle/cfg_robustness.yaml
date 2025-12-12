@@ -10,7 +10,7 @@ models:
   default_model: "dave2_gru"
 
   dave2:
-    checkpoint: "dave2/jungle_20251209-175046/best_model.h5"
+    checkpoint: "dave2/jungle_20251107-173326/best_model.h5"
     image_size_hw: [120, 160]
     normalize: "none"
 
@@ -35,7 +35,7 @@ segments:
   - id: "segment_01_steep_uphill"
     start_waypoint: 0
     end_waypoint: 50
-    timeout_s: 60
+    timeout_s: 90
 
   - id: "segment_02_long_uphill"
     start_waypoint: 50
@@ -45,7 +45,7 @@ segments:
   - id: "segment_03_very_tight_corner"
     start_waypoint: 130
     end_waypoint: 222
-    timeout_s: 40
+    timeout_s: 90
 
   - id: "segment_04_steep_downhill"
     start_waypoint: 222

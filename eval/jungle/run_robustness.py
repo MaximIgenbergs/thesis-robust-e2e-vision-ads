@@ -145,7 +145,29 @@ def get_sector(obs) -> int | None:
 
 def save_img(img: np.ndarray, path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    Image.fromarray(img).save(str(path))
+
+    a = np.asarray(img)
+
+    # handle potential batch dim (1, H, W, C)
+    if a.ndim == 4 and a.shape[0] == 1:
+        a = a[0]
+
+    # If float, map to [0,255] then uint8.
+    if np.issubdtype(a.dtype, np.floating):
+        amin = float(np.nanmin(a)) if a.size else 0.0
+        amax = float(np.nanmax(a)) if a.size else 1.0
+
+        # common case: [0,1]
+        if amin >= 0.0 and amax <= 1.0:
+            a = a * 255.0
+
+        a = np.clip(a, 0.0, 255.0).astype(np.uint8)
+
+    # If int but not uint8, clip/cast
+    elif a.dtype != np.uint8:
+        a = np.clip(a, 0, 255).astype(np.uint8)
+
+    Image.fromarray(a).save(str(path))
 
 
 def run_episode(
@@ -552,6 +574,93 @@ def main() -> int:
     ep_idx = 0
 
     if baseline:
+        ep_idx += 1
+
+        meta = {
+            "road": track,
+            "angles": None,
+            "segs": [s["id"] for s in segments],
+            "start": None,
+            "segment_id": None,
+            "segment_end_waypoint": None,
+            "segment_timeout_s": float(default_timeout_s),
+            "perturbation": None,
+            "severity": 0,
+            "image_size": {"h": image_size_hw[0], "w": image_size_hw[1]},
+            "episodes": 1,
+            "ckpt_name": ckpt_name,
+        }
+        eid, ep_dir = logger.new_episode(ep_idx, meta)
+
+        writer = ScenarioOutcomeWriter(str(ep_dir / "log.json"), overwrite_logs=True)
+
+        all_outcomes: List[ScenarioOutcomeLite] = []
+        all_events: List[Dict[str, Any]] = []
+
+        t0 = time.perf_counter()
+        try:
+            for seg in segments:
+                seg_id = seg["id"]
+                start_wp = seg["start_waypoint"]
+                seg_end_wp = seg["end_waypoint"]
+                seg_timeout_s = seg["timeout_s"]
+
+                img_dir = ep_dir / "images" / seg_id if save_images else None
+
+                outcome, events_log = run_episode(
+                    env=env,
+                    adapter=adapter,
+                    preview=preview,
+                    controller=None,
+                    pert_name="",
+                    severity=0,
+                    save_images=save_images,
+                    track=track,
+                    weather=weather,
+                    daytime=daytime,
+                    timeout_s=seg_timeout_s,
+                    start_waypoint=start_wp,
+                    end_waypoint=seg_end_wp,
+                    image_out_dir=img_dir,
+                )
+
+                for e in events_log:
+                    e.setdefault("segment_id", seg_id)
+
+                all_outcomes.append(outcome)
+                all_events.extend(events_log)
+
+                try:
+                    adapter.reset()
+                except Exception:
+                    pass
+
+                force_start_episode(env, track=track, weather=weather, daytime=daytime)
+
+            writer.write(all_outcomes, images=False)
+
+            (ep_dir / "events.json").write_text(
+                json.dumps(all_events, indent=2, sort_keys=True),
+                encoding="utf-8",
+            )
+
+            if any(o.timeout for o in all_outcomes):
+                status = "interrupted"
+            elif all(o.isSuccess for o in all_outcomes):
+                status = "ok"
+            else:
+                status = "fail_offtrack"
+
+            logger.complete_episode(eid, status=status, wall_time_s=(time.perf_counter() - t0))
+
+        except Exception as e:
+            logger.complete_episode(
+                eid,
+                status=f"error:{type(e).__name__}",
+                wall_time_s=(time.perf_counter() - t0),
+            )
+            raise
+
         for seg in segments:
             ep_idx += 1
             seg_id = seg["id"]
