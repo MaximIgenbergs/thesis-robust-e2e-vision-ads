@@ -12,8 +12,9 @@ import argparse
 import json
 import time
 from typing import List, Dict, Any, Tuple
-
+from pathlib import Path
 import numpy as np
+from PIL import Image
 
 from external.udacity_gym import UdacitySimulator, UdacityGym, UdacityAction
 from external.udacity_gym.agent_callback import PDPreviewCallback
@@ -142,6 +143,11 @@ def get_sector(obs) -> int | None:
         return None
 
 
+def save_img(img: np.ndarray, path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    Image.fromarray(img).save(str(path))
+
+
 def run_episode(
     env: UdacityGym,
     adapter,
@@ -156,6 +162,7 @@ def run_episode(
     timeout_s: float,
     start_waypoint: int | None = None,
     end_waypoint: int | None = None,
+    image_out_dir: Path | None = None,
 ) -> Tuple[ScenarioOutcomeLite, List[Dict[str, Any]]]:
     """
     Run a single episode with one (segment, perturbation, severity) triple.
@@ -185,8 +192,9 @@ def run_episode(
 
     events_log: List[Dict[str, Any]] = []
 
-    original_images = [] if save_images else None
-    perturbed_images = [] if save_images else None
+    # We do NOT store images in ScenarioOutcomeLite anymore.
+    original_images = None
+    perturbed_images = None
 
     offtrack_count = 0
     collision_count = 0
@@ -199,10 +207,13 @@ def run_episode(
     obs = env.observe()
     prev_sector: int | None = None  # for wrap-aware end detection
 
-    # NEW: state for event de-duplication
+    # state for event de-duplication
     seen_events: set[tuple[str, str]] = set()
     last_flag_out = False
     last_flag_collision = False
+
+    # Only save perturbed images to disk if enabled
+    save_images = bool(save_images and image_out_dir is not None)
 
     try:
         while True:
@@ -221,16 +232,15 @@ def run_episode(
                 continue
 
             img_np = np.asarray(obs.input_image, dtype=np.uint8).copy()
-            if save_images:
-                original_images.append(img_np)
 
             if controller is not None and pert_name:
                 pert_np = controller.perturbation(img_np, pert_name, int(severity))
             else:
                 # Baseline: no perturbation, use original image
                 pert_np = img_np
+
             if save_images:
-                perturbed_images.append(pert_np)
+                save_img(pert_np, image_out_dir / "perturbed" / f"frame_{step:06d}.jpg")
 
             # Adapter -> UdacityAction
             try:
@@ -427,8 +437,7 @@ def main() -> int:
     udacity_cfg = cfg["udacity"]
     models_cfg = cfg["models"]
     run_cfg = cfg["run"]
-    # Support both: top-level `segments:` and `run: { segments: [...] }`
-    segments_cfg = cfg.get("segments") or run_cfg.get("segments")
+    segments_cfg = cfg.get("segments")
 
     logging_cfg = cfg["logging"]
     pert_cfg = cfg["perturbations"]
@@ -504,10 +513,8 @@ def main() -> int:
     show_image = bool(run_cfg.get("show_image", True))
     image_size_hw = tuple(run_cfg.get("image_size_hw", [240, 320]))
 
-    # Global default timeout, overridable per-segment
     default_timeout_s = float(run_cfg.get("timeout_s", 300.0))
 
-    # Segments: each with its own start_waypoint, end_waypoint, timeout_s
     segments: List[Dict[str, Any]] = []
     if segments_cfg:
         for seg in segments_cfg:
@@ -544,7 +551,6 @@ def main() -> int:
 
     ep_idx = 0
 
-    # Baseline: one run per segment on the jungle map without any perturbation
     if baseline:
         for seg in segments:
             ep_idx += 1
@@ -574,13 +580,15 @@ def main() -> int:
                 overwrite_logs=True,
             )
 
+            img_dir = ep_dir / "images" / seg_id if save_images else None
+
             t0 = time.perf_counter()
             try:
                 outcome, events_log = run_episode(
                     env=env,
                     adapter=adapter,
                     preview=preview,
-                    controller=None,  # no perturbation
+                    controller=None,
                     pert_name="",
                     severity=0,
                     save_images=save_images,
@@ -590,8 +598,9 @@ def main() -> int:
                     timeout_s=seg_timeout_s,
                     start_waypoint=start_wp,
                     end_waypoint=seg_end_wp,
+                    image_out_dir=img_dir,
                 )
-                writer.write([outcome], images=save_images)
+                writer.write([outcome], images=False)
 
                 events_path = ep_dir / "events.json"
                 events_path.write_text(
@@ -641,7 +650,6 @@ def main() -> int:
                     for _ in range(episodes):
                         ep_idx += 1
 
-                        # episode-level meta (covers all segments)
                         meta = {
                             "road": track,
                             "angles": None,
@@ -677,6 +685,8 @@ def main() -> int:
                                 seg_end_wp = seg["end_waypoint"]
                                 seg_timeout_s = seg["timeout_s"]
 
+                                img_dir = ep_dir / "images" / seg_id if save_images else None
+
                                 outcome, events_log = run_episode(
                                     env=env,
                                     adapter=adapter,
@@ -691,9 +701,9 @@ def main() -> int:
                                     timeout_s=seg_timeout_s,
                                     start_waypoint=start_wp,
                                     end_waypoint=seg_end_wp,
+                                    image_out_dir=img_dir,
                                 )
 
-                                # tag events with segment_id
                                 for e in events_log:
                                     e.setdefault("segment_id", seg_id)
                                 all_outcomes.append(outcome)
@@ -706,8 +716,7 @@ def main() -> int:
 
                                 force_start_episode(env, track=track, weather=weather, daytime=daytime)
 
-                            # write all segments into one log.json
-                            writer.write(all_outcomes, images=save_images)
+                            writer.write(all_outcomes, images=False)
 
                             events_path = ep_dir / "events.json"
                             events_path.write_text(
@@ -715,7 +724,6 @@ def main() -> int:
                                 encoding="utf-8",
                             )
 
-                            # basic status: if any segment timed out -> interrupted, else if all success -> ok, else fail_offtrack
                             if any(o.timeout for o in all_outcomes):
                                 status = "interrupted"
                             elif all(o.isSuccess for o in all_outcomes):

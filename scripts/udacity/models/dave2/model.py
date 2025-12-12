@@ -4,7 +4,7 @@ from tensorflow.keras import layers, models, optimizers # type: ignore
 from .config import INPUT_SHAPE, NUM_OUTPUTS, LEARNING_RATE
 
 def build_dave2(num_outputs: int = NUM_OUTPUTS) -> tf.keras.Model: # type: ignore
-    """PilotNet/DAVE-2 backbone as in PD's example; no behavior changes."""
+    """PilotNet/DAVE-2 backbone from the perturbation-drive repository."""
     row, col, ch = INPUT_SHAPE
     img_in = layers.Input(shape=(row, col, ch), name="img_in")
     x = layers.Lambda(lambda t: t / 255.0, name="norm")(img_in)

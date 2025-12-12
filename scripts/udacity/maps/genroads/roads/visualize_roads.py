@@ -13,7 +13,7 @@ from scripts.udacity.maps.genroads.roads.load_roads import load_roads
 from perturbationdrive import CustomRoadGenerator
 from perturbationdrive.RoadGenerator.Roads.road_visualizer import visualize_road
 
-SET_NAME = "all"
+SET_NAME = "generalization"
 
 ROADS_PATH = abs_path("scripts/udacity/maps/genroads/configs/roads.yaml")
 

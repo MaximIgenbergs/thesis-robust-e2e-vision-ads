@@ -224,7 +224,26 @@ roads:
     angles: [-5, 5, -5, 5, -5, 5, -5, 5, -5, 5, -5, 5, -5, 5, -5, 5, -5, 5, -5, 5]
     segs:   [20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20]
 
+  long_straight_right_hairpin:
+    angles: [0, 0, 0, -10, -20, -30, -40, -40]
+    segs:   [25, 25, 25, 25, 25, 25, 25, 25]
+  long_straight_left_hairpin:
+    angles: [0, 0, 0, 10, 20, 30, 40, 40]
+    segs:   [25, 25, 25, 25, 25, 25, 25, 25]
+  chicane_lr:
+    angles: [0, 0, -15, 35, -35, -10, 0, 0]
+    segs:   [35, 35, 20, 15, 15, 20, 30, 30]
+  chicane_rl:
+    angles: [0, 0, 15, -35, 35, 10, 0, 0]
+    segs:   [35, 35, 20, 15, 15, 20, 30, 30]
+
+
 sets:
+  generalization:
+    - long_straight_right_hairpin
+    - long_straight_left_hairpin
+    - chicane_lr
+    - chicane_rl
   robustness:
     - random_001 # pretty interesting
 

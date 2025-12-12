@@ -1,6 +1,6 @@
 """
 https://github.com/DragonBanana/udacity-gym/blob/main/udacity_gym/extras/model/lane_keeping/vit/vit_model.py
-Credit: dragonbanana
+Credit: dragonbanana (Davide Yi Xian Hu)
 """
 
 import math
