@@ -174,7 +174,6 @@ cython_debug/
 .pypirc
 
 # Training data & logs
-data/
 udacity_dataset_*
 **/logs/
 **/lightning_logs/
@@ -186,24 +185,17 @@ models/**/figures/
 # VSCode settings
 .vscode/
 
-
-external/carla-test/runs/**
-
-# Environments
+binaries/**
+checkpoints/**
+data/**
 envs/**
-
-# Runs
 runs/**
 
-sims/udacity/checkpoints/**/training_runs/
-
-external/TCP/**
-
-**/binaries/**
-
-eval/**
-external/perturbation-drive
-.gitignore
 unitylog.txt
-external/TCP
-external/vision_transformer/**
+external/foresee/**
+
+# old code
+sims/**
+scripts_old/**
+eval_old/**
+external/carla-test/**

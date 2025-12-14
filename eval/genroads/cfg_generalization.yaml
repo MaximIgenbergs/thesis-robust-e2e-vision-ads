@@ -1,0 +1,41 @@
+udacity:
+  map: "genroads"
+  binary: "binaries/genroads/udacity_linux/udacity_binary.x86_64"
+  host: "127.0.0.1"
+  port: 9091
+  weather: "sunny"
+  daytime: "day"
+
+models:
+  default_model: "dave2_gru"
+
+  dave2:
+    checkpoint: "dave2/genroads_20251028-145557/best_model.h5"
+    image_size_hw: [120, 160]
+    normalize: "imagenet"
+
+  dave2_gru:
+    checkpoint: "dave2_gru/genroads_20251028-142517/best_model.h5"
+    sequence_length: 3
+    image_size_hw: [120, 160]
+    normalize: "imagenet"
+
+  vit:
+    checkpoint: "vit/genroads_20251202-152358/best_model.ckpt"
+    image_size_hw: [160, 160]
+    normalize: "imagenet"
+
+run:
+  image_size_hw: [120, 160]
+  show_image: true
+  max_steps: null # null = no limit
+  road_cooldown_s: 3.0 # cooldown between roads (seconds)
+  scenarios_path: "scripts/udacity/maps/genroads/configs/scenarios.yaml"
+
+logging:
+  runs_dir: "/media/maximigenbergs/Elements/maximigenbergs/runs/genroads/generalization"
+  snapshot_configs: true
+  snapshot_env: true
+  include_git_sha:
+    thesis_repo: true
+    perturbation_drive: true

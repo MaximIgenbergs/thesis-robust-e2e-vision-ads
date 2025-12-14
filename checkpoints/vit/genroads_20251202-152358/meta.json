@@ -1,0 +1,34 @@
+{
+  "augmentations": [
+    "augmix",
+    "flip"
+  ],
+  "batch_size": 256,
+  "checkpoint_path": "/home/maximigenbergs/thesis-robust-e2e-vision-ads/checkpoints/vit/genroads_20251202-152358/best_model.ckpt",
+  "counts": {
+    "train_images": 99519,
+    "val_images": 24879
+  },
+  "created_utc": "2025-12-02T17:31:00+00:00",
+  "data": {
+    "data_dir": "/home/maximigenbergs/thesis-robust-e2e-vision-ads/data/genroads/pid_20251201-163211"
+  },
+  "epochs": 2000,
+  "framework": "pytorch",
+  "input_shape": [
+    160,
+    160,
+    3
+  ],
+  "loss": "mse",
+  "map": "genroads",
+  "model": "vit",
+  "num_outputs": 2,
+  "optimizer": {
+    "lr": 0.0002,
+    "type": "adam"
+  },
+  "patience": 20,
+  "seed": 42,
+  "val_split": 0.2
+}

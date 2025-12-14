@@ -5,3 +5,6 @@
 [submodule "external/TCP"]
 	path = external/TCP
 	url = https://github.com/OpenDriveLab/TCP.git
+[submodule "external/InterFuser"]
+	path = external/InterFuser
+	url = https://github.com/opendilab/InterFuser.git

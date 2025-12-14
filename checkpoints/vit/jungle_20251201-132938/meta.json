@@ -1,0 +1,34 @@
+{
+  "augmentations": [
+    "augmix",
+    "flip"
+  ],
+  "batch_size": 256,
+  "checkpoint_path": "/home/maximigenbergs/thesis-robust-e2e-vision-ads/scripts/udacity/checkpoints/vit/jungle_20251201-132938/best_model.ckpt",
+  "counts": {
+    "train_images": 2343,
+    "val_images": 585
+  },
+  "created_utc": "2025-12-01T13:17:49+00:00",
+  "data": {
+    "data_dir": "/home/maximigenbergs/thesis-robust-e2e-vision-ads/data/jungle/pid_20251029-174507"
+  },
+  "epochs": 2000,
+  "framework": "pytorch",
+  "input_shape": [
+    160,
+    160,
+    3
+  ],
+  "loss": "mse",
+  "map": "jungle",
+  "model": "vit",
+  "num_outputs": 2,
+  "optimizer": {
+    "lr": 0.0002,
+    "type": "adam"
+  },
+  "patience": 20,
+  "seed": 42,
+  "val_split": 0.2
+}
