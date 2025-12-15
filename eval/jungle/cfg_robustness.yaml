@@ -15,7 +15,7 @@ models:
     normalize: "none"
 
   dave2_gru:
-    checkpoint: "dave2_gru/jungle_20251103-150739/best_model.h5"
+    checkpoint: "dave2_gru/jungle_20251107-173305/best_model.h5"
     sequence_length: 3
     image_size_hw: [120, 160]
     normalize: "none"

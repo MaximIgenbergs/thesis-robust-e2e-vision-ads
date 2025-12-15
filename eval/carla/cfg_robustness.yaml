@@ -37,32 +37,32 @@ logging:
 
 perturbations:
   baseline: true
-  severities: []
+  severities: [2, 4]
   episodes: 1
 
   chunks:
     # Category C: Weather Perturbations
     - ["dynamic_rain_filter"]
-    # - ["dynamic_snow_filter", "frost_filter", "fog_filter"]
-    # - ["dynamic_sun_filter"]
-    # - ["dynamic_lightning_filter"]
-    # - ["dynamic_smoke_filter"]
+    - ["dynamic_snow_filter", "frost_filter", "fog_filter"]
+    - ["dynamic_sun_filter"]
+    - ["dynamic_lightning_filter"]
+    - ["dynamic_smoke_filter"]
 
-    # # Category B: Blur and Focus Perturbations
-    # - ["motion_blur", "defocus_blur", "gaussian_blur"]
+    # Category B: Blur and Focus Perturbations
+    - ["motion_blur", "defocus_blur", "gaussian_blur"]
 
-    # # Category A: Noise Perturbations
-    # - ["gaussian_noise", "poisson_noise", "impulse_noise", "speckle_noise_filter", "jpeg_filter", "pixelate"]
+    # Category A: Noise Perturbations
+    - ["gaussian_noise", "poisson_noise", "impulse_noise", "speckle_noise_filter", "jpeg_filter", "pixelate"]
 
-    # # Category G: Color & Tone Adjustments
-    # - ["increase_brightness", "contrast", "white_balance_filter", "saturation_filter", "saturation_decrease_filter", "posterize_filter", "histogram_equalisation", "grayscale_filter", "low_pass_filter", "phase_scrambling"]
+    # Category G: Color & Tone Adjustments
+    - ["increase_brightness", "contrast", "white_balance_filter", "saturation_filter", "saturation_decrease_filter", "posterize_filter", "histogram_equalisation", "grayscale_filter", "low_pass_filter", "phase_scrambling"]
 
-    # # Category D/F: Distortion Perturbations & Graphic Patterns
-    # - ["elastic", "cutout_filter", "sample_pairing_filter"]
-    # - ["splatter_mapping", "dotted_lines_mapping", "zigzag_mapping", "canny_edges_mapping"]
+    # Category D/F: Distortion Perturbations & Graphic Patterns
+    - ["elastic", "cutout_filter", "sample_pairing_filter"]
+    - ["splatter_mapping", "dotted_lines_mapping", "zigzag_mapping", "canny_edges_mapping"]
 
-    # # Category E: Affine Transformations
-    # - ["translate_image", "scale_image"]
+    # Category E: Affine Transformations
+    - ["translate_image", "scale_image"]
 
-    # # Overlays (Occlusions)
-    # - ["dynamic_object_overlay", "static_object_overlay"]
+    # Overlays (Occlusions)
+    - ["dynamic_object_overlay", "static_object_overlay"]
