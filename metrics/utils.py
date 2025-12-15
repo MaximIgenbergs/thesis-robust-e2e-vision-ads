@@ -5,12 +5,12 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Sequence
 
 
-def read_json(path: Path) -> Dict[str, Any]:
+def read_json(path: Path) -> Any:
     with path.open("r", encoding="utf-8") as f:
         return json.load(f)
 
 
-def try_read_json(path: Path) -> Optional[Dict[str, Any]]:
+def try_read_json(path: Path) -> Optional[Any]:
     if not path.exists():
         return None
     try:

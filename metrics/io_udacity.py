@@ -3,152 +3,192 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional, Tuple
 
-from metrics.utils import try_read_json, safe_str, first_present
+from metrics.utils import read_json, try_read_json, safe_str
 
 
 BASELINE_NAME_DEFAULT = "baseline"
 
 
 def _infer_model_and_ts(run_dir_name: str) -> Tuple[str, str]:
-    # Handles: "<model>_<YYYYmmdd-HHMMSS>" or "<model>_<YYYYmmdd_HHMMSS>"
+    # run_id examples: dave2_gru_20251214_203816
     parts = run_dir_name.split("_")
-    if len(parts) >= 2:
-        model = "_".join(parts[:-1])
-        ts = parts[-1]
+    if len(parts) >= 3:
+        model = "_".join(parts[:-2])
+        ts = "_".join(parts[-2:])
         return model, ts
     return run_dir_name, "unknown"
 
 
-def _segments_from_config_snapshot(config_snapshot: Dict[str, Any]) -> List[Dict[str, Any]]:
-    cfgs = (config_snapshot or {}).get("configs") or {}
-    seg_cfg = cfgs.get("segments")
+def infer_num_segments_from_snapshot(config_snapshot: Dict[str, Any]) -> int:
+    # Your snapshot uses configs.segments as a list
+    cfg = (config_snapshot or {}).get("configs") or {}
+    segs = cfg.get("segments")
+    return int(len(segs)) if isinstance(segs, list) else 0
 
-    # seg_cfg might be:
-    # - dict with key "segments": [...]
-    # - list of segment dicts
-    if isinstance(seg_cfg, dict):
-        segs = seg_cfg.get("segments")
-        return segs if isinstance(segs, list) else []
-    if isinstance(seg_cfg, list):
-        return seg_cfg
+
+def _normalize_action_list(actions: Any) -> List[List[float]]:
+    """
+    Normalizes various action formats to: [[steer, throttle], ...]
+    Handles GenRoads pid_actions nesting: [[[s,t]], [[s,t]], ...]
+    """
+    if actions is None:
+        return []
+    if not isinstance(actions, list):
+        return []
+    out: List[List[float]] = []
+    for a in actions:
+        # genroads pid_actions: a might be [[s,t]]
+        if isinstance(a, list) and len(a) == 1 and isinstance(a[0], list):
+            a = a[0]
+        if isinstance(a, list) and len(a) >= 2:
+            try:
+                out.append([float(a[0]), float(a[1])])
+            except Exception:
+                continue
+    return out
+
+
+def _coerce_log_entries(log_json: Any) -> List[Dict[str, Any]]:
+    """
+    Your log.json is a list of dict entries.
+    But we accept dict too.
+    """
+    if isinstance(log_json, list):
+        return [x for x in log_json if isinstance(x, dict)]
+    if isinstance(log_json, dict):
+        return [log_json]
     return []
 
 
-def infer_num_segments(config_snapshot: Dict[str, Any]) -> int:
-    segs = _segments_from_config_snapshot(config_snapshot)
-    return int(len(segs))
-
-
-def _extract_scenario_fields(log: Dict[str, Any], meta: Dict[str, Any], baseline_name: str) -> Dict[str, Any]:
-    scenario = log.get("scenario") or meta.get("scenario") or {}
-    if not isinstance(scenario, dict):
-        scenario = {}
-
-    perturbation = first_present(
-        scenario,
-        ["perturbation", "corruption", "name", "perturbation_name", "filter", "effect"],
-    )
-    if perturbation is None:
-        perturbation = first_present(meta, ["perturbation", "corruption", "name", "perturbation_name"])
-
-    perturbation = safe_str(perturbation, default=baseline_name)
-
-    severity = first_present(scenario, ["level", "severity", "s"])
-    if severity is None:
-        severity = first_present(meta, ["level", "severity", "s"])
-
-    # baseline: enforce severity 0 if missing/invalid
-    try:
-        severity_i = int(severity) if severity is not None else (0 if perturbation == baseline_name else -1)
-    except Exception:
-        severity_i = 0 if perturbation == baseline_name else -1
-
-    segment_id = first_present(meta, ["segment_id", "segment", "segmentId", "segment_name"])
-    if segment_id is None:
-        segment_id = first_present(scenario, ["segment_id", "segment", "segmentId", "id"])
-    segment_id = safe_str(segment_id, default="unknown")
-
-    road_id = first_present(meta, ["road_id", "road", "roadId"])
-    if road_id is None:
-        road_id = first_present(scenario, ["road_id", "road", "roadId"])
-    road_id = safe_str(road_id, default="unknown")
-
-    return {
-        "perturbation": perturbation,
-        "severity": severity_i,
-        "segment_id": segment_id,
-        "road_id": road_id,
-    }
-
-
-def iter_udacity_episodes(run_dir: Path) -> Iterator[Dict[str, Any]]:
-    manifest = try_read_json(run_dir / "manifest.json") or {}
-    config_snapshot = try_read_json(run_dir / "config_snapshot.json") or {}
-
-    episodes_dir = run_dir / "episodes"
-    if not episodes_dir.exists():
+def iter_udacity_entries(run_dir: Path) -> Iterator[Dict[str, Any]]:
+    """
+    Yields normalized "entry-level" records:
+      - Jungle: one entry per segment within episodes/<id>/log.json list
+      - GenRoads: usually one entry, but handles multiple entries if present
+    """
+    manifest_path = run_dir / "manifest.json"
+    manifest = try_read_json(manifest_path)
+    if not isinstance(manifest, dict):
         return
 
-    for ep_dir in sorted(episodes_dir.glob("*")):
-        if not ep_dir.is_dir():
+    config_snapshot = try_read_json(run_dir / "config_snapshot.json")
+    if not isinstance(config_snapshot, dict):
+        config_snapshot = {}
+
+    episodes = manifest.get("episodes")
+    if not isinstance(episodes, list):
+        return
+
+    for ep in episodes:
+        if not isinstance(ep, dict):
             continue
-        meta = try_read_json(ep_dir / "meta.json") or {}
-        log = try_read_json(ep_dir / "log.json") or {}
-        if not log:
-            continue
+
+        ep_id = safe_str(ep.get("id"), default="unknown")
+        log_rel = safe_str(ep.get("log"), default=f"episodes/{ep_id}/log.json")
+        log_path = run_dir / log_rel
+
+        meta_path = run_dir / "episodes" / ep_id / "meta.json"
+        meta = try_read_json(meta_path)
+        if not isinstance(meta, dict):
+            meta = {}
+
+        log_json = try_read_json(log_path)
+        entries = _coerce_log_entries(log_json)
+
         yield {
             "run_dir": str(run_dir),
-            "episode_dir": str(ep_dir),
             "manifest": manifest,
             "config_snapshot": config_snapshot,
+            "episode_id": ep_id,
+            "episode_manifest": ep,   # includes perturbation/severity/road/status
             "meta": meta,
-            "log": log,
+            "log_entries": entries,
         }
 
 
-def normalize_udacity_episode(
+def normalize_udacity_entry(
     raw: Dict[str, Any],
     map_name: str,
     test_type: str,
     baseline_name: str = BASELINE_NAME_DEFAULT,
-) -> Dict[str, Any]:
+) -> List[Dict[str, Any]]:
+    """
+    Returns a list of normalized entries (one per log entry).
+    """
     run_dir = Path(raw["run_dir"])
-    model, run_ts = _infer_model_and_ts(run_dir.name)
+    manifest: Dict[str, Any] = raw["manifest"]
+    config_snapshot: Dict[str, Any] = raw["config_snapshot"]
+    meta: Dict[str, Any] = raw["meta"]
+    ep_m: Dict[str, Any] = raw["episode_manifest"]
+    log_entries: List[Dict[str, Any]] = raw["log_entries"]
 
-    meta: Dict[str, Any] = raw.get("meta") or {}
-    log: Dict[str, Any] = raw.get("log") or {}
-    config_snapshot: Dict[str, Any] = raw.get("config_snapshot") or {}
+    model = safe_str(manifest.get("model"), default=_infer_model_and_ts(run_dir.name)[0])
+    run_id = safe_str(manifest.get("run_id"), default=run_dir.name)
+    run_ts = safe_str(manifest.get("timestamp"), default=_infer_model_and_ts(run_dir.name)[1])
 
-    scenario_fields = _extract_scenario_fields(log, meta, baseline_name)
+    # manifest is authoritative for perturbation/severity/road
+    pert = ep_m.get("perturbation")
+    perturbation = baseline_name if pert is None else safe_str(pert, default=baseline_name)
 
-    is_success = bool(first_present(log, ["isSuccess", "is_success", "success"]) or False)
-    timeout = bool(first_present(log, ["timeout", "timed_out"]) or False)
+    try:
+        severity = int(ep_m.get("severity", 0))
+    except Exception:
+        severity = 0
 
-    xte = log.get("xte") or []
-    angle = first_present(log, ["angle_diff", "angle_errors"]) or []
-    actions = log.get("actions") or []
-    pid_actions = log.get("pid_actions") or []
+    road = safe_str(ep_m.get("road"), default=map_name)
 
-    # Jungle: task = segment_id, GenRoads: task = road_id
-    task_id = scenario_fields["segment_id"] if map_name.lower() == "jungle" else scenario_fields["road_id"]
+    # Jungle segments are listed in meta["segs"] (ordered)
+    seg_ids = meta.get("segs")
+    seg_ids_list = seg_ids if isinstance(seg_ids, list) else []
 
-    num_segments = infer_num_segments(config_snapshot) if map_name.lower() == "jungle" else 0
+    # num segments from snapshot (preferred), else from meta["segs"]
+    num_segments = infer_num_segments_from_snapshot(config_snapshot)
+    if num_segments <= 0 and map_name.lower() == "jungle":
+        num_segments = len(seg_ids_list)
 
-    return {
-        "sim": "udacity",
-        "map": map_name,
-        "test_type": test_type,
-        "model": model,
-        "run_ts": run_ts,
-        "task_id": task_id,
-        "episode_id": Path(raw["episode_dir"]).name,
-        "perturbation": scenario_fields["perturbation"],
-        "severity": scenario_fields["severity"],
-        "is_success": is_success,
-        "timeout": timeout,
-        "xte": xte,
-        "angle_err": angle,
-        "actions": actions,
-        "pid_actions": pid_actions,
-        "num_segments": num_segments,
-    }
+    out: List[Dict[str, Any]] = []
+    for idx, entry in enumerate(log_entries):
+        # signals are lists inside each entry
+        xte = entry.get("xte") or []
+        angle_err = entry.get("angle_diff") if "angle_diff" in entry else (entry.get("angle_errors") or [])
+
+        actions = _normalize_action_list(entry.get("actions"))
+        pid_actions = _normalize_action_list(entry.get("pid_actions"))
+
+        is_success = bool(entry.get("isSuccess", False))
+        timeout = bool(entry.get("timeout", False))
+
+        # task_id:
+        # - jungle: segment id by entry index (meta["segs"][idx])
+        # - genroads: road id
+        if map_name.lower() == "jungle":
+            seg_id = safe_str(seg_ids_list[idx], default=f"segment_{idx:02d}") if idx < len(seg_ids_list) else f"segment_{idx:02d}"
+            task_id = seg_id
+        else:
+            task_id = road
+
+        out.append({
+            "sim": "udacity",
+            "map": map_name,
+            "test_type": test_type,
+            "model": model,
+            "run_id": run_id,
+            "run_ts": run_ts,
+            # unique identifier per entry
+            "episode_folder": raw["episode_id"],
+            "entry_index": idx,
+            "entry_id": f"{raw['episode_id']}_{idx:02d}",
+            "task_id": task_id,
+            "road": road,
+            "perturbation": perturbation,
+            "severity": severity,
+            "is_success": is_success,
+            "timeout": timeout,
+            "xte": xte,
+            "angle_err": angle_err,
+            "actions": actions,
+            "pid_actions": pid_actions,
+            "num_segments": num_segments,
+        })
+
+    return out
