@@ -148,6 +148,7 @@ class RunLogger:
         cfg_roads: dict[str, Any] | None = None,
         cfg_perturbations: dict[str, Any] | None = None,
         cfg_segments: dict[str, Any] | None = None,
+        cfg_scenarios: dict[str, Any] | None = None,
         cfg_run: dict[str, Any] | None = None,
         cfg_host_port: dict[str, Any] | None = None,
     ) -> None:
@@ -166,6 +167,7 @@ class RunLogger:
                 "roads": cfg_roads,
                 "perturbations": cfg_perturbations,
                 "segments": cfg_segments,
+                "scenarios": cfg_scenarios,
                 "run": cfg_run,
                 "host_port": cfg_host_port,
             },

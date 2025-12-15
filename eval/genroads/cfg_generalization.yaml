@@ -26,6 +26,7 @@ models:
     normalize: "imagenet"
 
 run:
+  road_set: "generalization"
   image_size_hw: [120, 160]
   show_image: true
   max_steps: null # null = no limit
