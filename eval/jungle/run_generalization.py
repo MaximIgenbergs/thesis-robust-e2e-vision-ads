@@ -138,13 +138,13 @@ def predict_to_action(adapter, image: np.ndarray) -> UdacityAction:
         thr = out.get("throttle", out.get("accel", out.get("throttle_cmd", 0.0)))
         return UdacityAction(
             steering_angle=float(np.clip(float(steer), -1.0, 1.0)),
-            throttle=float(np.clip(float(thr), 0.0, 1.0)),
+            throttle=float(np.clip(float(thr), -1.0, 1.0)),
         )
 
     arr = np.array(out).reshape(-1)
     return UdacityAction(
         steering_angle=float(np.clip(float(arr[0]), -1.0, 1.0)),
-        throttle=float(np.clip(float(arr[1]), 0.0, 1.0)),
+        throttle=float(np.clip(float(arr[1]), -1.0, 1.0)),
     )
 
 
