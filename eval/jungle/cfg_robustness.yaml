@@ -134,6 +134,17 @@ perturbations:
 
     # Overlays (Occlusions)
     - ["dynamic_object_overlay", "static_object_overlay"]
+
+    # # dave2:
+    # # Category D/F: Distortion Perturbations & Graphic Patterns
+    # - ["cutout_filter", "sample_pairing_filter"]
+    # - ["splatter_mapping", "dotted_lines_mapping", "zigzag_mapping", "canny_edges_mapping"]
+
+    # # Category E: Affine Transformations
+    # - ["translate_image", "scale_image"]
+
+    # # Overlays (Occlusions)
+    # - ["dynamic_object_overlay", "static_object_overlay"]
     
 
 # List of all available perturbations:

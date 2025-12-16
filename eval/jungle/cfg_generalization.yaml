@@ -1,5 +1,5 @@
 udacity:
-  map: "jungle"
+  map: "jungle_reverse" # jungle or jungle_reverse
   binary: "binaries/jungle/udacity_linux/udacity.x86_64"
   host: "127.0.0.1"
   port: 9091
@@ -20,39 +20,104 @@ models:
 
   vit:
     checkpoint: "vit/jungle_20251201-132938/best_model.ckpt"
-    image_size_hw: [120, 160]
+    image_size_hw: [160, 160]
     normalize: "imagenet"
 
 run:
   image_size_hw: [240, 320]
   steps_per_episode: 2000
-  episodes: 1
-  start_waypoint: 200 # must be between 0 and 999
+  episodes: 3
   save_images: false
   show_image: true
 
 segments:
-  - id: "segment_01_after_uphill"
+  # jungle_reverse segments:
+  - id: "segment_01_easy_start"
     start_waypoint: 0
-    end_waypoint: 340
-    timeout_s: 300
+    end_waypoint: 77
+    timeout_s: 90
 
-  - id: "segment_02_flat"
-    start_waypoint: 341
+  - id: "segment_02_steep_downhill_sharp_curves" # very difficult
+    start_waypoint: 77
+    end_waypoint: 100
+    timeout_s: 90
+
+  - id: "segment_03_very_steep_uphill"
+    start_waypoint: 88
+    end_waypoint: 177
+    timeout_s: 90
+
+  - id: "segment_04_gain_speed_uphill"
+    start_waypoint: 177
+    end_waypoint: 236
+    timeout_s: 90
+
+  - id: "segment_05_left_right_curve"
+    start_waypoint: 236
+    end_waypoint: 290
+    timeout_s: 90
+
+  - id: "segment_05_uphill_with_enough_speed" # very easy
+    start_waypoint: 290
+    end_waypoint: 326
+    timeout_s: 90
+
+  - id: "segment_06_long_downhill_and_straight"
+    start_waypoint: 326
+    end_waypoint: 405
+    timeout_s: 120
+
+  - id: "segment_07_bridge"
+    start_waypoint: 405
+    end_waypoint: 480
+    timeout_s: 90
+
+  - id: "segment_08_uphill_curves"
+    start_waypoint: 480
+    end_waypoint: 630
+    timeout_s: 130
+
+  - id: "segment_09_very_steep_downhill_with_curves"
+    start_waypoint: 630
+    end_waypoint: 690
+    timeout_s: 90
+
+  - id: "segment_10_uphill"
+    start_waypoint: 670
+    end_waypoint: 766
+    timeout_s: 120
+
+  - id: "segment_11_level_curves" # easy topology
+    start_waypoint: 766
+    end_waypoint: 867
+    timeout_s: 90
+
+  - id: "segment_12_downhill_to_finish"
+    start_waypoint: 867
     end_waypoint: 999
-    timeout_s: 300
-    
-# jungle_reverse:
-  # - id: "segment_01"
-  #   start_waypoint: 0
-  #   end_waypoint: 340
-  #   timeout_s: 300
+    timeout_s: 110
 
-  # - id: "segment_02"
-  #   start_waypoint: 341
+  # last third of jungle segments:
+  # - id: "segment_09_downhill_and_steep_uphill"
+  #   start_waypoint: 760
+  #   end_waypoint: 825
+  #   timeout_s: 50
+
+  # - id: "segment_10_challenging_twists"
+  #   start_waypoint: 828
+  #   end_waypoint: 890
+  #   timeout_s: 60
+
+  # - id: "segment_11_steep_long_uphill" # almost impossible
+  #   start_waypoint: 876
+  #   end_waypoint: 960
+  #   timeout_s: 120
+
+  # - id: "segment_12_final_uphill_turn"
+  #   start_waypoint: 960
   #   end_waypoint: 999
-  #   timeout_s: 300
-
+  #   timeout_s: 60
+    
 logging:
   runs_dir: "/media/maximigenbergs/Elements/maximigenbergs/runs/jungle/generalization"
   snapshot_configs: true

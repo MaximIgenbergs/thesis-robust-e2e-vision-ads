@@ -19,7 +19,7 @@ from external.udacity_gym import UdacitySimulator, UdacityGym, UdacityAction
 from external.udacity_gym.agent_callback import PDPreviewCallback
 from external.udacity_gym.logger import ScenarioOutcomeWriter, ScenarioOutcomeLite, ScenarioLite
 
-from scripts import ROOT, abs_path, load_cfg
+from scripts import abs_path, load_cfg
 from scripts.udacity.adapters.utils.build_adapter import build_adapter
 from scripts.udacity.logging.eval_runs import RunLogger, prepare_run_dir, best_effort_git_sha, pip_freeze
 
@@ -74,6 +74,18 @@ def await_scene_ready(env: UdacityGym, min_frames: int = 8, max_wait_s: float = 
         time.sleep(0.02)
 
 
+def spawn_waypoint(env: UdacityGym, idx: int) -> None:
+    """
+    Request a spawn at a given waypoint index (sector).
+    """
+    await_scene_ready(env, min_frames=8, max_wait_s=5.0)
+
+    print(f"[eval:jungle:generalization][INFO] requesting waypoint {idx}")
+    env.simulator.sim_executor.request_spawn_waypoint(int(idx))
+    time.sleep(0.6)
+    print(f"[eval:jungle:generalization][INFO] waypoint {idx} request dispatched")
+
+
 def metrics(env: UdacityGym) -> dict:
     try:
         m = env.simulator.get_episode_metrics() or {}
@@ -109,16 +121,35 @@ def settle_metrics(env: UdacityGym, prev: dict, settle_seconds: float = 1.5, pro
     }
 
 
-def spawn_waypoint(env: UdacityGym, idx: int) -> None:
+def build_segments(run_cfg: dict, segments_cfg: list | None) -> List[Dict[str, Any]]:
     """
-    Request a spawn at a given waypoint index.
+    Identical segment construction logic as robustness.
     """
-    await_scene_ready(env, min_frames=8, max_wait_s=5.0)
+    default_timeout_s = float(run_cfg.get("timeout_s", 300.0))
 
-    print(f"[eval:jungle:generalization][INFO] requesting waypoint {idx}")
-    env.simulator.sim_executor.request_spawn_waypoint(int(idx))
-    time.sleep(0.6)
-    print(f"[eval:jungle:generalization][INFO] waypoint {idx} request dispatched")
+    segments: List[Dict[str, Any]] = []
+    if segments_cfg:
+        for seg in segments_cfg:
+            segments.append(
+                {
+                    "id": seg.get("id", "seg"),
+                    "start_waypoint": int(seg["start_waypoint"]),
+                    "end_waypoint": int(seg["end_waypoint"]) if seg.get("end_waypoint") is not None else None,
+                    "timeout_s": float(seg.get("timeout_s", default_timeout_s)),
+                }
+            )
+    else:
+        start_wp = int(run_cfg.get("start_waypoint", 200))
+        segments.append(
+            {
+                "id": "full",
+                "start_waypoint": start_wp,
+                "end_waypoint": None,
+                "timeout_s": float(default_timeout_s),
+            }
+        )
+
+    return segments
 
 
 def predict_to_action(adapter, image: np.ndarray) -> UdacityAction:
@@ -166,7 +197,7 @@ def get_sector(obs) -> int | None:
         return None
 
 
-def run_episode(
+def run_segment(
     env: UdacityGym,
     adapter,
     preview: PDPreviewCallback,
@@ -174,25 +205,23 @@ def run_episode(
     track: str,
     weather: str,
     daytime: str,
-    start_waypoint: int,
     timeout_s: float,
+    start_waypoint: int | None = None,
     end_waypoint: int | None = None,
 ) -> Tuple[ScenarioOutcomeLite, List[Dict[str, Any]]]:
     """
-    Run a single generalization episode on one segment without perturbations.
+    Run one segment (no perturbations).
 
     Termination:
       - segment timeout_s reached, or
-      - (if provided) sector >= end_waypoint, or
+      - (if provided) reached end_waypoint (wrap-aware crossing), or
       - env signals terminated or truncated, or
       - KeyboardInterrupt.
-
-    Returns:
-      - ScenarioOutcomeLite
-      - events_log: list of {step, sim_time, event, raw}
     """
     force_start_episode(env, track=track, weather=weather, daytime=daytime)
-    spawn_waypoint(env, start_waypoint)
+
+    if start_waypoint is not None:
+        spawn_waypoint(env, start_waypoint)
 
     metrics_base = metrics(env)
 
@@ -215,20 +244,22 @@ def run_episode(
     step = 0
     t0 = time.perf_counter()
     obs = env.observe()
+    prev_sector: int | None = None  # for wrap-aware end detection
+
+    # state for event de-duplication (same as robustness)
+    seen_events: set[tuple[str, str]] = set()
+    last_flag_out = False
+    last_flag_collision = False
 
     try:
         while True:
-            # Segment timeout
             if timeout_s is not None and (time.perf_counter() - t0) > timeout_s:
                 timed_out = True
                 print(
-                    f"[eval:jungle:generalization][INFO] "
-                    f"segment timeout after {timeout_s:.1f}s"
+                    f"[eval:jungle:generalization][INFO] segment timeout after {timeout_s:.1f}s"
                 )
                 break
 
-            if obs is None or obs.input_image is not None:
-                pass
             if obs is None or obs.input_image is None:
                 time.sleep(0.005)
                 obs = env.observe()
@@ -244,11 +275,17 @@ def run_episode(
             last_time = obs.time
             obs, reward, terminated, truncated, info = env.step(action)
 
-            # Events with timestamps for offline metrics
+            # Log discrete events with timestamps for offline metrics (deduplicated)
             events = (info or {}).get("events") or []
             for e in events:
                 key = (e.get("key") or e.get("type") or "").lower()
                 if key in ("out_of_track", "collision"):
+                    ts = str(e.get("timestamp", ""))
+                    ident = (ts, key)
+                    if ident in seen_events:
+                        continue
+                    seen_events.add(ident)
+
                     events_log.append(
                         {
                             "step": int(step),
@@ -262,7 +299,9 @@ def run_episode(
                     elif key == "collision":
                         collision_count += 1
 
-            if (info or {}).get("out_of_track") is True:
+            # Compatibility with possible boolean flags in info (only count rising edge)
+            flag_out = (info or {}).get("out_of_track") is True
+            if flag_out and not last_flag_out:
                 events_log.append(
                     {
                         "step": int(step),
@@ -272,7 +311,10 @@ def run_episode(
                     }
                 )
                 offtrack_count += 1
-            if (info or {}).get("collision") is True:
+            last_flag_out = flag_out
+
+            flag_collision = (info or {}).get("collision") is True
+            if flag_collision and not last_flag_collision:
                 events_log.append(
                     {
                         "step": int(step),
@@ -282,6 +324,7 @@ def run_episode(
                     }
                 )
                 collision_count += 1
+            last_flag_collision = flag_collision
 
             frames.append(step)
             xte.append(float(getattr(obs, "cte", 0.0)))
@@ -291,17 +334,33 @@ def run_episode(
             pos.append([float(px), float(py), float(pz)])
             actions.append([float(action.steering_angle), float(action.throttle)])
 
-            # Waypoint / sector-based termination
+            # End-waypoint termination (wrap-aware, same logic as robustness)
+            hit_end = False
+            sector_for_log: int | None = None
             if end_waypoint is not None:
                 sector = get_sector(obs)
-                if sector is not None and sector >= end_waypoint:
-                    print(
-                        f"[eval:jungle:generalization][INFO] "
-                        f"segment reached end_waypoint={end_waypoint} (sector={sector})"
-                    )
-                    reached_end = True
-                    step += 1
-                    break
+                if sector is not None:
+                    if prev_sector is None:
+                        if sector >= end_waypoint:
+                            hit_end = True
+                            sector_for_log = sector
+                    else:
+                        if prev_sector < end_waypoint <= sector:
+                            hit_end = True
+                            sector_for_log = sector
+                        elif prev_sector > sector:
+                            hit_end = True
+                            sector_for_log = sector
+                    prev_sector = sector
+
+            if hit_end:
+                print(
+                    f"[eval:jungle:generalization][INFO] "
+                    f"segment reached end_waypoint={end_waypoint} (sector={sector_for_log})"
+                )
+                reached_end = True
+                step += 1
+                break
 
             while obs.time == last_time:
                 time.sleep(0.0025)
@@ -319,28 +378,35 @@ def run_episode(
     except KeyboardInterrupt:
         stop_requested = True
         print(
-            "\n[eval:jungle:generalization][WARN] episode interrupted by user. "
+            "\n[eval:jungle:generalization][WARN] segment interrupted by user. "
             "Attempting to finish writing logs..."
         )
     finally:
         wall = time.perf_counter() - t0
-        delta = settle_metrics(env, metrics_base, settle_seconds=1.5, probe_hz=10.0)
+
+        # For clean segment ends, don't wait for late infractions after the segment.
+        if reached_end and not timed_out and not stop_requested:
+            delta = settle_metrics(env, metrics_base, settle_seconds=0.0, probe_hz=10.0)
+        else:
+            delta = settle_metrics(env, metrics_base, settle_seconds=1.5, probe_hz=10.0)
+
         offtrack_count = max(offtrack_count, int(delta["outOfTrackCount"]))
         collision_count = max(collision_count, int(delta["collisionCount"]))
+
         print(
-            f"[eval:jungle:generalization][INFO] episode: "
+            f"[eval:jungle:generalization][INFO] segment: "
             f"steps={step} wall={wall:.1f}s "
             f"offtrack_count={offtrack_count} collisions={collision_count} "
             f"{'(interrupted)' if stop_requested else ''}"
         )
 
-    # Success = reached end of segment without timeout / manual stop
     is_success = reached_end and not timed_out and not stop_requested
 
     outcome = ScenarioOutcomeLite(
         frames=frames,
         pos=pos,
         xte=xte,
+        angle_diff=angle_diff,
         speeds=speeds,
         actions=actions,
         pid_actions=[],
@@ -449,128 +515,103 @@ def main() -> int:
     show_image = bool(run_cfg.get("show_image", True))
     episodes = int(run_cfg.get("episodes", 1))
 
-    # Global default timeout; segments can override
-    default_timeout_s = float(run_cfg.get("timeout_s", 300.0))
-
-    segments: List[Dict[str, Any]] = []
-    if segments_cfg:
-        for seg in segments_cfg:
-            segments.append(
-                {
-                    "id": seg.get("id", "seg"),
-                    "start_waypoint": int(seg["start_waypoint"]),
-                    "end_waypoint": int(seg["end_waypoint"])
-                    if seg.get("end_waypoint") is not None
-                    else None,
-                    "timeout_s": float(seg.get("timeout_s", default_timeout_s)),
-                }
-            )
-    else:
-        # Fallback: single segment, using a default start waypoint if given
-        start_waypoint = int(run_cfg.get("start_waypoint", 200))
-        segments.append(
-            {
-                "id": "full",
-                "start_waypoint": start_waypoint,
-                "end_waypoint": None,
-                "timeout_s": float(default_timeout_s),
-            }
-        )
+    segments = build_segments(run_cfg, segments_cfg)
 
     sim = UdacitySimulator(str(sim_app), udacity_cfg["host"], int(udacity_cfg["port"]))
     env = UdacityGym(simulator=sim)
     sim.start()
 
-    force_start_episode(
-        env,
-        track=map_name,
-        weather=udacity_cfg.get("weather", "sunny"),
-        daytime=udacity_cfg.get("daytime", "day"),
-    )
+    track = map_name
+    weather = udacity_cfg.get("weather", "sunny")
+    daytime = udacity_cfg.get("daytime", "day")
+
+    force_start_episode(env, track=track, weather=weather, daytime=daytime)
     preview = PDPreviewCallback(enabled=show_image)
 
     ep_idx = 0
 
     try:
-        for seg in segments:
-            seg_id = seg["id"]
-            start_wp = seg["start_waypoint"]
-            seg_end_wp = seg["end_waypoint"]
-            seg_timeout_s = seg["timeout_s"]
+        for _ in range(episodes):
+            ep_idx += 1
 
-            for _ in range(episodes):
-                ep_idx += 1
-                meta = {
-                    "road": map_name,
-                    "angles": None,
-                    "segs": None,
-                    "start": int(start_wp),
-                    "segment_id": seg_id,
-                    "segment_end_waypoint": seg_end_wp,
-                    "segment_timeout_s": float(seg_timeout_s),
-                    "perturbation": "none",
-                    "severity": 0,
-                    "image_size": {"h": image_size_hw[0], "w": image_size_hw[1]},
-                    "episodes": int(episodes),
-                    "ckpt_name": ckpt_name,
-                }
-                eid, ep_dir = logger.new_episode(ep_idx, meta)
+            meta = {
+                "road": track,
+                "angles": None,
+                "segs": [s["id"] for s in segments],
+                "start": None,
+                "segment_id": None,
+                "segment_end_waypoint": None,
+                "segment_timeout_s": float(run_cfg.get("timeout_s", 300.0)),
+                "perturbation": "none",
+                "severity": 0,
+                "image_size": {"h": image_size_hw[0], "w": image_size_hw[1]},
+                "episodes": int(episodes),
+                "ckpt_name": ckpt_name,
+            }
+            eid, ep_dir = logger.new_episode(ep_idx, meta)
 
-                writer = ScenarioOutcomeWriter(
-                    str(ep_dir / "log.json"),
-                    overwrite_logs=True,
-                )
+            writer = ScenarioOutcomeWriter(str(ep_dir / "log.json"), overwrite_logs=True)
 
-                t0 = time.perf_counter()
-                try:
-                    outcome, events_log = run_episode(
+            all_outcomes: List[ScenarioOutcomeLite] = []
+            all_events: List[Dict[str, Any]] = []
+
+            t0 = time.perf_counter()
+            try:
+                for seg in segments:
+                    seg_id = seg["id"]
+                    start_wp = seg["start_waypoint"]
+                    seg_end_wp = seg["end_waypoint"]
+                    seg_timeout_s = seg["timeout_s"]
+
+                    outcome, events_log = run_segment(
                         env=env,
                         adapter=adapter,
                         preview=preview,
                         save_images=save_images,
-                        track=map_name,
-                        weather=udacity_cfg.get("weather", "sunny"),
-                        daytime=udacity_cfg.get("daytime", "day"),
-                        start_waypoint=start_wp,
+                        track=track,
+                        weather=weather,
+                        daytime=daytime,
                         timeout_s=seg_timeout_s,
+                        start_waypoint=start_wp,
                         end_waypoint=seg_end_wp,
                     )
-                    writer.write([outcome], images=save_images)
 
-                    # Sidecar: per-step events with timestamps
-                    events_path = ep_dir / "events.json"
-                    events_path.write_text(
-                        json.dumps(events_log, indent=2, sort_keys=True),
-                        encoding="utf-8",
-                    )
+                    for e in events_log:
+                        e.setdefault("segment_id", seg_id)
 
-                    status = "ok" if outcome.isSuccess else "fail_offtrack"
-                    logger.complete_episode(
-                        eid,
-                        status=status,
-                        wall_time_s=(time.perf_counter() - t0),
-                    )
+                    all_outcomes.append(outcome)
+                    all_events.extend(events_log)
 
-                except Exception as e:
-                    logger.complete_episode(
-                        eid,
-                        status=f"error:{type(e).__name__}",
-                        wall_time_s=(time.perf_counter() - t0),
-                    )
-                    raise
+                    try:
+                        adapter.reset()
+                    except Exception:
+                        pass
 
-                try:
-                    adapter.reset()
-                except Exception:
-                    pass
+                    force_start_episode(env, track=track, weather=weather, daytime=daytime)
 
-                force_start_episode(
-                    env,
-                    track=map_name,
-                    weather=udacity_cfg.get("weather", "sunny"),
-                    daytime=udacity_cfg.get("daytime", "day"),
+                writer.write(all_outcomes, images=save_images)
+
+                (ep_dir / "events.json").write_text(
+                    json.dumps(all_events, indent=2, sort_keys=True),
+                    encoding="utf-8",
                 )
-                spawn_waypoint(env, start_wp)
+
+                if any(o.timeout for o in all_outcomes):
+                    status = "interrupted"
+                elif all(o.isSuccess for o in all_outcomes):
+                    status = "ok"
+                else:
+                    status = "fail_offtrack"
+
+                logger.complete_episode(eid, status=status, wall_time_s=(time.perf_counter() - t0))
+
+            except Exception as e:
+                logger.complete_episode(
+                    eid,
+                    status=f"error:{type(e).__name__}",
+                    wall_time_s=(time.perf_counter() - t0),
+                )
+                raise
 
     except KeyboardInterrupt:
         print("\n[eval:jungle:generalization][WARN] Ctrl-C — stopping.")
@@ -579,11 +620,13 @@ def main() -> int:
             preview.close()
         except Exception:
             pass
+
         try:
             sim.close()
             env.close()
         except Exception:
             pass
+
         print("[eval:jungle:generalization][INFO] done.")
 
     return 0
