@@ -28,13 +28,14 @@ models:
 run:
   road_set: "generalization"
   image_size_hw: [120, 160]
+  road_set: "generalization"
   show_image: true
   max_steps: null # null = no limit
   road_cooldown_s: 3.0 # cooldown between roads (seconds)
   scenarios_path: "scripts/udacity/maps/genroads/configs/scenarios.yaml"
 
 logging:
-  runs_dir: "/media/maximigenbergs/Elements/maximigenbergs/runs/genroads/generalization"
+  runs_dir: "runs/genroads/generalization"
   snapshot_configs: true
   snapshot_env: true
   include_git_sha:

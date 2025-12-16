@@ -1,8 +1,7 @@
 python3.9 -m venv envs/.venv-jungle
 source envs/.venv-jungle/bin/activate
 cd external/perturbation-drive
-pip install -r requirements_macos.txt
-pip install --only-binary=:all: "grpcio==1.56.2" "h5py==3.10.0" --no-cache # to avoid building from source
+pip install -r requirements_linux.txt
 pip install "python-socketio==4.5.1" "python-engineio==3.13.2"
 pip install -e .
 pip install -e ../..
