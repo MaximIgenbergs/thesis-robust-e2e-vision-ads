@@ -15,7 +15,7 @@ models:
     normalize: "imagenet"
 
   dave2_gru:
-    checkpoint: "dave2_gru/genroads_20251028-142517/best_model.h5"
+    checkpoint: "dave2_gru/genroads_20251215-174930/best_model.h5"
     sequence_length: 3
     image_size_hw: [120, 160]
     normalize: "imagenet"
@@ -42,6 +42,7 @@ logging:
     perturbation_drive: true
 
 perturbations:
+  baseline: true
   severities: [2, 4]
   episodes: 1 # runs per (perturbation, severity) pair
 
