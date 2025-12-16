@@ -172,7 +172,7 @@ def main() -> int:
                     eid, ep_dir = logger.new_episode(ep_idx, meta)
                     log_file = ep_dir / "log.json"
 
-                    scens = [Scenario(waypoints=waypoints, perturbation_function=None, perturbation_scale=0)]
+                    scens = [Scenario(waypoints=waypoints, perturbation_function="", perturbation_scale=0)]
                     t0 = time.perf_counter()
                     try:
                         bench.simulate_scenarios(scenarios=scens, log_dir=str(log_file), image_size=image_size_hw)

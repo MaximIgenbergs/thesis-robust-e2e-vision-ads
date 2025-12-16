@@ -15,7 +15,7 @@ from perturbationdrive.RoadGenerator.Roads.road_visualizer import visualize_road
 
 SET_NAME = "generalization"
 
-ROADS_PATH = abs_path("scripts/udacity/maps/genroads/configs/roads.yaml")
+ROADS_PATH = abs_path("scripts/udacity/maps/genroads/roads/roads.yaml")
 
 # Default starting pose used for visualization (x, y, yaw_deg, speed)
 # Exact numbers don't matter for visualization; adjust if you care about absolute position.

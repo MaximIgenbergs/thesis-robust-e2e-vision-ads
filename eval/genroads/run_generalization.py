@@ -175,20 +175,16 @@ def run_scenario_episode(sim: UdacitySimulator, controller, track_string: str, w
                 model_actions = model_actions.reshape(1, -1)
 
             model_steer = float(model_actions[0][0])
-            model_throttle = float(model_actions[0][1])
+            model_throttle = float(model_actions[-1][1])
 
             pos = info.get("pos")
             x = float(pos[0])
             y = float(pos[1])
             wp_idx = nearest_wp_index(x, y, waypoints)
 
-            print(f"[eval:genroads:generalization][INFO] step={step_idx:04d} wp_idx={wp_idx:4d}  x={x:7.2f}  y={y:7.2f}", flush=True)
-
             (act_steer, act_throttle), phase, active_controls, active_perts = apply_scenario(scenario, wp_idx, (model_steer, model_throttle))
 
             actual_actions = np.array([[act_steer, act_throttle]], dtype=np.float32)
-            if isinstance(env.action_space, gym.spaces.Box):
-                actual_actions = np.clip(actual_actions, env.action_space.low, env.action_space.high)
 
             pert_summary = format_active_perturbations(active_perts)
 
@@ -269,7 +265,7 @@ def main() -> int:
     run_cfg = cfg["run"]
     logging_cfg = cfg["logging"]
 
-    roads_yaml = abs_path("scripts/udacity/maps/genroads/configs/roads.yaml")
+    roads_yaml = abs_path("scripts/udacity/maps/genroads/roads/roads.yaml") # TODO: should be in config
     roads_def, road_sets = load_roads(roads_yaml)
 
     # If you want subsets, you can add `road_set` to run: and use it here.
