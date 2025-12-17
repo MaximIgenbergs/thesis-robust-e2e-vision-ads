@@ -25,7 +25,7 @@ import yaml
 
 from scripts.udacity.adapters.utils.build_adapter import build_adapter
 from scripts.udacity.logging.eval_runs import RunLogger, prepare_run_dir, best_effort_git_sha, pip_freeze
-from scripts.udacity.maps.genroads.roads.load_roads import load_roads
+from scripts.udacity.maps.genroads.utils.load_roads import load_roads
 from scripts import abs_path, load_cfg
 
 from perturbationdrive.RoadGenerator.CustomRoadGenerator import CustomRoadGenerator
@@ -265,7 +265,7 @@ def main() -> int:
     run_cfg = cfg["run"]
     logging_cfg = cfg["logging"]
 
-    roads_yaml = abs_path("scripts/udacity/maps/genroads/roads/roads.yaml") # TODO: should be in config
+    roads_yaml = abs_path("scripts/udacity/maps/genroads/roads.yaml") # TODO: should be in config
     roads_def, road_sets = load_roads(roads_yaml)
 
     # If you want subsets, you can add `road_set` to run: and use it here.

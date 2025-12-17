@@ -14,7 +14,7 @@ from typing import List, Dict, Any
 
 from scripts.udacity.logging.eval_runs import RunLogger, prepare_run_dir, best_effort_git_sha, pip_freeze
 from scripts.udacity.adapters.utils.build_adapter import build_adapter
-from scripts.udacity.maps.genroads.roads.load_roads import load_roads
+from scripts.udacity.maps.genroads.utils.load_roads import load_roads
 from scripts import abs_path, load_cfg
 
 from perturbationdrive import Scenario, PerturbationDrive
@@ -53,7 +53,7 @@ def main() -> int:
     pert_cfg = cfg["perturbations"]
     baseline = bool(pert_cfg.get("baseline", False))
 
-    roads_yaml = abs_path("scripts/udacity/maps/genroads/roads/roads.yaml") # TODO: maybe not hardcode this path?
+    roads_yaml = abs_path("scripts/udacity/maps/genroads/roads.yaml") # TODO: maybe not hardcode this path?
     roads_def, road_sets = load_roads(roads_yaml)
 
     road_set_id = run_cfg.get("road_set")

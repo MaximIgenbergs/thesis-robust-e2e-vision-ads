@@ -32,7 +32,7 @@ run:
   show_image: true
   max_steps: null # null = no limit
   road_cooldown_s: 3.0 # cooldown between roads (seconds)
-  scenarios_path: "scripts/udacity/maps/genroads/configs/scenarios.yaml"
+  scenarios_path: "scripts/udacity/maps/genroads/scenarios.yaml"
 
 logging:
   runs_dir: "runs/genroads/generalization"
