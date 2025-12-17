@@ -13,13 +13,17 @@ import numpy as np
 from external.udacity_gym import UdacitySimulator, UdacityGym, UdacityAction
 from external.udacity_gym.agent import PIDUdacityAgent_Angle
 
-from scripts.udacity.maps.jungle.configs import paths, run
-from scripts.udacity.maps.jungle.configs.data_collection import TARGET_SECTOR_SPAN, MAX_STEPS, TARGET_SPEED
 from scripts.udacity.logging.data_collection_runs import DataRunLogger, make_run_dir, save_image, write_frame_record
 from scripts import abs_path
 
+SIM_PATH = "/home/maxim/thesis-robust-e2e-vision-ads/binaries/jungle/udacity_linux/udacity.x86_64"
 HOST = "127.0.0.1"
 PORT = 9091
+
+DATA_DIR = "/home/maxim/thesis-robust-e2e-vision-ads/data/jungle"
+TARGET_SECTOR_SPAN = 666  # 0-999 
+MAX_STEPS = 100000
+TARGET_SPEED = 22
 
 def initialize_jungle(env: UdacityGym, weather: str = "sunny", daytime: str = "day", timeout_s: float = 30.0) -> None:
     env.reset(track="jungle", weather=weather, daytime=daytime)
@@ -63,11 +67,11 @@ def update_sector_progress(state: SectorState, sector: int, target_span: int = 1
 
 
 def main() -> None:
-    sim_app = abs_path(getattr(paths, "SIM", getattr(paths, "SIM", "")))
+    sim_app = abs_path(SIM_PATH)
     if not sim_app.exists():
-        raise FileNotFoundError(f"SIM not found: {sim_app}\nEdit scripts/udacity/maps/jungle/configs/paths.py")
+        raise FileNotFoundError(f"SIM not found: {sim_app}")
 
-    base_dir: Path = Path(paths.DATA_DIR).expanduser().resolve()
+    base_dir: Path = Path(DATA_DIR).expanduser().resolve()
     out_dir = make_run_dir(base_dir, prefix="pid")
 
     # manifest logger
@@ -75,8 +79,8 @@ def main() -> None:
         "sector_span_target": int(TARGET_SECTOR_SPAN),
         "max_steps_cap": int(MAX_STEPS),
         "target_speed": float(TARGET_SPEED),
-        "weather": getattr(run, "WEATHER", "sunny"),
-        "daytime": getattr(run, "DAYTIME", "day"),
+        "weather": "sunny",
+        "daytime": "day",
     }
     mlog = DataRunLogger(run_dir=out_dir, map_name="jungle", source="jungle",
                          sim_app=sim_app, data_dir=out_dir, raw_pd_dir=None, extras=extras)

@@ -9,7 +9,7 @@ from typing import List, Tuple, Dict, Any
 import yaml
 
 from scripts import abs_path
-from scripts.udacity.maps.genroads.roads.load_roads import load_roads
+from scripts.udacity.maps.genroads.utils.load_roads import load_roads
 from perturbationdrive import CustomRoadGenerator
 from perturbationdrive.RoadGenerator.Roads.road_visualizer import visualize_road
 

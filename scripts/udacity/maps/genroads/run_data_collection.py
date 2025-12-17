@@ -7,9 +7,9 @@ Creates a pid_YYYYMMDD-HHMMSS/ run directory under DATA_DIR and fills it with im
 from __future__ import annotations
 import time
 from pathlib import Path
+from types import SimpleNamespace
 
-from scripts.udacity.maps.genroads.configs import paths
-from scripts.udacity.maps.genroads.roads.load_roads import load_roads
+from scripts.udacity.maps.genroads.utils.load_roads import load_roads
 from scripts.udacity.logging.data_collection_runs import make_run_dir, convert_outputs
 
 from perturbationdrive import PerturbationDrive
@@ -17,21 +17,24 @@ from perturbationdrive.RoadGenerator.CustomRoadGenerator import CustomRoadGenera
 from examples.udacity.udacity_simulator import UdacitySimulator
 from scripts import abs_path
 
+SIM_PATH = "/home/maxim/thesis-robust-e2e-vision-ads/binaries/genroads/udacity_linux/udacity_binary.x86_64"
 HOST = "127.0.0.1"
 PORT = 9091
+
+DATA_DIR = "/home/maxim/thesis-robust-e2e-vision-ads/data/genroads"
 ROADS_PATH = abs_path("scripts/udacity/maps/genroads/roads/roads.yaml")
 ROADS_SET = "data_collection"
 
 
 def main() -> None:
-    data_root = Path(paths.DATA_DIR).expanduser().resolve()
+    data_root = Path(DATA_DIR).expanduser().resolve()
     run_dir = make_run_dir(data_root, prefix="pid")
     raw_pd_dir = run_dir / "raw_pd_logs"
     raw_pd_dir.mkdir(parents=True, exist_ok=True)
 
-    sim_app = abs_path(getattr(paths, "SIM", getattr(paths, "SIM", "")))
+    sim_app = abs_path(SIM_PATH)
     if not sim_app.exists():
-        raise FileNotFoundError(f"SIM not found: {sim_app}\n Edit scripts/udacity/maps/genroads/configs/paths.py")
+        raise FileNotFoundError(f"SIM not found: {sim_app}")
 
     print(f"[scripts:genroads:collection] run_dir: {run_dir}")
 
