@@ -224,25 +224,43 @@ roads:
     angles: [-5, 5, -5, 5, -5, 5, -5, 5, -5, 5, -5, 5, -5, 5, -5, 5, -5, 5, -5, 5]
     segs:   [20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20]
 
+  
+  wide_hairpin_r:
+    angles: [0, 0, 0, 0, -30, -65, -55, -10]
+    segs: [25, 25, 25, 25, 25, 25, 25, 25]
+  wide_hairpin_l:
+    angles: [0, 0, 0, 0, 30, 65, 55, -10]
+    segs: [25, 25, 25, 25, 25, 25, 25, 25]
   hairpin_r:
-    angles: [0, 0, 0, 0, -5, -100, 0, 0]
+    angles: [0, 0, 0, 0, -30, -85, -55, -10]
     segs: [25, 25, 25, 25, 25, 25, 25, 25]
   hairpin_l:
-    angles: [0, 0, 0, 0, 5, 100, 0, 0]
+    angles: [0, 0, 0, 0, 30, 85, 55, -10]
     segs: [25, 25, 25, 25, 25, 25, 25, 25]
+  wide_chicane_lr: 
+    angles: [0, 0, 0, 10, 40, -40, -10, 0]
+    segs: [25, 25, 25, 15, 15, 25, 25, 25]
+  wide_chicane_rl:
+    angles: [0, 0, 0, -10, -40, 40, 10, 0]
+    segs: [25, 25, 25, 15, 15, 25, 25, 25]
   chicane_lr:
-    angles: [0, 0, 0, 10, 70, -70, -10, 0]
+    angles: [0, 0, 0, 10, 50, -50, -10, 0]
     segs: [25, 25, 25, 10, 10, 25, 25, 25]
   chicane_rl:
-    angles: [0, 0, 0, -10, -70, 70, 10, 0]
+    angles: [0, 0, 0, -10, -50, 50, 10, 0]
     segs: [25, 25, 25, 10, 10, 25, 25, 25]
 
 sets:
   generalization:
+    - wide_hairpin_r
+    - wide_hairpin_l
     - hairpin_r
     - hairpin_l
+    - wide_chicane_lr
+    - wide_chicane_rl
     - chicane_lr
     - chicane_rl
+    
   robustness:
     - random_001
 

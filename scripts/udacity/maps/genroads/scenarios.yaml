@@ -1,3 +1,19 @@
+wide_hairpin_r:
+  - name: "no perturbation wide hairpin"
+    active: true
+    road: "wide_hairpin_r"
+    level: 0
+    comment: ""
+    perturbations: []
+
+wide_hairpin_l:
+  - name: "no perturbation wide hairpin"
+    active: true
+    road: "wide_hairpin_l"
+    level: 0
+    comment: ""
+    perturbations: []
+
 hairpin_r:
   - name: "no perturbation hairpin"
     active: true
@@ -6,314 +22,449 @@ hairpin_r:
     comment: ""
     perturbations: []
 
-  - name: "no perturbation hairpin + brake tap"
-    active: true
-    road: "hairpin_r"
-    level: 1
-    comment: ""
-    perturbations:
-      - control: "throttle"
-        mode: "set"
-        factor: -1.0
-        start_wp: 217
-        end_wp: 223
-        comment: "Short brake tap"
+  # - name: "no perturbation hairpin + brake tap"
+  #   active: true
+  #   road: "hairpin_r"
+  #   level: 1
+  #   comment: ""
+  #   perturbations:
+  #     - control: "throttle"
+  #       mode: "set"
+  #       factor: -1.0
+  #       start_wp: 217
+  #       end_wp: 223
+  #       comment: "Short brake tap"
 
-  - name: "no perturbation hairpin + brake assist"
-    active: true
-    road: "hairpin_r"
-    level: 1
-    comment: ""
-    perturbations:
-      - control: "throttle"
-        mode: "add"
-        factor: -0.1
-        start_wp: 217
-        end_wp: 250
-        comment: "Gentle braking assist through the hairpin."
+  # - name: "no perturbation hairpin + brake assist"
+  #   active: true
+  #   road: "hairpin_r"
+  #   level: 1
+  #   comment: ""
+  #   perturbations:
+  #     - control: "throttle"
+  #       mode: "add"
+  #       factor: -0.1
+  #       start_wp: 217
+  #       end_wp: 250
+  #       comment: "Gentle braking assist through the hairpin."
 
-  - name: "overspeed into right hairpin"
-    active: true
-    road: "hairpin_r"
-    level: 1
-    comment: ""
-    perturbations:
-      - control: "throttle"
-        mode: "set"
-        factor: 0.3
-        start_wp: 0
-        end_wp: 90
-        comment: ""
-      - control: "steering"
-        mode: "set"
-        factor: 0.0
-        start_wp: 0
-        end_wp: 90
-        comment: ""
-  - name: "overspeed into right hairpin"
-    active: true
-    road: "hairpin_r"
-    level: 2
-    comment: ""
-    perturbations:
-      - control: "throttle"
-        mode: "set"
-        factor: 0.3
-        start_wp: 0
-        end_wp: 135
-        comment: ""
-      - control: "steering"
-        mode: "set"
-        factor: 0.0
-        start_wp: 0
-        end_wp: 135
-        comment: ""
-  - name: "overspeed into right hairpin"
-    active: true
-    road: "hairpin_r"
-    level: 3
-    comment: ""
-    perturbations:
-      - control: "throttle"
-        mode: "set"
-        factor: 0.3
-        start_wp: 0
-        end_wp: 180
-        comment: ""
-      - control: "steering"
-        mode: "set"
-        factor: 0.0
-        start_wp: 0
-        end_wp: 180
-        comment: ""
-  - name: "overspeed into right hairpin"
-    active: true
-    road: "hairpin_r"
-    level: 2
-    comment: "boost throttle slightly before right hairpin."
-    perturbations:
-      - control: "throttle"
-        mode: "set"
-        factor: 1.0
-        start_wp: 180
-        end_wp: 190
-        comment: "Full throttle before hairpin."
+  # - name: "overspeed into right hairpin"
+  #   active: true
+  #   road: "hairpin_r"
+  #   level: 1
+  #   comment: ""
+  #   perturbations:
+  #     - control: "throttle"
+  #       mode: "set"
+  #       factor: 0.3
+  #       start_wp: 0
+  #       end_wp: 90
+  #       comment: ""
+  #     - control: "steering"
+  #       mode: "set"
+  #       factor: 0.0
+  #       start_wp: 0
+  #       end_wp: 90
+  #       comment: ""
+  # - name: "overspeed into right hairpin"
+  #   active: true
+  #   road: "hairpin_r"
+  #   level: 2
+  #   comment: ""
+  #   perturbations:
+  #     - control: "throttle"
+  #       mode: "set"
+  #       factor: 0.3
+  #       start_wp: 0
+  #       end_wp: 135
+  #       comment: ""
+  #     - control: "steering"
+  #       mode: "set"
+  #       factor: 0.0
+  #       start_wp: 0
+  #       end_wp: 135
+  #       comment: ""
+  # - name: "overspeed into right hairpin"
+  #   active: true
+  #   road: "hairpin_r"
+  #   level: 3
+  #   comment: ""
+  #   perturbations:
+  #     - control: "throttle"
+  #       mode: "set"
+  #       factor: 0.3
+  #       start_wp: 0
+  #       end_wp: 180
+  #       comment: ""
+  #     - control: "steering"
+  #       mode: "set"
+  #       factor: 0.0
+  #       start_wp: 0
+  #       end_wp: 180
+  #       comment: ""
+  # - name: "overspeed into right hairpin"
+  #   active: true
+  #   road: "hairpin_r"
+  #   level: 2
+  #   comment: "boost throttle slightly before right hairpin."
+  #   perturbations:
+  #     - control: "throttle"
+  #       mode: "set"
+  #       factor: 1.0
+  #       start_wp: 180
+  #       end_wp: 190
+  #       comment: "Full throttle before hairpin."
 
-  - name: "outside line before right hairpin"
-    active: true
-    road: "hairpin_r"
-    level: 1
-    comment: "Small steering bias to the left on the straight so the car reaches the hairpin on the outside line."
-    perturbations:
-      - control: "steering"
-        mode: "add"
-        factor: 0.15 # positive = right in your setup; so use negative for 'left' if needed
-        start_wp: 190
-        end_wp: 200
-        comment: "Small persistent steering to the left."
+  # - name: "outside line before right hairpin"
+  #   active: true
+  #   road: "hairpin_r"
+  #   level: 1
+  #   comment: "Small steering bias to the left on the straight so the car reaches the hairpin on the outside line."
+  #   perturbations:
+  #     - control: "steering"
+  #       mode: "add"
+  #       factor: 0.15 # positive = right in your setup; so use negative for 'left' if needed
+  #       start_wp: 190
+  #       end_wp: 200
+  #       comment: "Small persistent steering to the left."
 
-  - name: "oversteer hairpin"
-    active: true
-    road: "hairpin_r"
-    level: 1
-    comment: "Short steering kick on exit that nudges the car off the ideal line."
-    perturbations:
-      - control: "steering"
-        mode: "add"
-        factor: -0.4 # kick further into the right turn
-        start_wp: 220
-        end_wp: 225
-        comment: "Short steering pulse on corner exit to push the car towards the inside."
-  - name: "understeer hairpin"
-    active: true
-    road: "hairpin_r"
-    level: 1
-    comment: ""
-    perturbations:
-      - control: "steering"
-        mode: "set"
-        factor: 0
-        start_wp: 220
-        end_wp: 223
-        comment: "going straight will understeer the car outwards."
+  # - name: "oversteer hairpin"
+  #   active: true
+  #   road: "hairpin_r"
+  #   level: 1
+  #   comment: "Short steering kick on exit that nudges the car off the ideal line."
+  #   perturbations:
+  #     - control: "steering"
+  #       mode: "add"
+  #       factor: -0.4 # kick further into the right turn
+  #       start_wp: 220
+  #       end_wp: 225
+  #       comment: "Short steering pulse on corner exit to push the car towards the inside."
+  # - name: "understeer hairpin"
+  #   active: true
+  #   road: "hairpin_r"
+  #   level: 1
+  #   comment: ""
+  #   perturbations:
+  #     - control: "steering"
+  #       mode: "set"
+  #       factor: 0
+  #       start_wp: 220
+  #       end_wp: 223
+  #       comment: "going straight will understeer the car outwards."
 
 hairpin_l:
-  - name: "overspeed into left hairpin"
-    active: true
-    road: "hairpin_l"
-    level: 1
-    comment: "Doesn't apply any perturbation, since speed build up on straight will be enough"
-    perturbations:
-      - control: "throttle"
-        mode: "mul"
-        factor: 1.0
-        start_wp: 180
-        end_wp: 190
-        comment: "Nothing."
-  - name: "overspeed into left hairpin"
-    active: true
-    road: "hairpin_l"
-    level: 2
-    comment: "boost throttle slightly before left hairpin."
-    perturbations:
-      - control: "throttle"
-        mode: "set"
-        factor: 1.0
-        start_wp: 180
-        end_wp: 190
-        comment: "Full throttle before hairpin."
 
-  - name: "outside line before left hairpin"
+  - name: "no perturbation hairpin"
     active: true
     road: "hairpin_l"
-    level: 1
-    comment: "Small steering bias to the right on the straight so the car reaches the hairpin on the outside line."
-    perturbations:
-      - control: "steering"
-        mode: "add"
-        factor: -0.15 # positive = right in your setup; so use negative for 'left' if needed
-        start_wp: 190
-        end_wp: 200
-        comment: "Small persistent steering to the right."
-
-  - name: "oversteer hairpin"
-    active: true
-    road: "hairpin_l"
-    level: 1
-    comment: "Short steering kick on exit that nudges the car off the ideal line."
-    perturbations:
-      - control: "steering"
-        mode: "add"
-        factor: 0.4 # kick further into the left turn
-        start_wp: 220
-        end_wp: 225
-        comment: "Short steering pulse on corner exit to push the car towards the inside."
-  - name: "understeer hairpin"
-    active: true
-    road: "hairpin_l"
-    level: 1
+    level: 0
     comment: ""
-    perturbations:
-      - control: "steering"
-        mode: "set"
-        factor: 0
-        start_wp: 220
-        end_wp: 223
-        comment: "going straight will understeer the car outwards."
+    perturbations: []
 
-  - name: "coasting mid left hairpin"
-    active: true
-    road: "hairpin_l"
-    level: 1
-    comment: "Throttle is cut to simulate coasting mid-corner while the model expects some power."
-    perturbations:
-      - control: "throttle"
-        mode: "set"
-        factor: 0.0
-        start_wp: 70
-        end_wp: 90
-        comment: "Removes throttle around the apex to test stability when speed drops unexpectedly."
+  # - name: "overspeed into left hairpin"
+  #   active: true
+  #   road: "hairpin_l"
+  #   level: 1
+  #   comment: "Doesn't apply any perturbation, since speed build up on straight will be enough"
+  #   perturbations:
+  #     - control: "throttle"
+  #       mode: "mul"
+  #       factor: 1.0
+  #       start_wp: 180
+  #       end_wp: 190
+  #       comment: "Nothing."
+  # - name: "overspeed into left hairpin"
+  #   active: true
+  #   road: "hairpin_l"
+  #   level: 2
+  #   comment: "boost throttle slightly before left hairpin."
+  #   perturbations:
+  #     - control: "throttle"
+  #       mode: "set"
+  #       factor: 1.0
+  #       start_wp: 180
+  #       end_wp: 190
+  #       comment: "Full throttle before hairpin."
 
-  - name: "coasting mid left hairpin"
+  # - name: "outside line before left hairpin"
+  #   active: true
+  #   road: "hairpin_l"
+  #   level: 1
+  #   comment: "Small steering bias to the right on the straight so the car reaches the hairpin on the outside line."
+  #   perturbations:
+  #     - control: "steering"
+  #       mode: "add"
+  #       factor: -0.15 # positive = right in your setup; so use negative for 'left' if needed
+  #       start_wp: 190
+  #       end_wp: 200
+  #       comment: "Small persistent steering to the right."
+
+  # - name: "oversteer hairpin"
+  #   active: true
+  #   road: "hairpin_l"
+  #   level: 1
+  #   comment: "Short steering kick on exit that nudges the car off the ideal line."
+  #   perturbations:
+  #     - control: "steering"
+  #       mode: "add"
+  #       factor: 0.4 # kick further into the left turn
+  #       start_wp: 220
+  #       end_wp: 225
+  #       comment: "Short steering pulse on corner exit to push the car towards the inside."
+  # - name: "understeer hairpin"
+  #   active: true
+  #   road: "hairpin_l"
+  #   level: 1
+  #   comment: ""
+  #   perturbations:
+  #     - control: "steering"
+  #       mode: "set"
+  #       factor: 0
+  #       start_wp: 220
+  #       end_wp: 223
+  #       comment: "going straight will understeer the car outwards."
+
+  # - name: "coasting mid left hairpin"
+  #   active: true
+  #   road: "hairpin_l"
+  #   level: 1
+  #   comment: "Throttle is cut to simulate coasting mid-corner while the model expects some power."
+  #   perturbations:
+  #     - control: "throttle"
+  #       mode: "set"
+  #       factor: 0.0
+  #       start_wp: 70
+  #       end_wp: 90
+  #       comment: "Removes throttle around the apex to test stability when speed drops unexpectedly."
+
+  # - name: "coasting mid left hairpin"
+  #   active: true
+  #   road: "hairpin_l"
+  #   level: 2
+  #   comment: "Longer coasting phase, potentially causing the car to drift off or over-correct."
+  #   perturbations:
+  #     - control: "throttle"
+  #       mode: "set"
+  #       factor: 0.0
+  #       start_wp: 65
+  #       end_wp: 100
+  #       comment: "Extends the throttle cut across most of the corner."
+
+wide_chicane_lr:
+  # No perturbation
+  - name: "no perturbation"
     active: true
-    road: "hairpin_l"
-    level: 2
-    comment: "Longer coasting phase, potentially causing the car to drift off or over-correct."
-    perturbations:
-      - control: "throttle"
-        mode: "set"
-        factor: 0.0
-        start_wp: 65
-        end_wp: 100
-        comment: "Extends the throttle cut across most of the corner."
+    road: "wide_chicane_lr"
+    level: 0
+    comment: ""
+    perturbations: []
+
+  # # Overspeed
+  # - name: "overspeed"
+  #   active: true
+  #   road: "wide_chicane_lr"
+  #   level: 1
+  #   comment: ""
+  #   perturbations:
+  #     - control: "throttle"
+  #       mode: "set"
+  #       factor: 0.3
+  #       start_wp: 0
+  #       end_wp: 110
+  #       comment: ""
+  # - name: "overspeed"
+  #   active: true
+  #   road: "wide_chicane_lr"
+  #   level: 2
+  #   comment: ""
+  #   perturbations:
+  #     - control: "throttle"
+  #       mode: "set"
+  #       factor: 0.4
+  #       start_wp: 0
+  #       end_wp: 100
+  #       comment: ""
+  # - name: "overspeed"
+  #   active: true
+  #   road: "wide_chicane_lr"
+  #   level: 3
+  #   comment: ""
+  #   perturbations:
+  #     - control: "throttle"
+  #       mode: "set"
+  #       factor: 0.5
+  #       start_wp: 0
+  #       end_wp: 100
+  #       comment: ""
+
+
+  # - name: "push left"
+  #   active: true
+  #   road: "wide_chicane_lr"
+  #   level: 1
+  #   comment: ""
+  #   perturbations:
+  #     - control: "steering"
+  #       mode: "set"
+  #       factor: -0.2
+  #       start_wp: 0
+  #       end_wp: 12
+  #       comment: "small left bias"
+  #     - control: "throttle"
+  #       mode: "set"
+  #       factor: 0.2
+  #       start_wp: 0
+  #       end_wp: 12
+  #       comment: ""
+
+  #     - control: "steering"
+  #       mode: "set"
+  #       factor: -0.25
+  #       start_wp: 55
+  #       end_wp: 63
+  #       comment: "forced outside line"
+
+  #     - control: "steering"
+  #       mode: "add"
+  #       factor: -0.22
+  #       start_wp: 100
+  #       end_wp: 135
+  #       comment: "push right into chicane"
+
+  #     - control: "steering"
+  #       mode: "mul"
+  #       factor: 1.3
+  #       start_wp: 140
+  #       end_wp: 175
+  #       comment: "amplify steering input"
+
+
+  #     - control: "steering"
+  #       mode: "add"
+  #       factor: -0.2
+  #       start_wp: 185
+  #       end_wp: 220
+  #       comment: "left bias into next turn"
+
+  #     - control: "steering"
+  #       mode: "set"
+  #       factor: 0.0
+  #       start_wp: 235
+  #       end_wp: 260
+  #       comment: "neutral steering (understeer test)"
+
+
+wide_chicane_rl:
+  - name: "no perturbation"
+    active: true
+    road: "wide_chicane_rl"
+    level: 0
+    comment: ""
+    perturbations: []
 
 chicane_lr:
-  - name: "overspeed through chicane"
+  - name: "no perturbation chicane"
     active: true
     road: "chicane_lr"
-    level: 1
-    comment: "Moderate overspeed into the left-right chicane after a medium straight."
-    perturbations:
-      - control: "throttle"
-        mode: "mul"
-        factor: 1.2
-        start_wp: 5
-        end_wp: 50
-        comment: "Slightly faster approach to the chicane than in training."
+    level: 0
+    comment: ""
+    perturbations: []
 
-  - name: "overspeed through chicane"
-    active: true
-    road: "chicane_lr"
-    level: 2
-    comment: "High overspeed through the entire chicane to test how the model handles fast alternating turns."
-    perturbations:
-      - control: "throttle"
-        mode: "set"
-        factor: 1.0
-        start_wp: 5
-        end_wp: 80
-        comment: "Full throttle across the straight and most of the chicane."
+  # - name: "overspeed through chicane"
+  #   active: true
+  #   road: "chicane_lr"
+  #   level: 1
+  #   comment: "Moderate overspeed into the left-right chicane after a medium straight."
+  #   perturbations:
+  #     - control: "throttle"
+  #       mode: "mul"
+  #       factor: 1.2
+  #       start_wp: 5
+  #       end_wp: 50
+  #       comment: "Slightly faster approach to the chicane than in training."
 
-  - name: "wrong-side entry into chicane"
-    active: true
-    road: "chicane_lr"
-    level: 1
-    comment: "Steering bias pushes the car to the wrong side before the first chicane turn."
-    perturbations:
-      - control: "steering"
-        mode: "add"
-        factor: -0.2
-        start_wp: 30
-        end_wp: 50
-        comment: "Gradually shifts the car to the opposite side of the lane before the first chicane corner."
+  # - name: "overspeed through chicane"
+  #   active: true
+  #   road: "chicane_lr"
+  #   level: 2
+  #   comment: "High overspeed through the entire chicane to test how the model handles fast alternating turns."
+  #   perturbations:
+  #     - control: "throttle"
+  #       mode: "set"
+  #       factor: 1.0
+  #       start_wp: 5
+  #       end_wp: 80
+  #       comment: "Full throttle across the straight and most of the chicane."
 
-  - name: "wrong-side entry into chicane"
-    active: true
-    road: "chicane_lr"
-    level: 2
-    comment: "Stronger lateral displacement so the car hits the chicane from a clearly unfamiliar position."
-    perturbations:
-      - control: "steering"
-        mode: "add"
-        factor: -0.35
-        start_wp: 25
-        end_wp: 55
-        comment: "More aggressive shift to maximize off-center entry."
+  # - name: "wrong-side entry into chicane"
+  #   active: true
+  #   road: "chicane_lr"
+  #   level: 1
+  #   comment: "Steering bias pushes the car to the wrong side before the first chicane turn."
+  #   perturbations:
+  #     - control: "steering"
+  #       mode: "add"
+  #       factor: -0.2
+  #       start_wp: 30
+  #       end_wp: 50
+  #       comment: "Gradually shifts the car to the opposite side of the lane before the first chicane corner."
 
-  - name: "oscillating steering in chicane"
-    active: true
-    road: "chicane_lr"
-    level: 1
-    comment: "Small alternating steering pulses inside the chicane to test temporal smoothing and recovery."
-    perturbations:
-      - control: "steering"
-        mode: "add"
-        factor: 0.25
-        start_wp: 55
-        end_wp: 60
-        comment: "First pulse."
-      - control: "steering"
-        mode: "add"
-        factor: -0.25
-        start_wp: 60
-        end_wp: 65
-        comment: "Opposite pulse."
+  # - name: "wrong-side entry into chicane"
+  #   active: true
+  #   road: "chicane_lr"
+  #   level: 2
+  #   comment: "Stronger lateral displacement so the car hits the chicane from a clearly unfamiliar position."
+  #   perturbations:
+  #     - control: "steering"
+  #       mode: "add"
+  #       factor: -0.35
+  #       start_wp: 25
+  #       end_wp: 55
+  #       comment: "More aggressive shift to maximize off-center entry."
 
-  - name: "oscillating steering in chicane"
+  # - name: "oscillating steering in chicane"
+  #   active: true
+  #   road: "chicane_lr"
+  #   level: 1
+  #   comment: "Small alternating steering pulses inside the chicane to test temporal smoothing and recovery."
+  #   perturbations:
+  #     - control: "steering"
+  #       mode: "add"
+  #       factor: 0.25
+  #       start_wp: 55
+  #       end_wp: 60
+  #       comment: "First pulse."
+  #     - control: "steering"
+  #       mode: "add"
+  #       factor: -0.25
+  #       start_wp: 60
+  #       end_wp: 65
+  #       comment: "Opposite pulse."
+
+  # - name: "oscillating steering in chicane"
+  #   active: true
+  #   road: "chicane_lr"
+  #   level: 2
+  #   comment: "Stronger oscillations to force large corrections in rapidly changing curvature."
+  #   perturbations:
+  #     - control: "steering"
+  #       mode: "add"
+  #       factor: 0.4
+  #       start_wp: 55
+  #       end_wp: 60
+  #       comment: "Stronger first pulse."
+  #     - control: "steering"
+  #       mode: "add"
+  #       factor: -0.4
+  #       start_wp: 60
+  #       end_wp: 65
+  #       comment: "Stronger opposite pulse."
+
+chicane_rl:
+  - name: "no perturbation"
     active: true
-    road: "chicane_lr"
-    level: 2
-    comment: "Stronger oscillations to force large corrections in rapidly changing curvature."
-    perturbations:
-      - control: "steering"
-        mode: "add"
-        factor: 0.4
-        start_wp: 55
-        end_wp: 60
-        comment: "Stronger first pulse."
-      - control: "steering"
-        mode: "add"
-        factor: -0.4
-        start_wp: 60
-        end_wp: 65
-        comment: "Stronger opposite pulse."
+    road: "chicane_rl"
+    level: 0
+    comment: ""
+    perturbations: [] 
