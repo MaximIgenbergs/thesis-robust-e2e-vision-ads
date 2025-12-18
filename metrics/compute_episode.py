@@ -6,10 +6,15 @@ from metrics.metrics import tracking_metrics, action_deviation_to_pid
 
 
 def compute_udacity_entry_metrics(ep: Dict[str, Any]) -> Dict[str, Any]:
-    track = tracking_metrics(ep["xte"], ep["angle_err"])
-    dev = action_deviation_to_pid(ep["actions"], ep["pid_actions"])
+    stop_idx = ep.get("fail_stop_idx", None)
 
-    return {
+    track_full = tracking_metrics(ep["xte"], ep["angle_err"], stop_idx=None)
+    track_pre = tracking_metrics(ep["xte"], ep["angle_err"], stop_idx=stop_idx)
+
+    dev_full = action_deviation_to_pid(ep["actions"], ep["pid_actions"], stop_idx=None)
+    dev_pre = action_deviation_to_pid(ep["actions"], ep["pid_actions"], stop_idx=stop_idx)
+
+    row = {
         "sim": ep["sim"],
         "map": ep["map"],
         "test_type": ep["test_type"],
@@ -26,13 +31,44 @@ def compute_udacity_entry_metrics(ep: Dict[str, Any]) -> Dict[str, Any]:
         "is_success": int(bool(ep["is_success"])),
         "timeout": int(bool(ep["timeout"])),
         "num_segments": int(ep.get("num_segments", 0)),
-        # tracking (episode-entry level)
-        "xte_abs_p95": track["xte_abs_p95"],
-        "angle_abs_p95": track["angle_abs_p95"],
-        # PID vs model
-        "pid_mae_steer": dev["mae_steer"],
-        "pid_mae_throttle": dev["mae_throttle"],
-        "pid_dev_mean": dev["dev_mean"],
-        "pid_dev_p95": dev["dev_p95"],
-        "pid_n": dev["n"],
+        "fail_stop_idx": int(ep.get("fail_stop_idx", 0)),
+
+        # tracking (full)
+        "xte_abs_p95": track_full["xte_abs_p95"],
+        "angle_abs_p95": track_full["angle_abs_p95"],
+        "xte_abs_mean": track_full["xte_abs_mean"],
+        "angle_abs_mean": track_full["angle_abs_mean"],
+
+        # tracking (pre-fail)
+        "xte_abs_p95_pre": track_pre["xte_abs_p95"],
+        "angle_abs_p95_pre": track_pre["angle_abs_p95"],
+        "xte_abs_mean_pre": track_pre["xte_abs_mean"],
+        "angle_abs_mean_pre": track_pre["angle_abs_mean"],
+
+        # PID deviation (full)
+        "pid_mae_steer": dev_full["mae_steer"],
+        "pid_mae_throttle": dev_full["mae_throttle"],
+        "pid_dev_mean": dev_full["dev_mean"],
+        "pid_dev_p95": dev_full["dev_p95"],
+        "pid_n": dev_full["n"],
+
+        # PID deviation (pre-fail)
+        "pid_mae_steer_pre": dev_pre["mae_steer"],
+        "pid_mae_throttle_pre": dev_pre["mae_throttle"],
+        "pid_dev_mean_pre": dev_pre["dev_mean"],
+        "pid_dev_p95_pre": dev_pre["dev_p95"],
+        "pid_n_pre": dev_pre["n"],
+
+        "track_error_name": ep.get("track_error_name", "xte"),
     }
+
+    # GenRoads uses CTE; expose explicit CTE fields as aliases
+    if str(ep.get("track_error_name", "")).lower() == "cte":
+        row.update({
+            "cte_abs_p95": row["xte_abs_p95"],
+            "cte_abs_mean": row["xte_abs_mean"],
+            "cte_abs_p95_pre": row["xte_abs_p95_pre"],
+            "cte_abs_mean_pre": row["xte_abs_mean_pre"],
+        })
+
+    return row

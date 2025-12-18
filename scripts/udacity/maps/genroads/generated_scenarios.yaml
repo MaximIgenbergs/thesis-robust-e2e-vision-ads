@@ -21,51 +21,63 @@ wide_hairpin_r:
   active: true
   road: wide_hairpin_r
   level: 1
-  comment: 'spulse: steering add factor=-0.25 start=68 end=75'
+  comment: 'spulse: steering add factor=-0.25 start=55 end=62'
   perturbations:
   - control: steering
     mode: add
     factor: -0.25
-    start_wp: 68
-    end_wp: 75
+    start_wp: 55
+    end_wp: 62
     comment: ''
 - name: spulse03
   active: true
   road: wide_hairpin_r
   level: 1
-  comment: 'spulse: steering add factor=0.25 start=134 end=141'
+  comment: 'spulse: steering add factor=0.25 start=107 end=114'
   perturbations:
   - control: steering
     mode: add
     factor: 0.25
-    start_wp: 134
-    end_wp: 141
+    start_wp: 107
+    end_wp: 114
     comment: ''
 - name: spulse04
   active: true
   road: wide_hairpin_r
   level: 1
-  comment: 'spulse: steering add factor=-0.25 start=199 end=206'
+  comment: 'spulse: steering add factor=-0.25 start=160 end=167'
   perturbations:
   - control: steering
     mode: add
     factor: -0.25
-    start_wp: 199
-    end_wp: 206
+    start_wp: 160
+    end_wp: 167
     comment: ''
 - name: spulse05
   active: true
   road: wide_hairpin_r
   level: 1
-  comment: 'spulse: steering add factor=0.25 start=264 end=271'
+  comment: 'spulse: steering add factor=0.25 start=212 end=219'
   perturbations:
   - control: steering
     mode: add
     factor: 0.25
+    start_wp: 212
+    end_wp: 219
+    comment: ''
+- name: spulse06
+  active: true
+  road: wide_hairpin_r
+  level: 1
+  comment: 'spulse: steering add factor=-0.25 start=264 end=271'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: -0.25
     start_wp: 264
     end_wp: 271
     comment: ''
-- name: spulse06
+- name: spulse07
   active: true
   road: wide_hairpin_r
   level: 2
@@ -77,51 +89,135 @@ wide_hairpin_r:
     start_wp: 3
     end_wp: 10
     comment: ''
-- name: spulse07
-  active: true
-  road: wide_hairpin_r
-  level: 2
-  comment: 'spulse: steering add factor=-0.4 start=68 end=75'
-  perturbations:
-  - control: steering
-    mode: add
-    factor: -0.4
-    start_wp: 68
-    end_wp: 75
-    comment: ''
 - name: spulse08
   active: true
   road: wide_hairpin_r
   level: 2
-  comment: 'spulse: steering add factor=0.4 start=134 end=141'
+  comment: 'spulse: steering add factor=-0.4 start=55 end=62'
   perturbations:
   - control: steering
     mode: add
-    factor: 0.4
-    start_wp: 134
-    end_wp: 141
+    factor: -0.4
+    start_wp: 55
+    end_wp: 62
     comment: ''
 - name: spulse09
   active: true
   road: wide_hairpin_r
   level: 2
-  comment: 'spulse: steering add factor=-0.4 start=199 end=206'
+  comment: 'spulse: steering add factor=0.4 start=107 end=114'
   perturbations:
   - control: steering
     mode: add
-    factor: -0.4
-    start_wp: 199
-    end_wp: 206
+    factor: 0.4
+    start_wp: 107
+    end_wp: 114
     comment: ''
 - name: spulse10
   active: true
   road: wide_hairpin_r
   level: 2
-  comment: 'spulse: steering add factor=0.4 start=264 end=271'
+  comment: 'spulse: steering add factor=-0.4 start=160 end=167'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: -0.4
+    start_wp: 160
+    end_wp: 167
+    comment: ''
+- name: spulse11
+  active: true
+  road: wide_hairpin_r
+  level: 2
+  comment: 'spulse: steering add factor=0.4 start=212 end=219'
   perturbations:
   - control: steering
     mode: add
     factor: 0.4
+    start_wp: 212
+    end_wp: 219
+    comment: ''
+- name: spulse12
+  active: true
+  road: wide_hairpin_r
+  level: 2
+  comment: 'spulse: steering add factor=-0.4 start=264 end=271'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: -0.4
+    start_wp: 264
+    end_wp: 271
+    comment: ''
+- name: spulse13
+  active: true
+  road: wide_hairpin_r
+  level: 3
+  comment: 'spulse: steering add factor=0.6 start=3 end=10'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: 0.6
+    start_wp: 3
+    end_wp: 10
+    comment: ''
+- name: spulse14
+  active: true
+  road: wide_hairpin_r
+  level: 3
+  comment: 'spulse: steering add factor=-0.6 start=55 end=62'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: -0.6
+    start_wp: 55
+    end_wp: 62
+    comment: ''
+- name: spulse15
+  active: true
+  road: wide_hairpin_r
+  level: 3
+  comment: 'spulse: steering add factor=0.6 start=107 end=114'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: 0.6
+    start_wp: 107
+    end_wp: 114
+    comment: ''
+- name: spulse16
+  active: true
+  road: wide_hairpin_r
+  level: 3
+  comment: 'spulse: steering add factor=-0.6 start=160 end=167'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: -0.6
+    start_wp: 160
+    end_wp: 167
+    comment: ''
+- name: spulse17
+  active: true
+  road: wide_hairpin_r
+  level: 3
+  comment: 'spulse: steering add factor=0.6 start=212 end=219'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: 0.6
+    start_wp: 212
+    end_wp: 219
+    comment: ''
+- name: spulse18
+  active: true
+  road: wide_hairpin_r
+  level: 3
+  comment: 'spulse: steering add factor=-0.6 start=264 end=271'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: -0.6
     start_wp: 264
     end_wp: 271
     comment: ''
@@ -129,143 +225,215 @@ wide_hairpin_r:
   active: true
   road: wide_hairpin_r
   level: 1
-  comment: 'sfreeze: steering set factor=0.0 start=3 end=10'
+  comment: 'sfreeze: steering set factor=0.0 start=3 end=12'
   perturbations:
   - control: steering
     mode: set
     factor: 0.0
     start_wp: 3
-    end_wp: 10
+    end_wp: 12
     comment: ''
 - name: sfreeze02
   active: true
   road: wide_hairpin_r
   level: 1
-  comment: 'sfreeze: steering set factor=0.0 start=134 end=141'
+  comment: 'sfreeze: steering set factor=0.0 start=55 end=64'
   perturbations:
   - control: steering
     mode: set
     factor: 0.0
-    start_wp: 134
-    end_wp: 141
+    start_wp: 55
+    end_wp: 64
     comment: ''
 - name: sfreeze03
   active: true
   road: wide_hairpin_r
   level: 1
-  comment: 'sfreeze: steering set factor=0.0 start=264 end=271'
+  comment: 'sfreeze: steering set factor=0.0 start=107 end=116'
   perturbations:
   - control: steering
     mode: set
     factor: 0.0
-    start_wp: 264
+    start_wp: 107
+    end_wp: 116
+    comment: ''
+- name: sfreeze04
+  active: true
+  road: wide_hairpin_r
+  level: 1
+  comment: 'sfreeze: steering set factor=0.0 start=158 end=167'
+  perturbations:
+  - control: steering
+    mode: set
+    factor: 0.0
+    start_wp: 158
+    end_wp: 167
+    comment: ''
+- name: sfreeze05
+  active: true
+  road: wide_hairpin_r
+  level: 1
+  comment: 'sfreeze: steering set factor=0.0 start=210 end=219'
+  perturbations:
+  - control: steering
+    mode: set
+    factor: 0.0
+    start_wp: 210
+    end_wp: 219
+    comment: ''
+- name: sfreeze06
+  active: true
+  road: wide_hairpin_r
+  level: 1
+  comment: 'sfreeze: steering set factor=0.0 start=262 end=271'
+  perturbations:
+  - control: steering
+    mode: set
+    factor: 0.0
+    start_wp: 262
     end_wp: 271
     comment: ''
 - name: sgain01
   active: true
   road: wide_hairpin_r
   level: 1
-  comment: 'sgain: steering mul factor=1.4 start=3 end=32'
+  comment: 'sgain: steering mul factor=1.4 start=3 end=42'
   perturbations:
   - control: steering
     mode: mul
     factor: 1.4
     start_wp: 3
-    end_wp: 32
+    end_wp: 42
     comment: ''
 - name: sgain02
   active: true
   road: wide_hairpin_r
   level: 1
-  comment: 'sgain: steering mul factor=1.4 start=122 end=151'
+  comment: 'sgain: steering mul factor=1.4 start=49 end=88'
   perturbations:
   - control: steering
     mode: mul
     factor: 1.4
-    start_wp: 122
-    end_wp: 151
+    start_wp: 49
+    end_wp: 88
     comment: ''
 - name: sgain03
   active: true
   road: wide_hairpin_r
   level: 1
-  comment: 'sgain: steering mul factor=1.4 start=242 end=271'
+  comment: 'sgain: steering mul factor=1.4 start=95 end=134'
   perturbations:
   - control: steering
     mode: mul
     factor: 1.4
-    start_wp: 242
+    start_wp: 95
+    end_wp: 134
+    comment: ''
+- name: sgain04
+  active: true
+  road: wide_hairpin_r
+  level: 1
+  comment: 'sgain: steering mul factor=1.4 start=140 end=179'
+  perturbations:
+  - control: steering
+    mode: mul
+    factor: 1.4
+    start_wp: 140
+    end_wp: 179
+    comment: ''
+- name: sgain05
+  active: true
+  road: wide_hairpin_r
+  level: 1
+  comment: 'sgain: steering mul factor=1.4 start=186 end=225'
+  perturbations:
+  - control: steering
+    mode: mul
+    factor: 1.4
+    start_wp: 186
+    end_wp: 225
+    comment: ''
+- name: sgain06
+  active: true
+  road: wide_hairpin_r
+  level: 1
+  comment: 'sgain: steering mul factor=1.4 start=232 end=271'
+  perturbations:
+  - control: steering
+    mode: mul
+    factor: 1.4
+    start_wp: 232
     end_wp: 271
     comment: ''
 - name: sbias01
   active: true
   road: wide_hairpin_r
   level: 1
-  comment: 'sbias: steering add factor=0.1 start=3 end=32'
+  comment: 'sbias: steering add factor=0.2 start=3 end=42'
   perturbations:
   - control: steering
     mode: add
-    factor: 0.1
+    factor: 0.2
     start_wp: 3
-    end_wp: 32
+    end_wp: 42
     comment: ''
 - name: sbias02
   active: true
   road: wide_hairpin_r
   level: 1
-  comment: 'sbias: steering add factor=-0.1 start=122 end=151'
+  comment: 'sbias: steering add factor=-0.2 start=49 end=88'
   perturbations:
   - control: steering
     mode: add
-    factor: -0.1
-    start_wp: 122
-    end_wp: 151
+    factor: -0.2
+    start_wp: 49
+    end_wp: 88
     comment: ''
 - name: sbias03
   active: true
   road: wide_hairpin_r
   level: 1
-  comment: 'sbias: steering add factor=0.1 start=242 end=271'
+  comment: 'sbias: steering add factor=0.2 start=95 end=134'
   perturbations:
   - control: steering
     mode: add
-    factor: 0.1
-    start_wp: 242
-    end_wp: 271
+    factor: 0.2
+    start_wp: 95
+    end_wp: 134
     comment: ''
-- name: tcut01
+- name: sbias04
   active: true
   road: wide_hairpin_r
   level: 1
-  comment: 'tcut: throttle set factor=0.0 start=3 end=42'
+  comment: 'sbias: steering add factor=-0.2 start=140 end=179'
   perturbations:
-  - control: throttle
-    mode: set
-    factor: 0.0
-    start_wp: 3
-    end_wp: 42
+  - control: steering
+    mode: add
+    factor: -0.2
+    start_wp: 140
+    end_wp: 179
     comment: ''
-- name: tcut02
+- name: sbias05
   active: true
   road: wide_hairpin_r
   level: 1
-  comment: 'tcut: throttle set factor=0.0 start=118 end=157'
+  comment: 'sbias: steering add factor=0.2 start=186 end=225'
   perturbations:
-  - control: throttle
-    mode: set
-    factor: 0.0
-    start_wp: 118
-    end_wp: 157
+  - control: steering
+    mode: add
+    factor: 0.2
+    start_wp: 186
+    end_wp: 225
     comment: ''
-- name: tcut03
+- name: sbias06
   active: true
   road: wide_hairpin_r
   level: 1
-  comment: 'tcut: throttle set factor=0.0 start=232 end=271'
+  comment: 'sbias: steering add factor=-0.2 start=232 end=271'
   perturbations:
-  - control: throttle
-    mode: set
-    factor: 0.0
+  - control: steering
+    mode: add
+    factor: -0.2
     start_wp: 232
     end_wp: 271
     comment: ''
@@ -273,27 +441,51 @@ wide_hairpin_r:
   active: true
   road: wide_hairpin_r
   level: 1
-  comment: 'tboost: throttle mul factor=1.2 start=3 end=42'
+  comment: 'tboost: throttle mul factor=1.2 start=3 end=102'
   perturbations:
   - control: throttle
     mode: mul
     factor: 1.2
     start_wp: 3
-    end_wp: 42
+    end_wp: 102
     comment: ''
 - name: tboost02
   active: true
   road: wide_hairpin_r
   level: 1
-  comment: 'tboost: throttle mul factor=1.2 start=232 end=271'
+  comment: 'tboost: throttle mul factor=1.2 start=172 end=271'
   perturbations:
   - control: throttle
     mode: mul
     factor: 1.2
-    start_wp: 232
+    start_wp: 172
     end_wp: 271
     comment: ''
 - name: btap01
+  active: true
+  road: wide_hairpin_r
+  level: 1
+  comment: 'btap: throttle set factor=-1.0 start=3 end=7'
+  perturbations:
+  - control: throttle
+    mode: set
+    factor: -1.0
+    start_wp: 3
+    end_wp: 7
+    comment: ''
+- name: btap02
+  active: true
+  road: wide_hairpin_r
+  level: 1
+  comment: 'btap: throttle set factor=-1.0 start=69 end=73'
+  perturbations:
+  - control: throttle
+    mode: set
+    factor: -1.0
+    start_wp: 69
+    end_wp: 73
+    comment: ''
+- name: btap03
   active: true
   road: wide_hairpin_r
   level: 1
@@ -304,6 +496,30 @@ wide_hairpin_r:
     factor: -1.0
     start_wp: 135
     end_wp: 139
+    comment: ''
+- name: btap04
+  active: true
+  road: wide_hairpin_r
+  level: 1
+  comment: 'btap: throttle set factor=-1.0 start=201 end=205'
+  perturbations:
+  - control: throttle
+    mode: set
+    factor: -1.0
+    start_wp: 201
+    end_wp: 205
+    comment: ''
+- name: btap05
+  active: true
+  road: wide_hairpin_r
+  level: 1
+  comment: 'btap: throttle set factor=-1.0 start=267 end=271'
+  perturbations:
+  - control: throttle
+    mode: set
+    factor: -1.0
+    start_wp: 267
+    end_wp: 271
     comment: ''
 wide_hairpin_l:
 - name: baseline
@@ -328,51 +544,63 @@ wide_hairpin_l:
   active: true
   road: wide_hairpin_l
   level: 1
-  comment: 'spulse: steering add factor=-0.25 start=68 end=75'
+  comment: 'spulse: steering add factor=-0.25 start=55 end=62'
   perturbations:
   - control: steering
     mode: add
     factor: -0.25
-    start_wp: 68
-    end_wp: 75
+    start_wp: 55
+    end_wp: 62
     comment: ''
 - name: spulse03
   active: true
   road: wide_hairpin_l
   level: 1
-  comment: 'spulse: steering add factor=0.25 start=134 end=141'
+  comment: 'spulse: steering add factor=0.25 start=107 end=114'
   perturbations:
   - control: steering
     mode: add
     factor: 0.25
-    start_wp: 134
-    end_wp: 141
+    start_wp: 107
+    end_wp: 114
     comment: ''
 - name: spulse04
   active: true
   road: wide_hairpin_l
   level: 1
-  comment: 'spulse: steering add factor=-0.25 start=199 end=206'
+  comment: 'spulse: steering add factor=-0.25 start=160 end=167'
   perturbations:
   - control: steering
     mode: add
     factor: -0.25
-    start_wp: 199
-    end_wp: 206
+    start_wp: 160
+    end_wp: 167
     comment: ''
 - name: spulse05
   active: true
   road: wide_hairpin_l
   level: 1
-  comment: 'spulse: steering add factor=0.25 start=264 end=271'
+  comment: 'spulse: steering add factor=0.25 start=212 end=219'
   perturbations:
   - control: steering
     mode: add
     factor: 0.25
+    start_wp: 212
+    end_wp: 219
+    comment: ''
+- name: spulse06
+  active: true
+  road: wide_hairpin_l
+  level: 1
+  comment: 'spulse: steering add factor=-0.25 start=264 end=271'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: -0.25
     start_wp: 264
     end_wp: 271
     comment: ''
-- name: spulse06
+- name: spulse07
   active: true
   road: wide_hairpin_l
   level: 2
@@ -384,51 +612,135 @@ wide_hairpin_l:
     start_wp: 3
     end_wp: 10
     comment: ''
-- name: spulse07
-  active: true
-  road: wide_hairpin_l
-  level: 2
-  comment: 'spulse: steering add factor=-0.4 start=68 end=75'
-  perturbations:
-  - control: steering
-    mode: add
-    factor: -0.4
-    start_wp: 68
-    end_wp: 75
-    comment: ''
 - name: spulse08
   active: true
   road: wide_hairpin_l
   level: 2
-  comment: 'spulse: steering add factor=0.4 start=134 end=141'
+  comment: 'spulse: steering add factor=-0.4 start=55 end=62'
   perturbations:
   - control: steering
     mode: add
-    factor: 0.4
-    start_wp: 134
-    end_wp: 141
+    factor: -0.4
+    start_wp: 55
+    end_wp: 62
     comment: ''
 - name: spulse09
   active: true
   road: wide_hairpin_l
   level: 2
-  comment: 'spulse: steering add factor=-0.4 start=199 end=206'
+  comment: 'spulse: steering add factor=0.4 start=107 end=114'
   perturbations:
   - control: steering
     mode: add
-    factor: -0.4
-    start_wp: 199
-    end_wp: 206
+    factor: 0.4
+    start_wp: 107
+    end_wp: 114
     comment: ''
 - name: spulse10
   active: true
   road: wide_hairpin_l
   level: 2
-  comment: 'spulse: steering add factor=0.4 start=264 end=271'
+  comment: 'spulse: steering add factor=-0.4 start=160 end=167'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: -0.4
+    start_wp: 160
+    end_wp: 167
+    comment: ''
+- name: spulse11
+  active: true
+  road: wide_hairpin_l
+  level: 2
+  comment: 'spulse: steering add factor=0.4 start=212 end=219'
   perturbations:
   - control: steering
     mode: add
     factor: 0.4
+    start_wp: 212
+    end_wp: 219
+    comment: ''
+- name: spulse12
+  active: true
+  road: wide_hairpin_l
+  level: 2
+  comment: 'spulse: steering add factor=-0.4 start=264 end=271'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: -0.4
+    start_wp: 264
+    end_wp: 271
+    comment: ''
+- name: spulse13
+  active: true
+  road: wide_hairpin_l
+  level: 3
+  comment: 'spulse: steering add factor=0.6 start=3 end=10'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: 0.6
+    start_wp: 3
+    end_wp: 10
+    comment: ''
+- name: spulse14
+  active: true
+  road: wide_hairpin_l
+  level: 3
+  comment: 'spulse: steering add factor=-0.6 start=55 end=62'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: -0.6
+    start_wp: 55
+    end_wp: 62
+    comment: ''
+- name: spulse15
+  active: true
+  road: wide_hairpin_l
+  level: 3
+  comment: 'spulse: steering add factor=0.6 start=107 end=114'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: 0.6
+    start_wp: 107
+    end_wp: 114
+    comment: ''
+- name: spulse16
+  active: true
+  road: wide_hairpin_l
+  level: 3
+  comment: 'spulse: steering add factor=-0.6 start=160 end=167'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: -0.6
+    start_wp: 160
+    end_wp: 167
+    comment: ''
+- name: spulse17
+  active: true
+  road: wide_hairpin_l
+  level: 3
+  comment: 'spulse: steering add factor=0.6 start=212 end=219'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: 0.6
+    start_wp: 212
+    end_wp: 219
+    comment: ''
+- name: spulse18
+  active: true
+  road: wide_hairpin_l
+  level: 3
+  comment: 'spulse: steering add factor=-0.6 start=264 end=271'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: -0.6
     start_wp: 264
     end_wp: 271
     comment: ''
@@ -436,143 +748,215 @@ wide_hairpin_l:
   active: true
   road: wide_hairpin_l
   level: 1
-  comment: 'sfreeze: steering set factor=0.0 start=3 end=10'
+  comment: 'sfreeze: steering set factor=0.0 start=3 end=12'
   perturbations:
   - control: steering
     mode: set
     factor: 0.0
     start_wp: 3
-    end_wp: 10
+    end_wp: 12
     comment: ''
 - name: sfreeze02
   active: true
   road: wide_hairpin_l
   level: 1
-  comment: 'sfreeze: steering set factor=0.0 start=134 end=141'
+  comment: 'sfreeze: steering set factor=0.0 start=55 end=64'
   perturbations:
   - control: steering
     mode: set
     factor: 0.0
-    start_wp: 134
-    end_wp: 141
+    start_wp: 55
+    end_wp: 64
     comment: ''
 - name: sfreeze03
   active: true
   road: wide_hairpin_l
   level: 1
-  comment: 'sfreeze: steering set factor=0.0 start=264 end=271'
+  comment: 'sfreeze: steering set factor=0.0 start=107 end=116'
   perturbations:
   - control: steering
     mode: set
     factor: 0.0
-    start_wp: 264
+    start_wp: 107
+    end_wp: 116
+    comment: ''
+- name: sfreeze04
+  active: true
+  road: wide_hairpin_l
+  level: 1
+  comment: 'sfreeze: steering set factor=0.0 start=158 end=167'
+  perturbations:
+  - control: steering
+    mode: set
+    factor: 0.0
+    start_wp: 158
+    end_wp: 167
+    comment: ''
+- name: sfreeze05
+  active: true
+  road: wide_hairpin_l
+  level: 1
+  comment: 'sfreeze: steering set factor=0.0 start=210 end=219'
+  perturbations:
+  - control: steering
+    mode: set
+    factor: 0.0
+    start_wp: 210
+    end_wp: 219
+    comment: ''
+- name: sfreeze06
+  active: true
+  road: wide_hairpin_l
+  level: 1
+  comment: 'sfreeze: steering set factor=0.0 start=262 end=271'
+  perturbations:
+  - control: steering
+    mode: set
+    factor: 0.0
+    start_wp: 262
     end_wp: 271
     comment: ''
 - name: sgain01
   active: true
   road: wide_hairpin_l
   level: 1
-  comment: 'sgain: steering mul factor=1.4 start=3 end=32'
+  comment: 'sgain: steering mul factor=1.4 start=3 end=42'
   perturbations:
   - control: steering
     mode: mul
     factor: 1.4
     start_wp: 3
-    end_wp: 32
+    end_wp: 42
     comment: ''
 - name: sgain02
   active: true
   road: wide_hairpin_l
   level: 1
-  comment: 'sgain: steering mul factor=1.4 start=122 end=151'
+  comment: 'sgain: steering mul factor=1.4 start=49 end=88'
   perturbations:
   - control: steering
     mode: mul
     factor: 1.4
-    start_wp: 122
-    end_wp: 151
+    start_wp: 49
+    end_wp: 88
     comment: ''
 - name: sgain03
   active: true
   road: wide_hairpin_l
   level: 1
-  comment: 'sgain: steering mul factor=1.4 start=242 end=271'
+  comment: 'sgain: steering mul factor=1.4 start=95 end=134'
   perturbations:
   - control: steering
     mode: mul
     factor: 1.4
-    start_wp: 242
+    start_wp: 95
+    end_wp: 134
+    comment: ''
+- name: sgain04
+  active: true
+  road: wide_hairpin_l
+  level: 1
+  comment: 'sgain: steering mul factor=1.4 start=140 end=179'
+  perturbations:
+  - control: steering
+    mode: mul
+    factor: 1.4
+    start_wp: 140
+    end_wp: 179
+    comment: ''
+- name: sgain05
+  active: true
+  road: wide_hairpin_l
+  level: 1
+  comment: 'sgain: steering mul factor=1.4 start=186 end=225'
+  perturbations:
+  - control: steering
+    mode: mul
+    factor: 1.4
+    start_wp: 186
+    end_wp: 225
+    comment: ''
+- name: sgain06
+  active: true
+  road: wide_hairpin_l
+  level: 1
+  comment: 'sgain: steering mul factor=1.4 start=232 end=271'
+  perturbations:
+  - control: steering
+    mode: mul
+    factor: 1.4
+    start_wp: 232
     end_wp: 271
     comment: ''
 - name: sbias01
   active: true
   road: wide_hairpin_l
   level: 1
-  comment: 'sbias: steering add factor=0.1 start=3 end=32'
+  comment: 'sbias: steering add factor=0.2 start=3 end=42'
   perturbations:
   - control: steering
     mode: add
-    factor: 0.1
+    factor: 0.2
     start_wp: 3
-    end_wp: 32
+    end_wp: 42
     comment: ''
 - name: sbias02
   active: true
   road: wide_hairpin_l
   level: 1
-  comment: 'sbias: steering add factor=-0.1 start=122 end=151'
+  comment: 'sbias: steering add factor=-0.2 start=49 end=88'
   perturbations:
   - control: steering
     mode: add
-    factor: -0.1
-    start_wp: 122
-    end_wp: 151
+    factor: -0.2
+    start_wp: 49
+    end_wp: 88
     comment: ''
 - name: sbias03
   active: true
   road: wide_hairpin_l
   level: 1
-  comment: 'sbias: steering add factor=0.1 start=242 end=271'
+  comment: 'sbias: steering add factor=0.2 start=95 end=134'
   perturbations:
   - control: steering
     mode: add
-    factor: 0.1
-    start_wp: 242
-    end_wp: 271
+    factor: 0.2
+    start_wp: 95
+    end_wp: 134
     comment: ''
-- name: tcut01
+- name: sbias04
   active: true
   road: wide_hairpin_l
   level: 1
-  comment: 'tcut: throttle set factor=0.0 start=3 end=42'
+  comment: 'sbias: steering add factor=-0.2 start=140 end=179'
   perturbations:
-  - control: throttle
-    mode: set
-    factor: 0.0
-    start_wp: 3
-    end_wp: 42
+  - control: steering
+    mode: add
+    factor: -0.2
+    start_wp: 140
+    end_wp: 179
     comment: ''
-- name: tcut02
+- name: sbias05
   active: true
   road: wide_hairpin_l
   level: 1
-  comment: 'tcut: throttle set factor=0.0 start=118 end=157'
+  comment: 'sbias: steering add factor=0.2 start=186 end=225'
   perturbations:
-  - control: throttle
-    mode: set
-    factor: 0.0
-    start_wp: 118
-    end_wp: 157
+  - control: steering
+    mode: add
+    factor: 0.2
+    start_wp: 186
+    end_wp: 225
     comment: ''
-- name: tcut03
+- name: sbias06
   active: true
   road: wide_hairpin_l
   level: 1
-  comment: 'tcut: throttle set factor=0.0 start=232 end=271'
+  comment: 'sbias: steering add factor=-0.2 start=232 end=271'
   perturbations:
-  - control: throttle
-    mode: set
-    factor: 0.0
+  - control: steering
+    mode: add
+    factor: -0.2
     start_wp: 232
     end_wp: 271
     comment: ''
@@ -580,27 +964,51 @@ wide_hairpin_l:
   active: true
   road: wide_hairpin_l
   level: 1
-  comment: 'tboost: throttle mul factor=1.2 start=3 end=42'
+  comment: 'tboost: throttle mul factor=1.2 start=3 end=102'
   perturbations:
   - control: throttle
     mode: mul
     factor: 1.2
     start_wp: 3
-    end_wp: 42
+    end_wp: 102
     comment: ''
 - name: tboost02
   active: true
   road: wide_hairpin_l
   level: 1
-  comment: 'tboost: throttle mul factor=1.2 start=232 end=271'
+  comment: 'tboost: throttle mul factor=1.2 start=172 end=271'
   perturbations:
   - control: throttle
     mode: mul
     factor: 1.2
-    start_wp: 232
+    start_wp: 172
     end_wp: 271
     comment: ''
 - name: btap01
+  active: true
+  road: wide_hairpin_l
+  level: 1
+  comment: 'btap: throttle set factor=-1.0 start=3 end=7'
+  perturbations:
+  - control: throttle
+    mode: set
+    factor: -1.0
+    start_wp: 3
+    end_wp: 7
+    comment: ''
+- name: btap02
+  active: true
+  road: wide_hairpin_l
+  level: 1
+  comment: 'btap: throttle set factor=-1.0 start=69 end=73'
+  perturbations:
+  - control: throttle
+    mode: set
+    factor: -1.0
+    start_wp: 69
+    end_wp: 73
+    comment: ''
+- name: btap03
   active: true
   road: wide_hairpin_l
   level: 1
@@ -611,6 +1019,30 @@ wide_hairpin_l:
     factor: -1.0
     start_wp: 135
     end_wp: 139
+    comment: ''
+- name: btap04
+  active: true
+  road: wide_hairpin_l
+  level: 1
+  comment: 'btap: throttle set factor=-1.0 start=201 end=205'
+  perturbations:
+  - control: throttle
+    mode: set
+    factor: -1.0
+    start_wp: 201
+    end_wp: 205
+    comment: ''
+- name: btap05
+  active: true
+  road: wide_hairpin_l
+  level: 1
+  comment: 'btap: throttle set factor=-1.0 start=267 end=271'
+  perturbations:
+  - control: throttle
+    mode: set
+    factor: -1.0
+    start_wp: 267
+    end_wp: 271
     comment: ''
 hairpin_r:
 - name: baseline
@@ -635,51 +1067,63 @@ hairpin_r:
   active: true
   road: hairpin_r
   level: 1
-  comment: 'spulse: steering add factor=-0.25 start=68 end=75'
+  comment: 'spulse: steering add factor=-0.25 start=55 end=62'
   perturbations:
   - control: steering
     mode: add
     factor: -0.25
-    start_wp: 68
-    end_wp: 75
+    start_wp: 55
+    end_wp: 62
     comment: ''
 - name: spulse03
   active: true
   road: hairpin_r
   level: 1
-  comment: 'spulse: steering add factor=0.25 start=134 end=141'
+  comment: 'spulse: steering add factor=0.25 start=107 end=114'
   perturbations:
   - control: steering
     mode: add
     factor: 0.25
-    start_wp: 134
-    end_wp: 141
+    start_wp: 107
+    end_wp: 114
     comment: ''
 - name: spulse04
   active: true
   road: hairpin_r
   level: 1
-  comment: 'spulse: steering add factor=-0.25 start=199 end=206'
+  comment: 'spulse: steering add factor=-0.25 start=160 end=167'
   perturbations:
   - control: steering
     mode: add
     factor: -0.25
-    start_wp: 199
-    end_wp: 206
+    start_wp: 160
+    end_wp: 167
     comment: ''
 - name: spulse05
   active: true
   road: hairpin_r
   level: 1
-  comment: 'spulse: steering add factor=0.25 start=264 end=271'
+  comment: 'spulse: steering add factor=0.25 start=212 end=219'
   perturbations:
   - control: steering
     mode: add
     factor: 0.25
+    start_wp: 212
+    end_wp: 219
+    comment: ''
+- name: spulse06
+  active: true
+  road: hairpin_r
+  level: 1
+  comment: 'spulse: steering add factor=-0.25 start=264 end=271'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: -0.25
     start_wp: 264
     end_wp: 271
     comment: ''
-- name: spulse06
+- name: spulse07
   active: true
   road: hairpin_r
   level: 2
@@ -691,51 +1135,135 @@ hairpin_r:
     start_wp: 3
     end_wp: 10
     comment: ''
-- name: spulse07
-  active: true
-  road: hairpin_r
-  level: 2
-  comment: 'spulse: steering add factor=-0.4 start=68 end=75'
-  perturbations:
-  - control: steering
-    mode: add
-    factor: -0.4
-    start_wp: 68
-    end_wp: 75
-    comment: ''
 - name: spulse08
   active: true
   road: hairpin_r
   level: 2
-  comment: 'spulse: steering add factor=0.4 start=134 end=141'
+  comment: 'spulse: steering add factor=-0.4 start=55 end=62'
   perturbations:
   - control: steering
     mode: add
-    factor: 0.4
-    start_wp: 134
-    end_wp: 141
+    factor: -0.4
+    start_wp: 55
+    end_wp: 62
     comment: ''
 - name: spulse09
   active: true
   road: hairpin_r
   level: 2
-  comment: 'spulse: steering add factor=-0.4 start=199 end=206'
+  comment: 'spulse: steering add factor=0.4 start=107 end=114'
   perturbations:
   - control: steering
     mode: add
-    factor: -0.4
-    start_wp: 199
-    end_wp: 206
+    factor: 0.4
+    start_wp: 107
+    end_wp: 114
     comment: ''
 - name: spulse10
   active: true
   road: hairpin_r
   level: 2
-  comment: 'spulse: steering add factor=0.4 start=264 end=271'
+  comment: 'spulse: steering add factor=-0.4 start=160 end=167'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: -0.4
+    start_wp: 160
+    end_wp: 167
+    comment: ''
+- name: spulse11
+  active: true
+  road: hairpin_r
+  level: 2
+  comment: 'spulse: steering add factor=0.4 start=212 end=219'
   perturbations:
   - control: steering
     mode: add
     factor: 0.4
+    start_wp: 212
+    end_wp: 219
+    comment: ''
+- name: spulse12
+  active: true
+  road: hairpin_r
+  level: 2
+  comment: 'spulse: steering add factor=-0.4 start=264 end=271'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: -0.4
+    start_wp: 264
+    end_wp: 271
+    comment: ''
+- name: spulse13
+  active: true
+  road: hairpin_r
+  level: 3
+  comment: 'spulse: steering add factor=0.6 start=3 end=10'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: 0.6
+    start_wp: 3
+    end_wp: 10
+    comment: ''
+- name: spulse14
+  active: true
+  road: hairpin_r
+  level: 3
+  comment: 'spulse: steering add factor=-0.6 start=55 end=62'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: -0.6
+    start_wp: 55
+    end_wp: 62
+    comment: ''
+- name: spulse15
+  active: true
+  road: hairpin_r
+  level: 3
+  comment: 'spulse: steering add factor=0.6 start=107 end=114'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: 0.6
+    start_wp: 107
+    end_wp: 114
+    comment: ''
+- name: spulse16
+  active: true
+  road: hairpin_r
+  level: 3
+  comment: 'spulse: steering add factor=-0.6 start=160 end=167'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: -0.6
+    start_wp: 160
+    end_wp: 167
+    comment: ''
+- name: spulse17
+  active: true
+  road: hairpin_r
+  level: 3
+  comment: 'spulse: steering add factor=0.6 start=212 end=219'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: 0.6
+    start_wp: 212
+    end_wp: 219
+    comment: ''
+- name: spulse18
+  active: true
+  road: hairpin_r
+  level: 3
+  comment: 'spulse: steering add factor=-0.6 start=264 end=271'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: -0.6
     start_wp: 264
     end_wp: 271
     comment: ''
@@ -743,143 +1271,215 @@ hairpin_r:
   active: true
   road: hairpin_r
   level: 1
-  comment: 'sfreeze: steering set factor=0.0 start=3 end=10'
+  comment: 'sfreeze: steering set factor=0.0 start=3 end=12'
   perturbations:
   - control: steering
     mode: set
     factor: 0.0
     start_wp: 3
-    end_wp: 10
+    end_wp: 12
     comment: ''
 - name: sfreeze02
   active: true
   road: hairpin_r
   level: 1
-  comment: 'sfreeze: steering set factor=0.0 start=134 end=141'
+  comment: 'sfreeze: steering set factor=0.0 start=55 end=64'
   perturbations:
   - control: steering
     mode: set
     factor: 0.0
-    start_wp: 134
-    end_wp: 141
+    start_wp: 55
+    end_wp: 64
     comment: ''
 - name: sfreeze03
   active: true
   road: hairpin_r
   level: 1
-  comment: 'sfreeze: steering set factor=0.0 start=264 end=271'
+  comment: 'sfreeze: steering set factor=0.0 start=107 end=116'
   perturbations:
   - control: steering
     mode: set
     factor: 0.0
-    start_wp: 264
+    start_wp: 107
+    end_wp: 116
+    comment: ''
+- name: sfreeze04
+  active: true
+  road: hairpin_r
+  level: 1
+  comment: 'sfreeze: steering set factor=0.0 start=158 end=167'
+  perturbations:
+  - control: steering
+    mode: set
+    factor: 0.0
+    start_wp: 158
+    end_wp: 167
+    comment: ''
+- name: sfreeze05
+  active: true
+  road: hairpin_r
+  level: 1
+  comment: 'sfreeze: steering set factor=0.0 start=210 end=219'
+  perturbations:
+  - control: steering
+    mode: set
+    factor: 0.0
+    start_wp: 210
+    end_wp: 219
+    comment: ''
+- name: sfreeze06
+  active: true
+  road: hairpin_r
+  level: 1
+  comment: 'sfreeze: steering set factor=0.0 start=262 end=271'
+  perturbations:
+  - control: steering
+    mode: set
+    factor: 0.0
+    start_wp: 262
     end_wp: 271
     comment: ''
 - name: sgain01
   active: true
   road: hairpin_r
   level: 1
-  comment: 'sgain: steering mul factor=1.4 start=3 end=32'
+  comment: 'sgain: steering mul factor=1.4 start=3 end=42'
   perturbations:
   - control: steering
     mode: mul
     factor: 1.4
     start_wp: 3
-    end_wp: 32
+    end_wp: 42
     comment: ''
 - name: sgain02
   active: true
   road: hairpin_r
   level: 1
-  comment: 'sgain: steering mul factor=1.4 start=122 end=151'
+  comment: 'sgain: steering mul factor=1.4 start=49 end=88'
   perturbations:
   - control: steering
     mode: mul
     factor: 1.4
-    start_wp: 122
-    end_wp: 151
+    start_wp: 49
+    end_wp: 88
     comment: ''
 - name: sgain03
   active: true
   road: hairpin_r
   level: 1
-  comment: 'sgain: steering mul factor=1.4 start=242 end=271'
+  comment: 'sgain: steering mul factor=1.4 start=95 end=134'
   perturbations:
   - control: steering
     mode: mul
     factor: 1.4
-    start_wp: 242
+    start_wp: 95
+    end_wp: 134
+    comment: ''
+- name: sgain04
+  active: true
+  road: hairpin_r
+  level: 1
+  comment: 'sgain: steering mul factor=1.4 start=140 end=179'
+  perturbations:
+  - control: steering
+    mode: mul
+    factor: 1.4
+    start_wp: 140
+    end_wp: 179
+    comment: ''
+- name: sgain05
+  active: true
+  road: hairpin_r
+  level: 1
+  comment: 'sgain: steering mul factor=1.4 start=186 end=225'
+  perturbations:
+  - control: steering
+    mode: mul
+    factor: 1.4
+    start_wp: 186
+    end_wp: 225
+    comment: ''
+- name: sgain06
+  active: true
+  road: hairpin_r
+  level: 1
+  comment: 'sgain: steering mul factor=1.4 start=232 end=271'
+  perturbations:
+  - control: steering
+    mode: mul
+    factor: 1.4
+    start_wp: 232
     end_wp: 271
     comment: ''
 - name: sbias01
   active: true
   road: hairpin_r
   level: 1
-  comment: 'sbias: steering add factor=0.1 start=3 end=32'
+  comment: 'sbias: steering add factor=0.2 start=3 end=42'
   perturbations:
   - control: steering
     mode: add
-    factor: 0.1
+    factor: 0.2
     start_wp: 3
-    end_wp: 32
+    end_wp: 42
     comment: ''
 - name: sbias02
   active: true
   road: hairpin_r
   level: 1
-  comment: 'sbias: steering add factor=-0.1 start=122 end=151'
+  comment: 'sbias: steering add factor=-0.2 start=49 end=88'
   perturbations:
   - control: steering
     mode: add
-    factor: -0.1
-    start_wp: 122
-    end_wp: 151
+    factor: -0.2
+    start_wp: 49
+    end_wp: 88
     comment: ''
 - name: sbias03
   active: true
   road: hairpin_r
   level: 1
-  comment: 'sbias: steering add factor=0.1 start=242 end=271'
+  comment: 'sbias: steering add factor=0.2 start=95 end=134'
   perturbations:
   - control: steering
     mode: add
-    factor: 0.1
-    start_wp: 242
-    end_wp: 271
+    factor: 0.2
+    start_wp: 95
+    end_wp: 134
     comment: ''
-- name: tcut01
+- name: sbias04
   active: true
   road: hairpin_r
   level: 1
-  comment: 'tcut: throttle set factor=0.0 start=3 end=42'
+  comment: 'sbias: steering add factor=-0.2 start=140 end=179'
   perturbations:
-  - control: throttle
-    mode: set
-    factor: 0.0
-    start_wp: 3
-    end_wp: 42
+  - control: steering
+    mode: add
+    factor: -0.2
+    start_wp: 140
+    end_wp: 179
     comment: ''
-- name: tcut02
+- name: sbias05
   active: true
   road: hairpin_r
   level: 1
-  comment: 'tcut: throttle set factor=0.0 start=118 end=157'
+  comment: 'sbias: steering add factor=0.2 start=186 end=225'
   perturbations:
-  - control: throttle
-    mode: set
-    factor: 0.0
-    start_wp: 118
-    end_wp: 157
+  - control: steering
+    mode: add
+    factor: 0.2
+    start_wp: 186
+    end_wp: 225
     comment: ''
-- name: tcut03
+- name: sbias06
   active: true
   road: hairpin_r
   level: 1
-  comment: 'tcut: throttle set factor=0.0 start=232 end=271'
+  comment: 'sbias: steering add factor=-0.2 start=232 end=271'
   perturbations:
-  - control: throttle
-    mode: set
-    factor: 0.0
+  - control: steering
+    mode: add
+    factor: -0.2
     start_wp: 232
     end_wp: 271
     comment: ''
@@ -887,27 +1487,51 @@ hairpin_r:
   active: true
   road: hairpin_r
   level: 1
-  comment: 'tboost: throttle mul factor=1.2 start=3 end=42'
+  comment: 'tboost: throttle mul factor=1.2 start=3 end=102'
   perturbations:
   - control: throttle
     mode: mul
     factor: 1.2
     start_wp: 3
-    end_wp: 42
+    end_wp: 102
     comment: ''
 - name: tboost02
   active: true
   road: hairpin_r
   level: 1
-  comment: 'tboost: throttle mul factor=1.2 start=232 end=271'
+  comment: 'tboost: throttle mul factor=1.2 start=172 end=271'
   perturbations:
   - control: throttle
     mode: mul
     factor: 1.2
-    start_wp: 232
+    start_wp: 172
     end_wp: 271
     comment: ''
 - name: btap01
+  active: true
+  road: hairpin_r
+  level: 1
+  comment: 'btap: throttle set factor=-1.0 start=3 end=7'
+  perturbations:
+  - control: throttle
+    mode: set
+    factor: -1.0
+    start_wp: 3
+    end_wp: 7
+    comment: ''
+- name: btap02
+  active: true
+  road: hairpin_r
+  level: 1
+  comment: 'btap: throttle set factor=-1.0 start=69 end=73'
+  perturbations:
+  - control: throttle
+    mode: set
+    factor: -1.0
+    start_wp: 69
+    end_wp: 73
+    comment: ''
+- name: btap03
   active: true
   road: hairpin_r
   level: 1
@@ -918,6 +1542,30 @@ hairpin_r:
     factor: -1.0
     start_wp: 135
     end_wp: 139
+    comment: ''
+- name: btap04
+  active: true
+  road: hairpin_r
+  level: 1
+  comment: 'btap: throttle set factor=-1.0 start=201 end=205'
+  perturbations:
+  - control: throttle
+    mode: set
+    factor: -1.0
+    start_wp: 201
+    end_wp: 205
+    comment: ''
+- name: btap05
+  active: true
+  road: hairpin_r
+  level: 1
+  comment: 'btap: throttle set factor=-1.0 start=267 end=271'
+  perturbations:
+  - control: throttle
+    mode: set
+    factor: -1.0
+    start_wp: 267
+    end_wp: 271
     comment: ''
 hairpin_l:
 - name: baseline
@@ -942,51 +1590,63 @@ hairpin_l:
   active: true
   road: hairpin_l
   level: 1
-  comment: 'spulse: steering add factor=-0.25 start=68 end=75'
+  comment: 'spulse: steering add factor=-0.25 start=55 end=62'
   perturbations:
   - control: steering
     mode: add
     factor: -0.25
-    start_wp: 68
-    end_wp: 75
+    start_wp: 55
+    end_wp: 62
     comment: ''
 - name: spulse03
   active: true
   road: hairpin_l
   level: 1
-  comment: 'spulse: steering add factor=0.25 start=134 end=141'
+  comment: 'spulse: steering add factor=0.25 start=107 end=114'
   perturbations:
   - control: steering
     mode: add
     factor: 0.25
-    start_wp: 134
-    end_wp: 141
+    start_wp: 107
+    end_wp: 114
     comment: ''
 - name: spulse04
   active: true
   road: hairpin_l
   level: 1
-  comment: 'spulse: steering add factor=-0.25 start=199 end=206'
+  comment: 'spulse: steering add factor=-0.25 start=160 end=167'
   perturbations:
   - control: steering
     mode: add
     factor: -0.25
-    start_wp: 199
-    end_wp: 206
+    start_wp: 160
+    end_wp: 167
     comment: ''
 - name: spulse05
   active: true
   road: hairpin_l
   level: 1
-  comment: 'spulse: steering add factor=0.25 start=264 end=271'
+  comment: 'spulse: steering add factor=0.25 start=212 end=219'
   perturbations:
   - control: steering
     mode: add
     factor: 0.25
+    start_wp: 212
+    end_wp: 219
+    comment: ''
+- name: spulse06
+  active: true
+  road: hairpin_l
+  level: 1
+  comment: 'spulse: steering add factor=-0.25 start=264 end=271'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: -0.25
     start_wp: 264
     end_wp: 271
     comment: ''
-- name: spulse06
+- name: spulse07
   active: true
   road: hairpin_l
   level: 2
@@ -998,51 +1658,135 @@ hairpin_l:
     start_wp: 3
     end_wp: 10
     comment: ''
-- name: spulse07
-  active: true
-  road: hairpin_l
-  level: 2
-  comment: 'spulse: steering add factor=-0.4 start=68 end=75'
-  perturbations:
-  - control: steering
-    mode: add
-    factor: -0.4
-    start_wp: 68
-    end_wp: 75
-    comment: ''
 - name: spulse08
   active: true
   road: hairpin_l
   level: 2
-  comment: 'spulse: steering add factor=0.4 start=134 end=141'
+  comment: 'spulse: steering add factor=-0.4 start=55 end=62'
   perturbations:
   - control: steering
     mode: add
-    factor: 0.4
-    start_wp: 134
-    end_wp: 141
+    factor: -0.4
+    start_wp: 55
+    end_wp: 62
     comment: ''
 - name: spulse09
   active: true
   road: hairpin_l
   level: 2
-  comment: 'spulse: steering add factor=-0.4 start=199 end=206'
+  comment: 'spulse: steering add factor=0.4 start=107 end=114'
   perturbations:
   - control: steering
     mode: add
-    factor: -0.4
-    start_wp: 199
-    end_wp: 206
+    factor: 0.4
+    start_wp: 107
+    end_wp: 114
     comment: ''
 - name: spulse10
   active: true
   road: hairpin_l
   level: 2
-  comment: 'spulse: steering add factor=0.4 start=264 end=271'
+  comment: 'spulse: steering add factor=-0.4 start=160 end=167'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: -0.4
+    start_wp: 160
+    end_wp: 167
+    comment: ''
+- name: spulse11
+  active: true
+  road: hairpin_l
+  level: 2
+  comment: 'spulse: steering add factor=0.4 start=212 end=219'
   perturbations:
   - control: steering
     mode: add
     factor: 0.4
+    start_wp: 212
+    end_wp: 219
+    comment: ''
+- name: spulse12
+  active: true
+  road: hairpin_l
+  level: 2
+  comment: 'spulse: steering add factor=-0.4 start=264 end=271'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: -0.4
+    start_wp: 264
+    end_wp: 271
+    comment: ''
+- name: spulse13
+  active: true
+  road: hairpin_l
+  level: 3
+  comment: 'spulse: steering add factor=0.6 start=3 end=10'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: 0.6
+    start_wp: 3
+    end_wp: 10
+    comment: ''
+- name: spulse14
+  active: true
+  road: hairpin_l
+  level: 3
+  comment: 'spulse: steering add factor=-0.6 start=55 end=62'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: -0.6
+    start_wp: 55
+    end_wp: 62
+    comment: ''
+- name: spulse15
+  active: true
+  road: hairpin_l
+  level: 3
+  comment: 'spulse: steering add factor=0.6 start=107 end=114'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: 0.6
+    start_wp: 107
+    end_wp: 114
+    comment: ''
+- name: spulse16
+  active: true
+  road: hairpin_l
+  level: 3
+  comment: 'spulse: steering add factor=-0.6 start=160 end=167'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: -0.6
+    start_wp: 160
+    end_wp: 167
+    comment: ''
+- name: spulse17
+  active: true
+  road: hairpin_l
+  level: 3
+  comment: 'spulse: steering add factor=0.6 start=212 end=219'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: 0.6
+    start_wp: 212
+    end_wp: 219
+    comment: ''
+- name: spulse18
+  active: true
+  road: hairpin_l
+  level: 3
+  comment: 'spulse: steering add factor=-0.6 start=264 end=271'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: -0.6
     start_wp: 264
     end_wp: 271
     comment: ''
@@ -1050,143 +1794,215 @@ hairpin_l:
   active: true
   road: hairpin_l
   level: 1
-  comment: 'sfreeze: steering set factor=0.0 start=3 end=10'
+  comment: 'sfreeze: steering set factor=0.0 start=3 end=12'
   perturbations:
   - control: steering
     mode: set
     factor: 0.0
     start_wp: 3
-    end_wp: 10
+    end_wp: 12
     comment: ''
 - name: sfreeze02
   active: true
   road: hairpin_l
   level: 1
-  comment: 'sfreeze: steering set factor=0.0 start=134 end=141'
+  comment: 'sfreeze: steering set factor=0.0 start=55 end=64'
   perturbations:
   - control: steering
     mode: set
     factor: 0.0
-    start_wp: 134
-    end_wp: 141
+    start_wp: 55
+    end_wp: 64
     comment: ''
 - name: sfreeze03
   active: true
   road: hairpin_l
   level: 1
-  comment: 'sfreeze: steering set factor=0.0 start=264 end=271'
+  comment: 'sfreeze: steering set factor=0.0 start=107 end=116'
   perturbations:
   - control: steering
     mode: set
     factor: 0.0
-    start_wp: 264
+    start_wp: 107
+    end_wp: 116
+    comment: ''
+- name: sfreeze04
+  active: true
+  road: hairpin_l
+  level: 1
+  comment: 'sfreeze: steering set factor=0.0 start=158 end=167'
+  perturbations:
+  - control: steering
+    mode: set
+    factor: 0.0
+    start_wp: 158
+    end_wp: 167
+    comment: ''
+- name: sfreeze05
+  active: true
+  road: hairpin_l
+  level: 1
+  comment: 'sfreeze: steering set factor=0.0 start=210 end=219'
+  perturbations:
+  - control: steering
+    mode: set
+    factor: 0.0
+    start_wp: 210
+    end_wp: 219
+    comment: ''
+- name: sfreeze06
+  active: true
+  road: hairpin_l
+  level: 1
+  comment: 'sfreeze: steering set factor=0.0 start=262 end=271'
+  perturbations:
+  - control: steering
+    mode: set
+    factor: 0.0
+    start_wp: 262
     end_wp: 271
     comment: ''
 - name: sgain01
   active: true
   road: hairpin_l
   level: 1
-  comment: 'sgain: steering mul factor=1.4 start=3 end=32'
+  comment: 'sgain: steering mul factor=1.4 start=3 end=42'
   perturbations:
   - control: steering
     mode: mul
     factor: 1.4
     start_wp: 3
-    end_wp: 32
+    end_wp: 42
     comment: ''
 - name: sgain02
   active: true
   road: hairpin_l
   level: 1
-  comment: 'sgain: steering mul factor=1.4 start=122 end=151'
+  comment: 'sgain: steering mul factor=1.4 start=49 end=88'
   perturbations:
   - control: steering
     mode: mul
     factor: 1.4
-    start_wp: 122
-    end_wp: 151
+    start_wp: 49
+    end_wp: 88
     comment: ''
 - name: sgain03
   active: true
   road: hairpin_l
   level: 1
-  comment: 'sgain: steering mul factor=1.4 start=242 end=271'
+  comment: 'sgain: steering mul factor=1.4 start=95 end=134'
   perturbations:
   - control: steering
     mode: mul
     factor: 1.4
-    start_wp: 242
+    start_wp: 95
+    end_wp: 134
+    comment: ''
+- name: sgain04
+  active: true
+  road: hairpin_l
+  level: 1
+  comment: 'sgain: steering mul factor=1.4 start=140 end=179'
+  perturbations:
+  - control: steering
+    mode: mul
+    factor: 1.4
+    start_wp: 140
+    end_wp: 179
+    comment: ''
+- name: sgain05
+  active: true
+  road: hairpin_l
+  level: 1
+  comment: 'sgain: steering mul factor=1.4 start=186 end=225'
+  perturbations:
+  - control: steering
+    mode: mul
+    factor: 1.4
+    start_wp: 186
+    end_wp: 225
+    comment: ''
+- name: sgain06
+  active: true
+  road: hairpin_l
+  level: 1
+  comment: 'sgain: steering mul factor=1.4 start=232 end=271'
+  perturbations:
+  - control: steering
+    mode: mul
+    factor: 1.4
+    start_wp: 232
     end_wp: 271
     comment: ''
 - name: sbias01
   active: true
   road: hairpin_l
   level: 1
-  comment: 'sbias: steering add factor=0.1 start=3 end=32'
+  comment: 'sbias: steering add factor=0.2 start=3 end=42'
   perturbations:
   - control: steering
     mode: add
-    factor: 0.1
+    factor: 0.2
     start_wp: 3
-    end_wp: 32
+    end_wp: 42
     comment: ''
 - name: sbias02
   active: true
   road: hairpin_l
   level: 1
-  comment: 'sbias: steering add factor=-0.1 start=122 end=151'
+  comment: 'sbias: steering add factor=-0.2 start=49 end=88'
   perturbations:
   - control: steering
     mode: add
-    factor: -0.1
-    start_wp: 122
-    end_wp: 151
+    factor: -0.2
+    start_wp: 49
+    end_wp: 88
     comment: ''
 - name: sbias03
   active: true
   road: hairpin_l
   level: 1
-  comment: 'sbias: steering add factor=0.1 start=242 end=271'
+  comment: 'sbias: steering add factor=0.2 start=95 end=134'
   perturbations:
   - control: steering
     mode: add
-    factor: 0.1
-    start_wp: 242
-    end_wp: 271
+    factor: 0.2
+    start_wp: 95
+    end_wp: 134
     comment: ''
-- name: tcut01
+- name: sbias04
   active: true
   road: hairpin_l
   level: 1
-  comment: 'tcut: throttle set factor=0.0 start=3 end=42'
+  comment: 'sbias: steering add factor=-0.2 start=140 end=179'
   perturbations:
-  - control: throttle
-    mode: set
-    factor: 0.0
-    start_wp: 3
-    end_wp: 42
+  - control: steering
+    mode: add
+    factor: -0.2
+    start_wp: 140
+    end_wp: 179
     comment: ''
-- name: tcut02
+- name: sbias05
   active: true
   road: hairpin_l
   level: 1
-  comment: 'tcut: throttle set factor=0.0 start=118 end=157'
+  comment: 'sbias: steering add factor=0.2 start=186 end=225'
   perturbations:
-  - control: throttle
-    mode: set
-    factor: 0.0
-    start_wp: 118
-    end_wp: 157
+  - control: steering
+    mode: add
+    factor: 0.2
+    start_wp: 186
+    end_wp: 225
     comment: ''
-- name: tcut03
+- name: sbias06
   active: true
   road: hairpin_l
   level: 1
-  comment: 'tcut: throttle set factor=0.0 start=232 end=271'
+  comment: 'sbias: steering add factor=-0.2 start=232 end=271'
   perturbations:
-  - control: throttle
-    mode: set
-    factor: 0.0
+  - control: steering
+    mode: add
+    factor: -0.2
     start_wp: 232
     end_wp: 271
     comment: ''
@@ -1194,27 +2010,51 @@ hairpin_l:
   active: true
   road: hairpin_l
   level: 1
-  comment: 'tboost: throttle mul factor=1.2 start=3 end=42'
+  comment: 'tboost: throttle mul factor=1.2 start=3 end=102'
   perturbations:
   - control: throttle
     mode: mul
     factor: 1.2
     start_wp: 3
-    end_wp: 42
+    end_wp: 102
     comment: ''
 - name: tboost02
   active: true
   road: hairpin_l
   level: 1
-  comment: 'tboost: throttle mul factor=1.2 start=232 end=271'
+  comment: 'tboost: throttle mul factor=1.2 start=172 end=271'
   perturbations:
   - control: throttle
     mode: mul
     factor: 1.2
-    start_wp: 232
+    start_wp: 172
     end_wp: 271
     comment: ''
 - name: btap01
+  active: true
+  road: hairpin_l
+  level: 1
+  comment: 'btap: throttle set factor=-1.0 start=3 end=7'
+  perturbations:
+  - control: throttle
+    mode: set
+    factor: -1.0
+    start_wp: 3
+    end_wp: 7
+    comment: ''
+- name: btap02
+  active: true
+  road: hairpin_l
+  level: 1
+  comment: 'btap: throttle set factor=-1.0 start=69 end=73'
+  perturbations:
+  - control: throttle
+    mode: set
+    factor: -1.0
+    start_wp: 69
+    end_wp: 73
+    comment: ''
+- name: btap03
   active: true
   road: hairpin_l
   level: 1
@@ -1225,6 +2065,30 @@ hairpin_l:
     factor: -1.0
     start_wp: 135
     end_wp: 139
+    comment: ''
+- name: btap04
+  active: true
+  road: hairpin_l
+  level: 1
+  comment: 'btap: throttle set factor=-1.0 start=201 end=205'
+  perturbations:
+  - control: throttle
+    mode: set
+    factor: -1.0
+    start_wp: 201
+    end_wp: 205
+    comment: ''
+- name: btap05
+  active: true
+  road: hairpin_l
+  level: 1
+  comment: 'btap: throttle set factor=-1.0 start=267 end=271'
+  perturbations:
+  - control: throttle
+    mode: set
+    factor: -1.0
+    start_wp: 267
+    end_wp: 271
     comment: ''
 wide_chicane_lr:
 - name: baseline
@@ -1249,51 +2113,63 @@ wide_chicane_lr:
   active: true
   road: wide_chicane_lr
   level: 1
-  comment: 'spulse: steering add factor=-0.25 start=68 end=75'
+  comment: 'spulse: steering add factor=-0.25 start=55 end=62'
   perturbations:
   - control: steering
     mode: add
     factor: -0.25
-    start_wp: 68
-    end_wp: 75
+    start_wp: 55
+    end_wp: 62
     comment: ''
 - name: spulse03
   active: true
   road: wide_chicane_lr
   level: 1
-  comment: 'spulse: steering add factor=0.25 start=134 end=141'
+  comment: 'spulse: steering add factor=0.25 start=107 end=114'
   perturbations:
   - control: steering
     mode: add
     factor: 0.25
-    start_wp: 134
-    end_wp: 141
+    start_wp: 107
+    end_wp: 114
     comment: ''
 - name: spulse04
   active: true
   road: wide_chicane_lr
   level: 1
-  comment: 'spulse: steering add factor=-0.25 start=199 end=206'
+  comment: 'spulse: steering add factor=-0.25 start=160 end=167'
   perturbations:
   - control: steering
     mode: add
     factor: -0.25
-    start_wp: 199
-    end_wp: 206
+    start_wp: 160
+    end_wp: 167
     comment: ''
 - name: spulse05
   active: true
   road: wide_chicane_lr
   level: 1
-  comment: 'spulse: steering add factor=0.25 start=264 end=271'
+  comment: 'spulse: steering add factor=0.25 start=212 end=219'
   perturbations:
   - control: steering
     mode: add
     factor: 0.25
+    start_wp: 212
+    end_wp: 219
+    comment: ''
+- name: spulse06
+  active: true
+  road: wide_chicane_lr
+  level: 1
+  comment: 'spulse: steering add factor=-0.25 start=264 end=271'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: -0.25
     start_wp: 264
     end_wp: 271
     comment: ''
-- name: spulse06
+- name: spulse07
   active: true
   road: wide_chicane_lr
   level: 2
@@ -1305,51 +2181,135 @@ wide_chicane_lr:
     start_wp: 3
     end_wp: 10
     comment: ''
-- name: spulse07
-  active: true
-  road: wide_chicane_lr
-  level: 2
-  comment: 'spulse: steering add factor=-0.4 start=68 end=75'
-  perturbations:
-  - control: steering
-    mode: add
-    factor: -0.4
-    start_wp: 68
-    end_wp: 75
-    comment: ''
 - name: spulse08
   active: true
   road: wide_chicane_lr
   level: 2
-  comment: 'spulse: steering add factor=0.4 start=134 end=141'
+  comment: 'spulse: steering add factor=-0.4 start=55 end=62'
   perturbations:
   - control: steering
     mode: add
-    factor: 0.4
-    start_wp: 134
-    end_wp: 141
+    factor: -0.4
+    start_wp: 55
+    end_wp: 62
     comment: ''
 - name: spulse09
   active: true
   road: wide_chicane_lr
   level: 2
-  comment: 'spulse: steering add factor=-0.4 start=199 end=206'
+  comment: 'spulse: steering add factor=0.4 start=107 end=114'
   perturbations:
   - control: steering
     mode: add
-    factor: -0.4
-    start_wp: 199
-    end_wp: 206
+    factor: 0.4
+    start_wp: 107
+    end_wp: 114
     comment: ''
 - name: spulse10
   active: true
   road: wide_chicane_lr
   level: 2
-  comment: 'spulse: steering add factor=0.4 start=264 end=271'
+  comment: 'spulse: steering add factor=-0.4 start=160 end=167'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: -0.4
+    start_wp: 160
+    end_wp: 167
+    comment: ''
+- name: spulse11
+  active: true
+  road: wide_chicane_lr
+  level: 2
+  comment: 'spulse: steering add factor=0.4 start=212 end=219'
   perturbations:
   - control: steering
     mode: add
     factor: 0.4
+    start_wp: 212
+    end_wp: 219
+    comment: ''
+- name: spulse12
+  active: true
+  road: wide_chicane_lr
+  level: 2
+  comment: 'spulse: steering add factor=-0.4 start=264 end=271'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: -0.4
+    start_wp: 264
+    end_wp: 271
+    comment: ''
+- name: spulse13
+  active: true
+  road: wide_chicane_lr
+  level: 3
+  comment: 'spulse: steering add factor=0.6 start=3 end=10'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: 0.6
+    start_wp: 3
+    end_wp: 10
+    comment: ''
+- name: spulse14
+  active: true
+  road: wide_chicane_lr
+  level: 3
+  comment: 'spulse: steering add factor=-0.6 start=55 end=62'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: -0.6
+    start_wp: 55
+    end_wp: 62
+    comment: ''
+- name: spulse15
+  active: true
+  road: wide_chicane_lr
+  level: 3
+  comment: 'spulse: steering add factor=0.6 start=107 end=114'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: 0.6
+    start_wp: 107
+    end_wp: 114
+    comment: ''
+- name: spulse16
+  active: true
+  road: wide_chicane_lr
+  level: 3
+  comment: 'spulse: steering add factor=-0.6 start=160 end=167'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: -0.6
+    start_wp: 160
+    end_wp: 167
+    comment: ''
+- name: spulse17
+  active: true
+  road: wide_chicane_lr
+  level: 3
+  comment: 'spulse: steering add factor=0.6 start=212 end=219'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: 0.6
+    start_wp: 212
+    end_wp: 219
+    comment: ''
+- name: spulse18
+  active: true
+  road: wide_chicane_lr
+  level: 3
+  comment: 'spulse: steering add factor=-0.6 start=264 end=271'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: -0.6
     start_wp: 264
     end_wp: 271
     comment: ''
@@ -1357,143 +2317,215 @@ wide_chicane_lr:
   active: true
   road: wide_chicane_lr
   level: 1
-  comment: 'sfreeze: steering set factor=0.0 start=3 end=10'
+  comment: 'sfreeze: steering set factor=0.0 start=3 end=12'
   perturbations:
   - control: steering
     mode: set
     factor: 0.0
     start_wp: 3
-    end_wp: 10
+    end_wp: 12
     comment: ''
 - name: sfreeze02
   active: true
   road: wide_chicane_lr
   level: 1
-  comment: 'sfreeze: steering set factor=0.0 start=134 end=141'
+  comment: 'sfreeze: steering set factor=0.0 start=55 end=64'
   perturbations:
   - control: steering
     mode: set
     factor: 0.0
-    start_wp: 134
-    end_wp: 141
+    start_wp: 55
+    end_wp: 64
     comment: ''
 - name: sfreeze03
   active: true
   road: wide_chicane_lr
   level: 1
-  comment: 'sfreeze: steering set factor=0.0 start=264 end=271'
+  comment: 'sfreeze: steering set factor=0.0 start=107 end=116'
   perturbations:
   - control: steering
     mode: set
     factor: 0.0
-    start_wp: 264
+    start_wp: 107
+    end_wp: 116
+    comment: ''
+- name: sfreeze04
+  active: true
+  road: wide_chicane_lr
+  level: 1
+  comment: 'sfreeze: steering set factor=0.0 start=158 end=167'
+  perturbations:
+  - control: steering
+    mode: set
+    factor: 0.0
+    start_wp: 158
+    end_wp: 167
+    comment: ''
+- name: sfreeze05
+  active: true
+  road: wide_chicane_lr
+  level: 1
+  comment: 'sfreeze: steering set factor=0.0 start=210 end=219'
+  perturbations:
+  - control: steering
+    mode: set
+    factor: 0.0
+    start_wp: 210
+    end_wp: 219
+    comment: ''
+- name: sfreeze06
+  active: true
+  road: wide_chicane_lr
+  level: 1
+  comment: 'sfreeze: steering set factor=0.0 start=262 end=271'
+  perturbations:
+  - control: steering
+    mode: set
+    factor: 0.0
+    start_wp: 262
     end_wp: 271
     comment: ''
 - name: sgain01
   active: true
   road: wide_chicane_lr
   level: 1
-  comment: 'sgain: steering mul factor=1.4 start=3 end=32'
+  comment: 'sgain: steering mul factor=1.4 start=3 end=42'
   perturbations:
   - control: steering
     mode: mul
     factor: 1.4
     start_wp: 3
-    end_wp: 32
+    end_wp: 42
     comment: ''
 - name: sgain02
   active: true
   road: wide_chicane_lr
   level: 1
-  comment: 'sgain: steering mul factor=1.4 start=122 end=151'
+  comment: 'sgain: steering mul factor=1.4 start=49 end=88'
   perturbations:
   - control: steering
     mode: mul
     factor: 1.4
-    start_wp: 122
-    end_wp: 151
+    start_wp: 49
+    end_wp: 88
     comment: ''
 - name: sgain03
   active: true
   road: wide_chicane_lr
   level: 1
-  comment: 'sgain: steering mul factor=1.4 start=242 end=271'
+  comment: 'sgain: steering mul factor=1.4 start=95 end=134'
   perturbations:
   - control: steering
     mode: mul
     factor: 1.4
-    start_wp: 242
+    start_wp: 95
+    end_wp: 134
+    comment: ''
+- name: sgain04
+  active: true
+  road: wide_chicane_lr
+  level: 1
+  comment: 'sgain: steering mul factor=1.4 start=140 end=179'
+  perturbations:
+  - control: steering
+    mode: mul
+    factor: 1.4
+    start_wp: 140
+    end_wp: 179
+    comment: ''
+- name: sgain05
+  active: true
+  road: wide_chicane_lr
+  level: 1
+  comment: 'sgain: steering mul factor=1.4 start=186 end=225'
+  perturbations:
+  - control: steering
+    mode: mul
+    factor: 1.4
+    start_wp: 186
+    end_wp: 225
+    comment: ''
+- name: sgain06
+  active: true
+  road: wide_chicane_lr
+  level: 1
+  comment: 'sgain: steering mul factor=1.4 start=232 end=271'
+  perturbations:
+  - control: steering
+    mode: mul
+    factor: 1.4
+    start_wp: 232
     end_wp: 271
     comment: ''
 - name: sbias01
   active: true
   road: wide_chicane_lr
   level: 1
-  comment: 'sbias: steering add factor=0.1 start=3 end=32'
+  comment: 'sbias: steering add factor=0.2 start=3 end=42'
   perturbations:
   - control: steering
     mode: add
-    factor: 0.1
+    factor: 0.2
     start_wp: 3
-    end_wp: 32
+    end_wp: 42
     comment: ''
 - name: sbias02
   active: true
   road: wide_chicane_lr
   level: 1
-  comment: 'sbias: steering add factor=-0.1 start=122 end=151'
+  comment: 'sbias: steering add factor=-0.2 start=49 end=88'
   perturbations:
   - control: steering
     mode: add
-    factor: -0.1
-    start_wp: 122
-    end_wp: 151
+    factor: -0.2
+    start_wp: 49
+    end_wp: 88
     comment: ''
 - name: sbias03
   active: true
   road: wide_chicane_lr
   level: 1
-  comment: 'sbias: steering add factor=0.1 start=242 end=271'
+  comment: 'sbias: steering add factor=0.2 start=95 end=134'
   perturbations:
   - control: steering
     mode: add
-    factor: 0.1
-    start_wp: 242
-    end_wp: 271
+    factor: 0.2
+    start_wp: 95
+    end_wp: 134
     comment: ''
-- name: tcut01
+- name: sbias04
   active: true
   road: wide_chicane_lr
   level: 1
-  comment: 'tcut: throttle set factor=0.0 start=3 end=42'
+  comment: 'sbias: steering add factor=-0.2 start=140 end=179'
   perturbations:
-  - control: throttle
-    mode: set
-    factor: 0.0
-    start_wp: 3
-    end_wp: 42
+  - control: steering
+    mode: add
+    factor: -0.2
+    start_wp: 140
+    end_wp: 179
     comment: ''
-- name: tcut02
+- name: sbias05
   active: true
   road: wide_chicane_lr
   level: 1
-  comment: 'tcut: throttle set factor=0.0 start=118 end=157'
+  comment: 'sbias: steering add factor=0.2 start=186 end=225'
   perturbations:
-  - control: throttle
-    mode: set
-    factor: 0.0
-    start_wp: 118
-    end_wp: 157
+  - control: steering
+    mode: add
+    factor: 0.2
+    start_wp: 186
+    end_wp: 225
     comment: ''
-- name: tcut03
+- name: sbias06
   active: true
   road: wide_chicane_lr
   level: 1
-  comment: 'tcut: throttle set factor=0.0 start=232 end=271'
+  comment: 'sbias: steering add factor=-0.2 start=232 end=271'
   perturbations:
-  - control: throttle
-    mode: set
-    factor: 0.0
+  - control: steering
+    mode: add
+    factor: -0.2
     start_wp: 232
     end_wp: 271
     comment: ''
@@ -1501,27 +2533,51 @@ wide_chicane_lr:
   active: true
   road: wide_chicane_lr
   level: 1
-  comment: 'tboost: throttle mul factor=1.2 start=3 end=42'
+  comment: 'tboost: throttle mul factor=1.2 start=3 end=102'
   perturbations:
   - control: throttle
     mode: mul
     factor: 1.2
     start_wp: 3
-    end_wp: 42
+    end_wp: 102
     comment: ''
 - name: tboost02
   active: true
   road: wide_chicane_lr
   level: 1
-  comment: 'tboost: throttle mul factor=1.2 start=232 end=271'
+  comment: 'tboost: throttle mul factor=1.2 start=172 end=271'
   perturbations:
   - control: throttle
     mode: mul
     factor: 1.2
-    start_wp: 232
+    start_wp: 172
     end_wp: 271
     comment: ''
 - name: btap01
+  active: true
+  road: wide_chicane_lr
+  level: 1
+  comment: 'btap: throttle set factor=-1.0 start=3 end=7'
+  perturbations:
+  - control: throttle
+    mode: set
+    factor: -1.0
+    start_wp: 3
+    end_wp: 7
+    comment: ''
+- name: btap02
+  active: true
+  road: wide_chicane_lr
+  level: 1
+  comment: 'btap: throttle set factor=-1.0 start=69 end=73'
+  perturbations:
+  - control: throttle
+    mode: set
+    factor: -1.0
+    start_wp: 69
+    end_wp: 73
+    comment: ''
+- name: btap03
   active: true
   road: wide_chicane_lr
   level: 1
@@ -1532,6 +2588,30 @@ wide_chicane_lr:
     factor: -1.0
     start_wp: 135
     end_wp: 139
+    comment: ''
+- name: btap04
+  active: true
+  road: wide_chicane_lr
+  level: 1
+  comment: 'btap: throttle set factor=-1.0 start=201 end=205'
+  perturbations:
+  - control: throttle
+    mode: set
+    factor: -1.0
+    start_wp: 201
+    end_wp: 205
+    comment: ''
+- name: btap05
+  active: true
+  road: wide_chicane_lr
+  level: 1
+  comment: 'btap: throttle set factor=-1.0 start=267 end=271'
+  perturbations:
+  - control: throttle
+    mode: set
+    factor: -1.0
+    start_wp: 267
+    end_wp: 271
     comment: ''
 wide_chicane_rl:
 - name: baseline
@@ -1556,51 +2636,63 @@ wide_chicane_rl:
   active: true
   road: wide_chicane_rl
   level: 1
-  comment: 'spulse: steering add factor=-0.25 start=68 end=75'
+  comment: 'spulse: steering add factor=-0.25 start=55 end=62'
   perturbations:
   - control: steering
     mode: add
     factor: -0.25
-    start_wp: 68
-    end_wp: 75
+    start_wp: 55
+    end_wp: 62
     comment: ''
 - name: spulse03
   active: true
   road: wide_chicane_rl
   level: 1
-  comment: 'spulse: steering add factor=0.25 start=134 end=141'
+  comment: 'spulse: steering add factor=0.25 start=107 end=114'
   perturbations:
   - control: steering
     mode: add
     factor: 0.25
-    start_wp: 134
-    end_wp: 141
+    start_wp: 107
+    end_wp: 114
     comment: ''
 - name: spulse04
   active: true
   road: wide_chicane_rl
   level: 1
-  comment: 'spulse: steering add factor=-0.25 start=199 end=206'
+  comment: 'spulse: steering add factor=-0.25 start=160 end=167'
   perturbations:
   - control: steering
     mode: add
     factor: -0.25
-    start_wp: 199
-    end_wp: 206
+    start_wp: 160
+    end_wp: 167
     comment: ''
 - name: spulse05
   active: true
   road: wide_chicane_rl
   level: 1
-  comment: 'spulse: steering add factor=0.25 start=264 end=271'
+  comment: 'spulse: steering add factor=0.25 start=212 end=219'
   perturbations:
   - control: steering
     mode: add
     factor: 0.25
+    start_wp: 212
+    end_wp: 219
+    comment: ''
+- name: spulse06
+  active: true
+  road: wide_chicane_rl
+  level: 1
+  comment: 'spulse: steering add factor=-0.25 start=264 end=271'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: -0.25
     start_wp: 264
     end_wp: 271
     comment: ''
-- name: spulse06
+- name: spulse07
   active: true
   road: wide_chicane_rl
   level: 2
@@ -1612,51 +2704,135 @@ wide_chicane_rl:
     start_wp: 3
     end_wp: 10
     comment: ''
-- name: spulse07
-  active: true
-  road: wide_chicane_rl
-  level: 2
-  comment: 'spulse: steering add factor=-0.4 start=68 end=75'
-  perturbations:
-  - control: steering
-    mode: add
-    factor: -0.4
-    start_wp: 68
-    end_wp: 75
-    comment: ''
 - name: spulse08
   active: true
   road: wide_chicane_rl
   level: 2
-  comment: 'spulse: steering add factor=0.4 start=134 end=141'
+  comment: 'spulse: steering add factor=-0.4 start=55 end=62'
   perturbations:
   - control: steering
     mode: add
-    factor: 0.4
-    start_wp: 134
-    end_wp: 141
+    factor: -0.4
+    start_wp: 55
+    end_wp: 62
     comment: ''
 - name: spulse09
   active: true
   road: wide_chicane_rl
   level: 2
-  comment: 'spulse: steering add factor=-0.4 start=199 end=206'
+  comment: 'spulse: steering add factor=0.4 start=107 end=114'
   perturbations:
   - control: steering
     mode: add
-    factor: -0.4
-    start_wp: 199
-    end_wp: 206
+    factor: 0.4
+    start_wp: 107
+    end_wp: 114
     comment: ''
 - name: spulse10
   active: true
   road: wide_chicane_rl
   level: 2
-  comment: 'spulse: steering add factor=0.4 start=264 end=271'
+  comment: 'spulse: steering add factor=-0.4 start=160 end=167'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: -0.4
+    start_wp: 160
+    end_wp: 167
+    comment: ''
+- name: spulse11
+  active: true
+  road: wide_chicane_rl
+  level: 2
+  comment: 'spulse: steering add factor=0.4 start=212 end=219'
   perturbations:
   - control: steering
     mode: add
     factor: 0.4
+    start_wp: 212
+    end_wp: 219
+    comment: ''
+- name: spulse12
+  active: true
+  road: wide_chicane_rl
+  level: 2
+  comment: 'spulse: steering add factor=-0.4 start=264 end=271'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: -0.4
+    start_wp: 264
+    end_wp: 271
+    comment: ''
+- name: spulse13
+  active: true
+  road: wide_chicane_rl
+  level: 3
+  comment: 'spulse: steering add factor=0.6 start=3 end=10'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: 0.6
+    start_wp: 3
+    end_wp: 10
+    comment: ''
+- name: spulse14
+  active: true
+  road: wide_chicane_rl
+  level: 3
+  comment: 'spulse: steering add factor=-0.6 start=55 end=62'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: -0.6
+    start_wp: 55
+    end_wp: 62
+    comment: ''
+- name: spulse15
+  active: true
+  road: wide_chicane_rl
+  level: 3
+  comment: 'spulse: steering add factor=0.6 start=107 end=114'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: 0.6
+    start_wp: 107
+    end_wp: 114
+    comment: ''
+- name: spulse16
+  active: true
+  road: wide_chicane_rl
+  level: 3
+  comment: 'spulse: steering add factor=-0.6 start=160 end=167'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: -0.6
+    start_wp: 160
+    end_wp: 167
+    comment: ''
+- name: spulse17
+  active: true
+  road: wide_chicane_rl
+  level: 3
+  comment: 'spulse: steering add factor=0.6 start=212 end=219'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: 0.6
+    start_wp: 212
+    end_wp: 219
+    comment: ''
+- name: spulse18
+  active: true
+  road: wide_chicane_rl
+  level: 3
+  comment: 'spulse: steering add factor=-0.6 start=264 end=271'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: -0.6
     start_wp: 264
     end_wp: 271
     comment: ''
@@ -1664,143 +2840,215 @@ wide_chicane_rl:
   active: true
   road: wide_chicane_rl
   level: 1
-  comment: 'sfreeze: steering set factor=0.0 start=3 end=10'
+  comment: 'sfreeze: steering set factor=0.0 start=3 end=12'
   perturbations:
   - control: steering
     mode: set
     factor: 0.0
     start_wp: 3
-    end_wp: 10
+    end_wp: 12
     comment: ''
 - name: sfreeze02
   active: true
   road: wide_chicane_rl
   level: 1
-  comment: 'sfreeze: steering set factor=0.0 start=134 end=141'
+  comment: 'sfreeze: steering set factor=0.0 start=55 end=64'
   perturbations:
   - control: steering
     mode: set
     factor: 0.0
-    start_wp: 134
-    end_wp: 141
+    start_wp: 55
+    end_wp: 64
     comment: ''
 - name: sfreeze03
   active: true
   road: wide_chicane_rl
   level: 1
-  comment: 'sfreeze: steering set factor=0.0 start=264 end=271'
+  comment: 'sfreeze: steering set factor=0.0 start=107 end=116'
   perturbations:
   - control: steering
     mode: set
     factor: 0.0
-    start_wp: 264
+    start_wp: 107
+    end_wp: 116
+    comment: ''
+- name: sfreeze04
+  active: true
+  road: wide_chicane_rl
+  level: 1
+  comment: 'sfreeze: steering set factor=0.0 start=158 end=167'
+  perturbations:
+  - control: steering
+    mode: set
+    factor: 0.0
+    start_wp: 158
+    end_wp: 167
+    comment: ''
+- name: sfreeze05
+  active: true
+  road: wide_chicane_rl
+  level: 1
+  comment: 'sfreeze: steering set factor=0.0 start=210 end=219'
+  perturbations:
+  - control: steering
+    mode: set
+    factor: 0.0
+    start_wp: 210
+    end_wp: 219
+    comment: ''
+- name: sfreeze06
+  active: true
+  road: wide_chicane_rl
+  level: 1
+  comment: 'sfreeze: steering set factor=0.0 start=262 end=271'
+  perturbations:
+  - control: steering
+    mode: set
+    factor: 0.0
+    start_wp: 262
     end_wp: 271
     comment: ''
 - name: sgain01
   active: true
   road: wide_chicane_rl
   level: 1
-  comment: 'sgain: steering mul factor=1.4 start=3 end=32'
+  comment: 'sgain: steering mul factor=1.4 start=3 end=42'
   perturbations:
   - control: steering
     mode: mul
     factor: 1.4
     start_wp: 3
-    end_wp: 32
+    end_wp: 42
     comment: ''
 - name: sgain02
   active: true
   road: wide_chicane_rl
   level: 1
-  comment: 'sgain: steering mul factor=1.4 start=122 end=151'
+  comment: 'sgain: steering mul factor=1.4 start=49 end=88'
   perturbations:
   - control: steering
     mode: mul
     factor: 1.4
-    start_wp: 122
-    end_wp: 151
+    start_wp: 49
+    end_wp: 88
     comment: ''
 - name: sgain03
   active: true
   road: wide_chicane_rl
   level: 1
-  comment: 'sgain: steering mul factor=1.4 start=242 end=271'
+  comment: 'sgain: steering mul factor=1.4 start=95 end=134'
   perturbations:
   - control: steering
     mode: mul
     factor: 1.4
-    start_wp: 242
+    start_wp: 95
+    end_wp: 134
+    comment: ''
+- name: sgain04
+  active: true
+  road: wide_chicane_rl
+  level: 1
+  comment: 'sgain: steering mul factor=1.4 start=140 end=179'
+  perturbations:
+  - control: steering
+    mode: mul
+    factor: 1.4
+    start_wp: 140
+    end_wp: 179
+    comment: ''
+- name: sgain05
+  active: true
+  road: wide_chicane_rl
+  level: 1
+  comment: 'sgain: steering mul factor=1.4 start=186 end=225'
+  perturbations:
+  - control: steering
+    mode: mul
+    factor: 1.4
+    start_wp: 186
+    end_wp: 225
+    comment: ''
+- name: sgain06
+  active: true
+  road: wide_chicane_rl
+  level: 1
+  comment: 'sgain: steering mul factor=1.4 start=232 end=271'
+  perturbations:
+  - control: steering
+    mode: mul
+    factor: 1.4
+    start_wp: 232
     end_wp: 271
     comment: ''
 - name: sbias01
   active: true
   road: wide_chicane_rl
   level: 1
-  comment: 'sbias: steering add factor=0.1 start=3 end=32'
+  comment: 'sbias: steering add factor=0.2 start=3 end=42'
   perturbations:
   - control: steering
     mode: add
-    factor: 0.1
+    factor: 0.2
     start_wp: 3
-    end_wp: 32
+    end_wp: 42
     comment: ''
 - name: sbias02
   active: true
   road: wide_chicane_rl
   level: 1
-  comment: 'sbias: steering add factor=-0.1 start=122 end=151'
+  comment: 'sbias: steering add factor=-0.2 start=49 end=88'
   perturbations:
   - control: steering
     mode: add
-    factor: -0.1
-    start_wp: 122
-    end_wp: 151
+    factor: -0.2
+    start_wp: 49
+    end_wp: 88
     comment: ''
 - name: sbias03
   active: true
   road: wide_chicane_rl
   level: 1
-  comment: 'sbias: steering add factor=0.1 start=242 end=271'
+  comment: 'sbias: steering add factor=0.2 start=95 end=134'
   perturbations:
   - control: steering
     mode: add
-    factor: 0.1
-    start_wp: 242
-    end_wp: 271
+    factor: 0.2
+    start_wp: 95
+    end_wp: 134
     comment: ''
-- name: tcut01
+- name: sbias04
   active: true
   road: wide_chicane_rl
   level: 1
-  comment: 'tcut: throttle set factor=0.0 start=3 end=42'
+  comment: 'sbias: steering add factor=-0.2 start=140 end=179'
   perturbations:
-  - control: throttle
-    mode: set
-    factor: 0.0
-    start_wp: 3
-    end_wp: 42
+  - control: steering
+    mode: add
+    factor: -0.2
+    start_wp: 140
+    end_wp: 179
     comment: ''
-- name: tcut02
+- name: sbias05
   active: true
   road: wide_chicane_rl
   level: 1
-  comment: 'tcut: throttle set factor=0.0 start=118 end=157'
+  comment: 'sbias: steering add factor=0.2 start=186 end=225'
   perturbations:
-  - control: throttle
-    mode: set
-    factor: 0.0
-    start_wp: 118
-    end_wp: 157
+  - control: steering
+    mode: add
+    factor: 0.2
+    start_wp: 186
+    end_wp: 225
     comment: ''
-- name: tcut03
+- name: sbias06
   active: true
   road: wide_chicane_rl
   level: 1
-  comment: 'tcut: throttle set factor=0.0 start=232 end=271'
+  comment: 'sbias: steering add factor=-0.2 start=232 end=271'
   perturbations:
-  - control: throttle
-    mode: set
-    factor: 0.0
+  - control: steering
+    mode: add
+    factor: -0.2
     start_wp: 232
     end_wp: 271
     comment: ''
@@ -1808,27 +3056,51 @@ wide_chicane_rl:
   active: true
   road: wide_chicane_rl
   level: 1
-  comment: 'tboost: throttle mul factor=1.2 start=3 end=42'
+  comment: 'tboost: throttle mul factor=1.2 start=3 end=102'
   perturbations:
   - control: throttle
     mode: mul
     factor: 1.2
     start_wp: 3
-    end_wp: 42
+    end_wp: 102
     comment: ''
 - name: tboost02
   active: true
   road: wide_chicane_rl
   level: 1
-  comment: 'tboost: throttle mul factor=1.2 start=232 end=271'
+  comment: 'tboost: throttle mul factor=1.2 start=172 end=271'
   perturbations:
   - control: throttle
     mode: mul
     factor: 1.2
-    start_wp: 232
+    start_wp: 172
     end_wp: 271
     comment: ''
 - name: btap01
+  active: true
+  road: wide_chicane_rl
+  level: 1
+  comment: 'btap: throttle set factor=-1.0 start=3 end=7'
+  perturbations:
+  - control: throttle
+    mode: set
+    factor: -1.0
+    start_wp: 3
+    end_wp: 7
+    comment: ''
+- name: btap02
+  active: true
+  road: wide_chicane_rl
+  level: 1
+  comment: 'btap: throttle set factor=-1.0 start=69 end=73'
+  perturbations:
+  - control: throttle
+    mode: set
+    factor: -1.0
+    start_wp: 69
+    end_wp: 73
+    comment: ''
+- name: btap03
   active: true
   road: wide_chicane_rl
   level: 1
@@ -1839,6 +3111,30 @@ wide_chicane_rl:
     factor: -1.0
     start_wp: 135
     end_wp: 139
+    comment: ''
+- name: btap04
+  active: true
+  road: wide_chicane_rl
+  level: 1
+  comment: 'btap: throttle set factor=-1.0 start=201 end=205'
+  perturbations:
+  - control: throttle
+    mode: set
+    factor: -1.0
+    start_wp: 201
+    end_wp: 205
+    comment: ''
+- name: btap05
+  active: true
+  road: wide_chicane_rl
+  level: 1
+  comment: 'btap: throttle set factor=-1.0 start=267 end=271'
+  perturbations:
+  - control: throttle
+    mode: set
+    factor: -1.0
+    start_wp: 267
+    end_wp: 271
     comment: ''
 chicane_lr:
 - name: baseline
@@ -1863,51 +3159,63 @@ chicane_lr:
   active: true
   road: chicane_lr
   level: 1
-  comment: 'spulse: steering add factor=-0.25 start=68 end=75'
+  comment: 'spulse: steering add factor=-0.25 start=55 end=62'
   perturbations:
   - control: steering
     mode: add
     factor: -0.25
-    start_wp: 68
-    end_wp: 75
+    start_wp: 55
+    end_wp: 62
     comment: ''
 - name: spulse03
   active: true
   road: chicane_lr
   level: 1
-  comment: 'spulse: steering add factor=0.25 start=134 end=141'
+  comment: 'spulse: steering add factor=0.25 start=107 end=114'
   perturbations:
   - control: steering
     mode: add
     factor: 0.25
-    start_wp: 134
-    end_wp: 141
+    start_wp: 107
+    end_wp: 114
     comment: ''
 - name: spulse04
   active: true
   road: chicane_lr
   level: 1
-  comment: 'spulse: steering add factor=-0.25 start=199 end=206'
+  comment: 'spulse: steering add factor=-0.25 start=160 end=167'
   perturbations:
   - control: steering
     mode: add
     factor: -0.25
-    start_wp: 199
-    end_wp: 206
+    start_wp: 160
+    end_wp: 167
     comment: ''
 - name: spulse05
   active: true
   road: chicane_lr
   level: 1
-  comment: 'spulse: steering add factor=0.25 start=264 end=271'
+  comment: 'spulse: steering add factor=0.25 start=212 end=219'
   perturbations:
   - control: steering
     mode: add
     factor: 0.25
+    start_wp: 212
+    end_wp: 219
+    comment: ''
+- name: spulse06
+  active: true
+  road: chicane_lr
+  level: 1
+  comment: 'spulse: steering add factor=-0.25 start=264 end=271'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: -0.25
     start_wp: 264
     end_wp: 271
     comment: ''
-- name: spulse06
+- name: spulse07
   active: true
   road: chicane_lr
   level: 2
@@ -1919,51 +3227,135 @@ chicane_lr:
     start_wp: 3
     end_wp: 10
     comment: ''
-- name: spulse07
-  active: true
-  road: chicane_lr
-  level: 2
-  comment: 'spulse: steering add factor=-0.4 start=68 end=75'
-  perturbations:
-  - control: steering
-    mode: add
-    factor: -0.4
-    start_wp: 68
-    end_wp: 75
-    comment: ''
 - name: spulse08
   active: true
   road: chicane_lr
   level: 2
-  comment: 'spulse: steering add factor=0.4 start=134 end=141'
+  comment: 'spulse: steering add factor=-0.4 start=55 end=62'
   perturbations:
   - control: steering
     mode: add
-    factor: 0.4
-    start_wp: 134
-    end_wp: 141
+    factor: -0.4
+    start_wp: 55
+    end_wp: 62
     comment: ''
 - name: spulse09
   active: true
   road: chicane_lr
   level: 2
-  comment: 'spulse: steering add factor=-0.4 start=199 end=206'
+  comment: 'spulse: steering add factor=0.4 start=107 end=114'
   perturbations:
   - control: steering
     mode: add
-    factor: -0.4
-    start_wp: 199
-    end_wp: 206
+    factor: 0.4
+    start_wp: 107
+    end_wp: 114
     comment: ''
 - name: spulse10
   active: true
   road: chicane_lr
   level: 2
-  comment: 'spulse: steering add factor=0.4 start=264 end=271'
+  comment: 'spulse: steering add factor=-0.4 start=160 end=167'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: -0.4
+    start_wp: 160
+    end_wp: 167
+    comment: ''
+- name: spulse11
+  active: true
+  road: chicane_lr
+  level: 2
+  comment: 'spulse: steering add factor=0.4 start=212 end=219'
   perturbations:
   - control: steering
     mode: add
     factor: 0.4
+    start_wp: 212
+    end_wp: 219
+    comment: ''
+- name: spulse12
+  active: true
+  road: chicane_lr
+  level: 2
+  comment: 'spulse: steering add factor=-0.4 start=264 end=271'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: -0.4
+    start_wp: 264
+    end_wp: 271
+    comment: ''
+- name: spulse13
+  active: true
+  road: chicane_lr
+  level: 3
+  comment: 'spulse: steering add factor=0.6 start=3 end=10'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: 0.6
+    start_wp: 3
+    end_wp: 10
+    comment: ''
+- name: spulse14
+  active: true
+  road: chicane_lr
+  level: 3
+  comment: 'spulse: steering add factor=-0.6 start=55 end=62'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: -0.6
+    start_wp: 55
+    end_wp: 62
+    comment: ''
+- name: spulse15
+  active: true
+  road: chicane_lr
+  level: 3
+  comment: 'spulse: steering add factor=0.6 start=107 end=114'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: 0.6
+    start_wp: 107
+    end_wp: 114
+    comment: ''
+- name: spulse16
+  active: true
+  road: chicane_lr
+  level: 3
+  comment: 'spulse: steering add factor=-0.6 start=160 end=167'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: -0.6
+    start_wp: 160
+    end_wp: 167
+    comment: ''
+- name: spulse17
+  active: true
+  road: chicane_lr
+  level: 3
+  comment: 'spulse: steering add factor=0.6 start=212 end=219'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: 0.6
+    start_wp: 212
+    end_wp: 219
+    comment: ''
+- name: spulse18
+  active: true
+  road: chicane_lr
+  level: 3
+  comment: 'spulse: steering add factor=-0.6 start=264 end=271'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: -0.6
     start_wp: 264
     end_wp: 271
     comment: ''
@@ -1971,143 +3363,215 @@ chicane_lr:
   active: true
   road: chicane_lr
   level: 1
-  comment: 'sfreeze: steering set factor=0.0 start=3 end=10'
+  comment: 'sfreeze: steering set factor=0.0 start=3 end=12'
   perturbations:
   - control: steering
     mode: set
     factor: 0.0
     start_wp: 3
-    end_wp: 10
+    end_wp: 12
     comment: ''
 - name: sfreeze02
   active: true
   road: chicane_lr
   level: 1
-  comment: 'sfreeze: steering set factor=0.0 start=134 end=141'
+  comment: 'sfreeze: steering set factor=0.0 start=55 end=64'
   perturbations:
   - control: steering
     mode: set
     factor: 0.0
-    start_wp: 134
-    end_wp: 141
+    start_wp: 55
+    end_wp: 64
     comment: ''
 - name: sfreeze03
   active: true
   road: chicane_lr
   level: 1
-  comment: 'sfreeze: steering set factor=0.0 start=264 end=271'
+  comment: 'sfreeze: steering set factor=0.0 start=107 end=116'
   perturbations:
   - control: steering
     mode: set
     factor: 0.0
-    start_wp: 264
+    start_wp: 107
+    end_wp: 116
+    comment: ''
+- name: sfreeze04
+  active: true
+  road: chicane_lr
+  level: 1
+  comment: 'sfreeze: steering set factor=0.0 start=158 end=167'
+  perturbations:
+  - control: steering
+    mode: set
+    factor: 0.0
+    start_wp: 158
+    end_wp: 167
+    comment: ''
+- name: sfreeze05
+  active: true
+  road: chicane_lr
+  level: 1
+  comment: 'sfreeze: steering set factor=0.0 start=210 end=219'
+  perturbations:
+  - control: steering
+    mode: set
+    factor: 0.0
+    start_wp: 210
+    end_wp: 219
+    comment: ''
+- name: sfreeze06
+  active: true
+  road: chicane_lr
+  level: 1
+  comment: 'sfreeze: steering set factor=0.0 start=262 end=271'
+  perturbations:
+  - control: steering
+    mode: set
+    factor: 0.0
+    start_wp: 262
     end_wp: 271
     comment: ''
 - name: sgain01
   active: true
   road: chicane_lr
   level: 1
-  comment: 'sgain: steering mul factor=1.4 start=3 end=32'
+  comment: 'sgain: steering mul factor=1.4 start=3 end=42'
   perturbations:
   - control: steering
     mode: mul
     factor: 1.4
     start_wp: 3
-    end_wp: 32
+    end_wp: 42
     comment: ''
 - name: sgain02
   active: true
   road: chicane_lr
   level: 1
-  comment: 'sgain: steering mul factor=1.4 start=122 end=151'
+  comment: 'sgain: steering mul factor=1.4 start=49 end=88'
   perturbations:
   - control: steering
     mode: mul
     factor: 1.4
-    start_wp: 122
-    end_wp: 151
+    start_wp: 49
+    end_wp: 88
     comment: ''
 - name: sgain03
   active: true
   road: chicane_lr
   level: 1
-  comment: 'sgain: steering mul factor=1.4 start=242 end=271'
+  comment: 'sgain: steering mul factor=1.4 start=95 end=134'
   perturbations:
   - control: steering
     mode: mul
     factor: 1.4
-    start_wp: 242
+    start_wp: 95
+    end_wp: 134
+    comment: ''
+- name: sgain04
+  active: true
+  road: chicane_lr
+  level: 1
+  comment: 'sgain: steering mul factor=1.4 start=140 end=179'
+  perturbations:
+  - control: steering
+    mode: mul
+    factor: 1.4
+    start_wp: 140
+    end_wp: 179
+    comment: ''
+- name: sgain05
+  active: true
+  road: chicane_lr
+  level: 1
+  comment: 'sgain: steering mul factor=1.4 start=186 end=225'
+  perturbations:
+  - control: steering
+    mode: mul
+    factor: 1.4
+    start_wp: 186
+    end_wp: 225
+    comment: ''
+- name: sgain06
+  active: true
+  road: chicane_lr
+  level: 1
+  comment: 'sgain: steering mul factor=1.4 start=232 end=271'
+  perturbations:
+  - control: steering
+    mode: mul
+    factor: 1.4
+    start_wp: 232
     end_wp: 271
     comment: ''
 - name: sbias01
   active: true
   road: chicane_lr
   level: 1
-  comment: 'sbias: steering add factor=0.1 start=3 end=32'
+  comment: 'sbias: steering add factor=0.2 start=3 end=42'
   perturbations:
   - control: steering
     mode: add
-    factor: 0.1
+    factor: 0.2
     start_wp: 3
-    end_wp: 32
+    end_wp: 42
     comment: ''
 - name: sbias02
   active: true
   road: chicane_lr
   level: 1
-  comment: 'sbias: steering add factor=-0.1 start=122 end=151'
+  comment: 'sbias: steering add factor=-0.2 start=49 end=88'
   perturbations:
   - control: steering
     mode: add
-    factor: -0.1
-    start_wp: 122
-    end_wp: 151
+    factor: -0.2
+    start_wp: 49
+    end_wp: 88
     comment: ''
 - name: sbias03
   active: true
   road: chicane_lr
   level: 1
-  comment: 'sbias: steering add factor=0.1 start=242 end=271'
+  comment: 'sbias: steering add factor=0.2 start=95 end=134'
   perturbations:
   - control: steering
     mode: add
-    factor: 0.1
-    start_wp: 242
-    end_wp: 271
+    factor: 0.2
+    start_wp: 95
+    end_wp: 134
     comment: ''
-- name: tcut01
+- name: sbias04
   active: true
   road: chicane_lr
   level: 1
-  comment: 'tcut: throttle set factor=0.0 start=3 end=42'
+  comment: 'sbias: steering add factor=-0.2 start=140 end=179'
   perturbations:
-  - control: throttle
-    mode: set
-    factor: 0.0
-    start_wp: 3
-    end_wp: 42
+  - control: steering
+    mode: add
+    factor: -0.2
+    start_wp: 140
+    end_wp: 179
     comment: ''
-- name: tcut02
+- name: sbias05
   active: true
   road: chicane_lr
   level: 1
-  comment: 'tcut: throttle set factor=0.0 start=118 end=157'
+  comment: 'sbias: steering add factor=0.2 start=186 end=225'
   perturbations:
-  - control: throttle
-    mode: set
-    factor: 0.0
-    start_wp: 118
-    end_wp: 157
+  - control: steering
+    mode: add
+    factor: 0.2
+    start_wp: 186
+    end_wp: 225
     comment: ''
-- name: tcut03
+- name: sbias06
   active: true
   road: chicane_lr
   level: 1
-  comment: 'tcut: throttle set factor=0.0 start=232 end=271'
+  comment: 'sbias: steering add factor=-0.2 start=232 end=271'
   perturbations:
-  - control: throttle
-    mode: set
-    factor: 0.0
+  - control: steering
+    mode: add
+    factor: -0.2
     start_wp: 232
     end_wp: 271
     comment: ''
@@ -2115,27 +3579,51 @@ chicane_lr:
   active: true
   road: chicane_lr
   level: 1
-  comment: 'tboost: throttle mul factor=1.2 start=3 end=42'
+  comment: 'tboost: throttle mul factor=1.2 start=3 end=102'
   perturbations:
   - control: throttle
     mode: mul
     factor: 1.2
     start_wp: 3
-    end_wp: 42
+    end_wp: 102
     comment: ''
 - name: tboost02
   active: true
   road: chicane_lr
   level: 1
-  comment: 'tboost: throttle mul factor=1.2 start=232 end=271'
+  comment: 'tboost: throttle mul factor=1.2 start=172 end=271'
   perturbations:
   - control: throttle
     mode: mul
     factor: 1.2
-    start_wp: 232
+    start_wp: 172
     end_wp: 271
     comment: ''
 - name: btap01
+  active: true
+  road: chicane_lr
+  level: 1
+  comment: 'btap: throttle set factor=-1.0 start=3 end=7'
+  perturbations:
+  - control: throttle
+    mode: set
+    factor: -1.0
+    start_wp: 3
+    end_wp: 7
+    comment: ''
+- name: btap02
+  active: true
+  road: chicane_lr
+  level: 1
+  comment: 'btap: throttle set factor=-1.0 start=69 end=73'
+  perturbations:
+  - control: throttle
+    mode: set
+    factor: -1.0
+    start_wp: 69
+    end_wp: 73
+    comment: ''
+- name: btap03
   active: true
   road: chicane_lr
   level: 1
@@ -2146,6 +3634,30 @@ chicane_lr:
     factor: -1.0
     start_wp: 135
     end_wp: 139
+    comment: ''
+- name: btap04
+  active: true
+  road: chicane_lr
+  level: 1
+  comment: 'btap: throttle set factor=-1.0 start=201 end=205'
+  perturbations:
+  - control: throttle
+    mode: set
+    factor: -1.0
+    start_wp: 201
+    end_wp: 205
+    comment: ''
+- name: btap05
+  active: true
+  road: chicane_lr
+  level: 1
+  comment: 'btap: throttle set factor=-1.0 start=267 end=271'
+  perturbations:
+  - control: throttle
+    mode: set
+    factor: -1.0
+    start_wp: 267
+    end_wp: 271
     comment: ''
 chicane_rl:
 - name: baseline
@@ -2170,51 +3682,63 @@ chicane_rl:
   active: true
   road: chicane_rl
   level: 1
-  comment: 'spulse: steering add factor=-0.25 start=68 end=75'
+  comment: 'spulse: steering add factor=-0.25 start=55 end=62'
   perturbations:
   - control: steering
     mode: add
     factor: -0.25
-    start_wp: 68
-    end_wp: 75
+    start_wp: 55
+    end_wp: 62
     comment: ''
 - name: spulse03
   active: true
   road: chicane_rl
   level: 1
-  comment: 'spulse: steering add factor=0.25 start=134 end=141'
+  comment: 'spulse: steering add factor=0.25 start=107 end=114'
   perturbations:
   - control: steering
     mode: add
     factor: 0.25
-    start_wp: 134
-    end_wp: 141
+    start_wp: 107
+    end_wp: 114
     comment: ''
 - name: spulse04
   active: true
   road: chicane_rl
   level: 1
-  comment: 'spulse: steering add factor=-0.25 start=199 end=206'
+  comment: 'spulse: steering add factor=-0.25 start=160 end=167'
   perturbations:
   - control: steering
     mode: add
     factor: -0.25
-    start_wp: 199
-    end_wp: 206
+    start_wp: 160
+    end_wp: 167
     comment: ''
 - name: spulse05
   active: true
   road: chicane_rl
   level: 1
-  comment: 'spulse: steering add factor=0.25 start=264 end=271'
+  comment: 'spulse: steering add factor=0.25 start=212 end=219'
   perturbations:
   - control: steering
     mode: add
     factor: 0.25
+    start_wp: 212
+    end_wp: 219
+    comment: ''
+- name: spulse06
+  active: true
+  road: chicane_rl
+  level: 1
+  comment: 'spulse: steering add factor=-0.25 start=264 end=271'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: -0.25
     start_wp: 264
     end_wp: 271
     comment: ''
-- name: spulse06
+- name: spulse07
   active: true
   road: chicane_rl
   level: 2
@@ -2226,51 +3750,135 @@ chicane_rl:
     start_wp: 3
     end_wp: 10
     comment: ''
-- name: spulse07
-  active: true
-  road: chicane_rl
-  level: 2
-  comment: 'spulse: steering add factor=-0.4 start=68 end=75'
-  perturbations:
-  - control: steering
-    mode: add
-    factor: -0.4
-    start_wp: 68
-    end_wp: 75
-    comment: ''
 - name: spulse08
   active: true
   road: chicane_rl
   level: 2
-  comment: 'spulse: steering add factor=0.4 start=134 end=141'
+  comment: 'spulse: steering add factor=-0.4 start=55 end=62'
   perturbations:
   - control: steering
     mode: add
-    factor: 0.4
-    start_wp: 134
-    end_wp: 141
+    factor: -0.4
+    start_wp: 55
+    end_wp: 62
     comment: ''
 - name: spulse09
   active: true
   road: chicane_rl
   level: 2
-  comment: 'spulse: steering add factor=-0.4 start=199 end=206'
+  comment: 'spulse: steering add factor=0.4 start=107 end=114'
   perturbations:
   - control: steering
     mode: add
-    factor: -0.4
-    start_wp: 199
-    end_wp: 206
+    factor: 0.4
+    start_wp: 107
+    end_wp: 114
     comment: ''
 - name: spulse10
   active: true
   road: chicane_rl
   level: 2
-  comment: 'spulse: steering add factor=0.4 start=264 end=271'
+  comment: 'spulse: steering add factor=-0.4 start=160 end=167'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: -0.4
+    start_wp: 160
+    end_wp: 167
+    comment: ''
+- name: spulse11
+  active: true
+  road: chicane_rl
+  level: 2
+  comment: 'spulse: steering add factor=0.4 start=212 end=219'
   perturbations:
   - control: steering
     mode: add
     factor: 0.4
+    start_wp: 212
+    end_wp: 219
+    comment: ''
+- name: spulse12
+  active: true
+  road: chicane_rl
+  level: 2
+  comment: 'spulse: steering add factor=-0.4 start=264 end=271'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: -0.4
+    start_wp: 264
+    end_wp: 271
+    comment: ''
+- name: spulse13
+  active: true
+  road: chicane_rl
+  level: 3
+  comment: 'spulse: steering add factor=0.6 start=3 end=10'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: 0.6
+    start_wp: 3
+    end_wp: 10
+    comment: ''
+- name: spulse14
+  active: true
+  road: chicane_rl
+  level: 3
+  comment: 'spulse: steering add factor=-0.6 start=55 end=62'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: -0.6
+    start_wp: 55
+    end_wp: 62
+    comment: ''
+- name: spulse15
+  active: true
+  road: chicane_rl
+  level: 3
+  comment: 'spulse: steering add factor=0.6 start=107 end=114'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: 0.6
+    start_wp: 107
+    end_wp: 114
+    comment: ''
+- name: spulse16
+  active: true
+  road: chicane_rl
+  level: 3
+  comment: 'spulse: steering add factor=-0.6 start=160 end=167'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: -0.6
+    start_wp: 160
+    end_wp: 167
+    comment: ''
+- name: spulse17
+  active: true
+  road: chicane_rl
+  level: 3
+  comment: 'spulse: steering add factor=0.6 start=212 end=219'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: 0.6
+    start_wp: 212
+    end_wp: 219
+    comment: ''
+- name: spulse18
+  active: true
+  road: chicane_rl
+  level: 3
+  comment: 'spulse: steering add factor=-0.6 start=264 end=271'
+  perturbations:
+  - control: steering
+    mode: add
+    factor: -0.6
     start_wp: 264
     end_wp: 271
     comment: ''
@@ -2278,143 +3886,215 @@ chicane_rl:
   active: true
   road: chicane_rl
   level: 1
-  comment: 'sfreeze: steering set factor=0.0 start=3 end=10'
+  comment: 'sfreeze: steering set factor=0.0 start=3 end=12'
   perturbations:
   - control: steering
     mode: set
     factor: 0.0
     start_wp: 3
-    end_wp: 10
+    end_wp: 12
     comment: ''
 - name: sfreeze02
   active: true
   road: chicane_rl
   level: 1
-  comment: 'sfreeze: steering set factor=0.0 start=134 end=141'
+  comment: 'sfreeze: steering set factor=0.0 start=55 end=64'
   perturbations:
   - control: steering
     mode: set
     factor: 0.0
-    start_wp: 134
-    end_wp: 141
+    start_wp: 55
+    end_wp: 64
     comment: ''
 - name: sfreeze03
   active: true
   road: chicane_rl
   level: 1
-  comment: 'sfreeze: steering set factor=0.0 start=264 end=271'
+  comment: 'sfreeze: steering set factor=0.0 start=107 end=116'
   perturbations:
   - control: steering
     mode: set
     factor: 0.0
-    start_wp: 264
+    start_wp: 107
+    end_wp: 116
+    comment: ''
+- name: sfreeze04
+  active: true
+  road: chicane_rl
+  level: 1
+  comment: 'sfreeze: steering set factor=0.0 start=158 end=167'
+  perturbations:
+  - control: steering
+    mode: set
+    factor: 0.0
+    start_wp: 158
+    end_wp: 167
+    comment: ''
+- name: sfreeze05
+  active: true
+  road: chicane_rl
+  level: 1
+  comment: 'sfreeze: steering set factor=0.0 start=210 end=219'
+  perturbations:
+  - control: steering
+    mode: set
+    factor: 0.0
+    start_wp: 210
+    end_wp: 219
+    comment: ''
+- name: sfreeze06
+  active: true
+  road: chicane_rl
+  level: 1
+  comment: 'sfreeze: steering set factor=0.0 start=262 end=271'
+  perturbations:
+  - control: steering
+    mode: set
+    factor: 0.0
+    start_wp: 262
     end_wp: 271
     comment: ''
 - name: sgain01
   active: true
   road: chicane_rl
   level: 1
-  comment: 'sgain: steering mul factor=1.4 start=3 end=32'
+  comment: 'sgain: steering mul factor=1.4 start=3 end=42'
   perturbations:
   - control: steering
     mode: mul
     factor: 1.4
     start_wp: 3
-    end_wp: 32
+    end_wp: 42
     comment: ''
 - name: sgain02
   active: true
   road: chicane_rl
   level: 1
-  comment: 'sgain: steering mul factor=1.4 start=122 end=151'
+  comment: 'sgain: steering mul factor=1.4 start=49 end=88'
   perturbations:
   - control: steering
     mode: mul
     factor: 1.4
-    start_wp: 122
-    end_wp: 151
+    start_wp: 49
+    end_wp: 88
     comment: ''
 - name: sgain03
   active: true
   road: chicane_rl
   level: 1
-  comment: 'sgain: steering mul factor=1.4 start=242 end=271'
+  comment: 'sgain: steering mul factor=1.4 start=95 end=134'
   perturbations:
   - control: steering
     mode: mul
     factor: 1.4
-    start_wp: 242
+    start_wp: 95
+    end_wp: 134
+    comment: ''
+- name: sgain04
+  active: true
+  road: chicane_rl
+  level: 1
+  comment: 'sgain: steering mul factor=1.4 start=140 end=179'
+  perturbations:
+  - control: steering
+    mode: mul
+    factor: 1.4
+    start_wp: 140
+    end_wp: 179
+    comment: ''
+- name: sgain05
+  active: true
+  road: chicane_rl
+  level: 1
+  comment: 'sgain: steering mul factor=1.4 start=186 end=225'
+  perturbations:
+  - control: steering
+    mode: mul
+    factor: 1.4
+    start_wp: 186
+    end_wp: 225
+    comment: ''
+- name: sgain06
+  active: true
+  road: chicane_rl
+  level: 1
+  comment: 'sgain: steering mul factor=1.4 start=232 end=271'
+  perturbations:
+  - control: steering
+    mode: mul
+    factor: 1.4
+    start_wp: 232
     end_wp: 271
     comment: ''
 - name: sbias01
   active: true
   road: chicane_rl
   level: 1
-  comment: 'sbias: steering add factor=0.1 start=3 end=32'
+  comment: 'sbias: steering add factor=0.2 start=3 end=42'
   perturbations:
   - control: steering
     mode: add
-    factor: 0.1
+    factor: 0.2
     start_wp: 3
-    end_wp: 32
+    end_wp: 42
     comment: ''
 - name: sbias02
   active: true
   road: chicane_rl
   level: 1
-  comment: 'sbias: steering add factor=-0.1 start=122 end=151'
+  comment: 'sbias: steering add factor=-0.2 start=49 end=88'
   perturbations:
   - control: steering
     mode: add
-    factor: -0.1
-    start_wp: 122
-    end_wp: 151
+    factor: -0.2
+    start_wp: 49
+    end_wp: 88
     comment: ''
 - name: sbias03
   active: true
   road: chicane_rl
   level: 1
-  comment: 'sbias: steering add factor=0.1 start=242 end=271'
+  comment: 'sbias: steering add factor=0.2 start=95 end=134'
   perturbations:
   - control: steering
     mode: add
-    factor: 0.1
-    start_wp: 242
-    end_wp: 271
+    factor: 0.2
+    start_wp: 95
+    end_wp: 134
     comment: ''
-- name: tcut01
+- name: sbias04
   active: true
   road: chicane_rl
   level: 1
-  comment: 'tcut: throttle set factor=0.0 start=3 end=42'
+  comment: 'sbias: steering add factor=-0.2 start=140 end=179'
   perturbations:
-  - control: throttle
-    mode: set
-    factor: 0.0
-    start_wp: 3
-    end_wp: 42
+  - control: steering
+    mode: add
+    factor: -0.2
+    start_wp: 140
+    end_wp: 179
     comment: ''
-- name: tcut02
+- name: sbias05
   active: true
   road: chicane_rl
   level: 1
-  comment: 'tcut: throttle set factor=0.0 start=118 end=157'
+  comment: 'sbias: steering add factor=0.2 start=186 end=225'
   perturbations:
-  - control: throttle
-    mode: set
-    factor: 0.0
-    start_wp: 118
-    end_wp: 157
+  - control: steering
+    mode: add
+    factor: 0.2
+    start_wp: 186
+    end_wp: 225
     comment: ''
-- name: tcut03
+- name: sbias06
   active: true
   road: chicane_rl
   level: 1
-  comment: 'tcut: throttle set factor=0.0 start=232 end=271'
+  comment: 'sbias: steering add factor=-0.2 start=232 end=271'
   perturbations:
-  - control: throttle
-    mode: set
-    factor: 0.0
+  - control: steering
+    mode: add
+    factor: -0.2
     start_wp: 232
     end_wp: 271
     comment: ''
@@ -2422,27 +4102,51 @@ chicane_rl:
   active: true
   road: chicane_rl
   level: 1
-  comment: 'tboost: throttle mul factor=1.2 start=3 end=42'
+  comment: 'tboost: throttle mul factor=1.2 start=3 end=102'
   perturbations:
   - control: throttle
     mode: mul
     factor: 1.2
     start_wp: 3
-    end_wp: 42
+    end_wp: 102
     comment: ''
 - name: tboost02
   active: true
   road: chicane_rl
   level: 1
-  comment: 'tboost: throttle mul factor=1.2 start=232 end=271'
+  comment: 'tboost: throttle mul factor=1.2 start=172 end=271'
   perturbations:
   - control: throttle
     mode: mul
     factor: 1.2
-    start_wp: 232
+    start_wp: 172
     end_wp: 271
     comment: ''
 - name: btap01
+  active: true
+  road: chicane_rl
+  level: 1
+  comment: 'btap: throttle set factor=-1.0 start=3 end=7'
+  perturbations:
+  - control: throttle
+    mode: set
+    factor: -1.0
+    start_wp: 3
+    end_wp: 7
+    comment: ''
+- name: btap02
+  active: true
+  road: chicane_rl
+  level: 1
+  comment: 'btap: throttle set factor=-1.0 start=69 end=73'
+  perturbations:
+  - control: throttle
+    mode: set
+    factor: -1.0
+    start_wp: 69
+    end_wp: 73
+    comment: ''
+- name: btap03
   active: true
   road: chicane_rl
   level: 1
@@ -2453,4 +4157,28 @@ chicane_rl:
     factor: -1.0
     start_wp: 135
     end_wp: 139
+    comment: ''
+- name: btap04
+  active: true
+  road: chicane_rl
+  level: 1
+  comment: 'btap: throttle set factor=-1.0 start=201 end=205'
+  perturbations:
+  - control: throttle
+    mode: set
+    factor: -1.0
+    start_wp: 201
+    end_wp: 205
+    comment: ''
+- name: btap05
+  active: true
+  road: chicane_rl
+  level: 1
+  comment: 'btap: throttle set factor=-1.0 start=267 end=271'
+  perturbations:
+  - control: throttle
+    mode: set
+    factor: -1.0
+    start_wp: 267
+    end_wp: 271
     comment: ''

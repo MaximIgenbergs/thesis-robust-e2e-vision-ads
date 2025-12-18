@@ -26,7 +26,7 @@ models:
 run:
   image_size_hw: [240, 320]
   steps_per_episode: 2000
-  episodes: 3
+  episodes: 5
   save_images: false
   show_image: true
 

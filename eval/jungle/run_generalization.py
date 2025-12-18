@@ -9,19 +9,51 @@ Arguments:
 
 from __future__ import annotations
 import argparse
+import contextlib
 import json
+import os
 import time
 from typing import Any, Dict, List, Tuple
 
 import numpy as np
 
 from external.udacity_gym import UdacitySimulator, UdacityGym, UdacityAction
+from external.udacity_gym.agent import PIDUdacityAgent_Angle
 from external.udacity_gym.agent_callback import PDPreviewCallback
 from external.udacity_gym.logger import ScenarioOutcomeWriter, ScenarioOutcomeLite, ScenarioLite
 
 from scripts import abs_path, load_cfg
 from scripts.udacity.adapters.utils.build_adapter import build_adapter
 from scripts.udacity.logging.eval_runs import RunLogger, prepare_run_dir, best_effort_git_sha, pip_freeze
+
+
+PID_TARGET_SPEED = 22.0
+
+
+def compute_pid_action(pid_agent: PIDUdacityAgent_Angle, obs) -> UdacityAction:
+    """
+    Compute a reference PID action from the SAME pre-step observation.
+    PID prints every step in the agent code -> silence stdout here.
+    """
+    try:
+        with open(os.devnull, "w") as f, contextlib.redirect_stdout(f):
+            a = pid_agent(obs)
+    except Exception:
+        return UdacityAction(steering_angle=0.0, throttle=0.0)
+
+    if isinstance(a, UdacityAction):
+        steer = float(np.clip(float(a.steering_angle), -1.0, 1.0))
+        thr = float(np.clip(float(a.throttle), -1.0, 1.0))
+        return UdacityAction(steering_angle=steer, throttle=thr)
+
+    # fallback if agent ever returns array-like
+    try:
+        arr = np.array(a).reshape(-1)
+        steer = float(np.clip(float(arr[0]), -1.0, 1.0))
+        thr = float(np.clip(float(arr[1]), -1.0, 1.0))
+        return UdacityAction(steering_angle=steer, throttle=thr)
+    except Exception:
+        return UdacityAction(steering_angle=0.0, throttle=0.0)
 
 
 def force_start_episode(
@@ -225,11 +257,20 @@ def run_segment(
 
     metrics_base = metrics(env)
 
+    # Reference PID (fresh per segment, no carryover)
+    pid_agent = PIDUdacityAgent_Angle(
+        target_speed=PID_TARGET_SPEED,
+        track="jungle",
+        before_action_callbacks=[],
+        after_action_callbacks=[],
+    )
+
     frames: list[int] = []
     xte: list[float] = []
     angle_diff: list[float] = []
     speeds: list[float] = []
     actions: list[list[float]] = []
+    pid_actions: list[list[float]] = []
     pos: list[list[float]] = []
     images = [] if save_images else None
 
@@ -255,15 +296,16 @@ def run_segment(
         while True:
             if timeout_s is not None and (time.perf_counter() - t0) > timeout_s:
                 timed_out = True
-                print(
-                    f"[eval:jungle:generalization][INFO] segment timeout after {timeout_s:.1f}s"
-                )
+                print(f"[eval:jungle:generalization][INFO] segment timeout after {timeout_s:.1f}s")
                 break
 
             if obs is None or obs.input_image is None:
                 time.sleep(0.005)
                 obs = env.observe()
                 continue
+
+            # PID reference on SAME pre-step obs
+            pid_a = compute_pid_action(pid_agent, obs)
 
             img_np = np.asarray(obs.input_image, dtype=np.uint8).copy()
             if save_images:
@@ -287,12 +329,7 @@ def run_segment(
                     seen_events.add(ident)
 
                     events_log.append(
-                        {
-                            "step": int(step),
-                            "sim_time": float(last_time),
-                            "event": key,
-                            "raw": e,
-                        }
+                        {"step": int(step), "sim_time": float(last_time), "event": key, "raw": e}
                     )
                     if key == "out_of_track":
                         offtrack_count += 1
@@ -303,12 +340,7 @@ def run_segment(
             flag_out = (info or {}).get("out_of_track") is True
             if flag_out and not last_flag_out:
                 events_log.append(
-                    {
-                        "step": int(step),
-                        "sim_time": float(last_time),
-                        "event": "out_of_track",
-                        "raw": {"source": "flag"},
-                    }
+                    {"step": int(step), "sim_time": float(last_time), "event": "out_of_track", "raw": {"source": "flag"}}
                 )
                 offtrack_count += 1
             last_flag_out = flag_out
@@ -316,23 +348,19 @@ def run_segment(
             flag_collision = (info or {}).get("collision") is True
             if flag_collision and not last_flag_collision:
                 events_log.append(
-                    {
-                        "step": int(step),
-                        "sim_time": float(last_time),
-                        "event": "collision",
-                        "raw": {"source": "flag"},
-                    }
+                    {"step": int(step), "sim_time": float(last_time), "event": "collision", "raw": {"source": "flag"}}
                 )
                 collision_count += 1
             last_flag_collision = flag_collision
 
             frames.append(step)
             xte.append(float(getattr(obs, "cte", 0.0)))
-            angle_diff.append(float((obs.get_metrics() or {}).get("angleDiff", 0.0)))
+            angle_diff.append(float(getattr(obs, "angle_diff", 0.0)))
             speeds.append(float(getattr(obs, "speed", 0.0)))
             px, py, pz = obs.position
             pos.append([float(px), float(py), float(pz)])
             actions.append([float(action.steering_angle), float(action.throttle)])
+            pid_actions.append([float(pid_a.steering_angle), float(pid_a.throttle)])
 
             # End-waypoint termination (wrap-aware, same logic as robustness)
             hit_end = False
@@ -355,8 +383,7 @@ def run_segment(
 
             if hit_end:
                 print(
-                    f"[eval:jungle:generalization][INFO] "
-                    f"segment reached end_waypoint={end_waypoint} (sector={sector_for_log})"
+                    f"[eval:jungle:generalization][INFO] segment reached end_waypoint={end_waypoint} (sector={sector_for_log})"
                 )
                 reached_end = True
                 step += 1
@@ -370,21 +397,18 @@ def run_segment(
 
             if terminated or truncated:
                 print(
-                    f"[eval:jungle:generalization][INFO] "
-                    f"episode terminated: terminated={terminated} truncated={truncated}"
+                    f"[eval:jungle:generalization][INFO] episode terminated: terminated={terminated} truncated={truncated}"
                 )
                 break
 
     except KeyboardInterrupt:
         stop_requested = True
         print(
-            "\n[eval:jungle:generalization][WARN] segment interrupted by user. "
-            "Attempting to finish writing logs..."
+            "\n[eval:jungle:generalization][WARN] segment interrupted by user. Attempting to finish writing logs..."
         )
     finally:
         wall = time.perf_counter() - t0
 
-        # For clean segment ends, don't wait for late infractions after the segment.
         if reached_end and not timed_out and not stop_requested:
             delta = settle_metrics(env, metrics_base, settle_seconds=0.0, probe_hz=10.0)
         else:
@@ -394,8 +418,7 @@ def run_segment(
         collision_count = max(collision_count, int(delta["collisionCount"]))
 
         print(
-            f"[eval:jungle:generalization][INFO] segment: "
-            f"steps={step} wall={wall:.1f}s "
+            f"[eval:jungle:generalization][INFO] segment: steps={step} wall={wall:.1f}s "
             f"offtrack_count={offtrack_count} collisions={collision_count} "
             f"{'(interrupted)' if stop_requested else ''}"
         )
@@ -409,7 +432,7 @@ def run_segment(
         angle_diff=angle_diff,
         speeds=speeds,
         actions=actions,
-        pid_actions=[],
+        pid_actions=pid_actions,
         scenario=ScenarioLite(
             perturbation_function="none",
             perturbation_scale=0,
@@ -451,9 +474,7 @@ def main() -> int:
 
     model_name = args.model or models_cfg.get("default_model", "dave2")
     if model_name not in model_defs:
-        raise ValueError(
-            f"Model '{model_name}' not defined under models in cfg_generalization.yaml"
-        )
+        raise ValueError(f"Model '{model_name}' not defined under models in cfg_generalization.yaml")
 
     adapter, ckpt = build_adapter(model_name, model_defs[model_name])
 
@@ -483,9 +504,7 @@ def main() -> int:
         git_info["thesis_sha"] = best_effort_git_sha(abs_path(""))
 
     if include_git.get("perturbation_drive", True):
-        git_info["perturbation_drive_sha"] = best_effort_git_sha(
-            abs_path("external/perturbation-drive")
-        )
+        git_info["perturbation_drive_sha"] = best_effort_git_sha(abs_path("external/perturbation-drive"))
 
     logger = RunLogger(
         run_dir=run_dir,
@@ -547,6 +566,7 @@ def main() -> int:
                 "image_size": {"h": image_size_hw[0], "w": image_size_hw[1]},
                 "episodes": int(episodes),
                 "ckpt_name": ckpt_name,
+                "pid": {"target_speed": float(PID_TARGET_SPEED), "track": "jungle"},
             }
             eid, ep_dir = logger.new_episode(ep_idx, meta)
 

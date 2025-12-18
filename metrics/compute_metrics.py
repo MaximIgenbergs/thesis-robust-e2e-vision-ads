@@ -1,8 +1,8 @@
 from __future__ import annotations
-
 from pathlib import Path
 from typing import Any, Dict, List
 
+from scripts import abs_path
 from metrics.io_udacity import iter_udacity_entries, normalize_udacity_entry
 from metrics.io_carla import normalize_carla_run
 from metrics.compute_episode import compute_udacity_entry_metrics
@@ -14,26 +14,42 @@ from metrics.aggregate import (
 )
 from metrics.report_tables import write_csv
 
+SIM = "udacity" # "udacity" or "carla"
 
-# -----------------------
-# CONFIG (edit these)
-# -----------------------
+# carla generalization tcp
+# RUN_DIR = abs_path(Path("/media/maxim/Elements/maximigenbergs/runs/carla/generalization/tcp/20251201_120732"))
+# OUT_DIR = abs_path(Path("results/carla/generalization/tcp/20251201_120732"))
 
-# Example Udacity:
-#   RUN_DIR = Path("/media/.../runs/jungle/robustness/dave2_gru_20251214_203816")
-# Example CARLA:
-#   RUN_DIR = Path("/media/.../runs/carla/robustness/tcp/20251212_185734")
+# carla robustness tcp
+# RUN_DIR = abs_path(Path("/media/maxim/Elements/maximigenbergs/runs/carla/robustness/tcp/20251212_185734"))
+# OUT_DIR = abs_path(Path("results/carla/robustness/tcp/20251212_185734"))
 
-SIM = "carla"  # "udacity" or "carla"
+# genroads generalization vit
+# RUN_DIR = abs_path(Path("/media/maxim/Elements/maximigenbergs/runs/genroads/generalization/vit_20251217_182632"))
+# OUT_DIR = abs_path(Path("results/genroads/generalization/vit_20251217_182632"))
 
-# RUN_DIR = Path("/media/maximigenbergs/Elements/maximigenbergs/runs/carla/generalization/tcp/20251201_120732")
-RUN_DIR = Path("/media/maximigenbergs/Elements/maximigenbergs/runs/carla/robustness/tcp/20251212_185734")
+# genroads generalization dave2
+# RUN_DIR = abs_path(Path("/media/maxim/Elements/maximigenbergs/runs/genroads/generalization/dave2_20251217_225857"))
+# OUT_DIR = abs_path(Path("results/genroads/generalization/dave2_20251217_225857"))
 
-MAP_NAME = "multi-town"          # udacity: "jungle" or "genroads"; carla: keep "multi-town"
-TEST_TYPE = "robustness"     # "robustness" or "generalization"
+# genroads generalization dave2_gru
+# RUN_DIR = abs_path(Path("/media/maxim/Elements/maximigenbergs/runs/genroads/generalization/dave2_gru_20251218_031746"))
+# OUT_DIR = abs_path(Path("results/genroads/generalization/dave2_gru_20251218_031746"))
 
-# OUT_DIR = Path("/media/maximigenbergs/Elements/maximigenbergs/results/carla/generalization/tcp/20251201_120732")
-OUT_DIR = Path("/media/maximigenbergs/Elements/maximigenbergs/results/carla/robustness/tcp/20251212_185734")
+# genroads robustness vit
+# RUN_DIR = abs_path(Path("/media/maxim/Elements/maximigenbergs/runs/genroads/robustness/vit_20251208_181344"))
+# OUT_DIR = abs_path(Path("results/genroads/robustness/vit_20251208_181344"))
+
+# genroads robustness dave2
+# RUN_DIR = abs_path(Path("/media/maxim/Elements/maximigenbergs/runs/genroads/robustness/dave2_20251214_184315"))
+# OUT_DIR = abs_path(Path("results/genroads/robustness/dave2_20251214_184315"))
+
+# jungle robustness vit
+RUN_DIR = abs_path(Path("/media/maxim/Elements/maximigenbergs/runs/jungle/robustness/vit_20251209_205922"))
+OUT_DIR = abs_path(Path("results/jungle/robustness/vit_20251209_205922"))
+
+MAP_NAME = "jungle" # udacity: jungle or genroads; carla: multi-town
+TEST_TYPE = "robustness" # robustness or generalization
 
 BASELINE_NAME = "baseline"
 

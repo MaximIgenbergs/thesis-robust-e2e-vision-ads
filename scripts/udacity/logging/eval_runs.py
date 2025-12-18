@@ -22,8 +22,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from scripts import ROOT
-
 
 def dump_json(path: Path, obj: Any) -> None:
     text = json.dumps(obj, indent=2, sort_keys=True)

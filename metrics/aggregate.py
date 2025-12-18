@@ -10,8 +10,6 @@ from metrics.metrics import (
     relative_drop,
     corruption_error,
     mean_corruption_error,
-    CarlaEpisodeSummary,
-    carla_ds_active,
 )
 
 
@@ -22,29 +20,32 @@ def _mean(xs: List[float]) -> float:
 
 
 def aggregate_udacity_summary(entry_rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """
-    Udacity:
-      - Jungle primary: mean_segments_passed_rate_per_run (run-level)
-      - GenRoads primary: pass_rate
-    Always also reports: xte_abs_p95_mean, angle_abs_p95_mean, pid_dev/pid_mae means.
-    """
     groups: Dict[Tuple[str, str, str, str, int], List[Dict[str, Any]]] = defaultdict(list)
     for r in entry_rows:
         key = (r["map"], r["test_type"], r["model"], r["perturbation"], int(r["severity"]))
         groups[key].append(r)
 
     out: List[Dict[str, Any]] = []
-
     for (map_name, test_type, model, perturbation, severity), rows in sorted(groups.items()):
         is_jungle = str(map_name).lower() == "jungle"
 
         success = [float(r["is_success"]) for r in rows]
+
+        # full
         xte_p95 = [float(r["xte_abs_p95"]) for r in rows]
         ang_p95 = [float(r["angle_abs_p95"]) for r in rows]
         pid_dev_mean = [float(r["pid_dev_mean"]) for r in rows]
         pid_dev_p95 = [float(r["pid_dev_p95"]) for r in rows]
         pid_mae_s = [float(r["pid_mae_steer"]) for r in rows]
         pid_mae_t = [float(r["pid_mae_throttle"]) for r in rows]
+
+        # pre-fail
+        xte_p95_pre = [float(r["xte_abs_p95_pre"]) for r in rows]
+        ang_p95_pre = [float(r["angle_abs_p95_pre"]) for r in rows]
+        pid_dev_mean_pre = [float(r["pid_dev_mean_pre"]) for r in rows]
+        pid_dev_p95_pre = [float(r["pid_dev_p95_pre"]) for r in rows]
+        pid_mae_s_pre = [float(r["pid_mae_steer_pre"]) for r in rows]
+        pid_mae_t_pre = [float(r["pid_mae_throttle_pre"]) for r in rows]
 
         base = {
             "sim": "udacity",
@@ -54,12 +55,22 @@ def aggregate_udacity_summary(entry_rows: List[Dict[str, Any]]) -> List[Dict[str
             "perturbation": perturbation,
             "severity": int(severity),
             "n_entries": len(rows),
+
+            # full
             "xte_abs_p95_mean": _mean(xte_p95),
             "angle_abs_p95_mean": _mean(ang_p95),
             "pid_dev_mean_mean": _mean(pid_dev_mean),
             "pid_dev_p95_mean": _mean(pid_dev_p95),
             "pid_mae_steer_mean": _mean(pid_mae_s),
             "pid_mae_throttle_mean": _mean(pid_mae_t),
+
+            # pre-fail
+            "xte_abs_p95_pre_mean": _mean(xte_p95_pre),
+            "angle_abs_p95_pre_mean": _mean(ang_p95_pre),
+            "pid_dev_mean_pre_mean": _mean(pid_dev_mean_pre),
+            "pid_dev_p95_pre_mean": _mean(pid_dev_p95_pre),
+            "pid_mae_steer_pre_mean": _mean(pid_mae_s_pre),
+            "pid_mae_throttle_pre_mean": _mean(pid_mae_t_pre),
         }
 
         if not is_jungle:
@@ -68,8 +79,7 @@ def aggregate_udacity_summary(entry_rows: List[Dict[str, Any]]) -> List[Dict[str
             out.append(base)
             continue
 
-        # Jungle: each row is a segment-entry attempt. We need run-level segments passed.
-        # Here you are computing for ONE run dir, but keep it general.
+        # Jungle: compute run-level segments passed rate (mean per run)
         segment_pass_rate_micro = _mean(success)
 
         per_run_seen: Dict[str, set] = defaultdict(set)
@@ -92,9 +102,7 @@ def aggregate_udacity_summary(entry_rows: List[Dict[str, Any]]) -> List[Dict[str
 
         for run_id in per_run_seen.keys():
             k = len(per_run_passed.get(run_id, set()))
-            denom = per_run_num_segments.get(run_id, 0)
-            if denom <= 0:
-                denom = len(per_run_seen[run_id])
+            denom = per_run_num_segments.get(run_id, 0) or len(per_run_seen[run_id])
             seg_pass_counts.append(float(k))
             seg_pass_rates.append(float(k) / float(denom) if denom > 0 else float("nan"))
 
@@ -110,22 +118,9 @@ def aggregate_udacity_summary(entry_rows: List[Dict[str, Any]]) -> List[Dict[str
 
 
 def aggregate_carla_summary(route_rows: list[dict]) -> list[dict]:
-    """
-    Aggregates per (model, test_type, condition, perturbation, severity).
-    Produces both DS including blocked routes and DS excluding blocked routes.
-    """
-    from collections import defaultdict
-    import math
-
     groups: dict[tuple, list[dict]] = defaultdict(list)
     for r in route_rows:
-        key = (
-            r["model"],
-            r["test_type"],
-            r["condition"],
-            r["perturbation"],
-            int(r["severity"]),
-        )
+        key = (r["model"], r["test_type"], r["condition"], r["perturbation"], int(r["severity"]))
         groups[key].append(r)
 
     out: list[dict] = []
@@ -136,7 +131,6 @@ def aggregate_carla_summary(route_rows: list[dict]) -> list[dict]:
         blocked_flags = [int(r.get("blocked", 0)) for r in rows]
         blocked_rate = (sum(blocked_flags) / len(blocked_flags)) if blocked_flags else 0.0
 
-        # time-to-block (TTB): duration_game_s for blocked routes only (optional)
         ttb = [
             float(r["duration_game_s"])
             for r in rows
@@ -144,7 +138,9 @@ def aggregate_carla_summary(route_rows: list[dict]) -> list[dict]:
         ]
 
         def mean(xs: list[float]) -> float:
-            return sum(xs) / len(xs) if xs else float("nan")
+            arr = np.asarray(xs, dtype=np.float64)
+            arr = arr[np.isfinite(arr)]
+            return float(np.mean(arr)) if arr.size else float("nan")
 
         out.append({
             "sim": "carla",
@@ -162,8 +158,6 @@ def aggregate_carla_summary(route_rows: list[dict]) -> list[dict]:
             "ds_active_mean": mean(ds_active),
 
             "blocked_rate": blocked_rate,
-
-            # optional diagnostics (keep or drop later):
             "n_routes": len(rows),
             "n_blocked": sum(blocked_flags),
             "ttb_mean_s": mean(ttb),
@@ -172,26 +166,27 @@ def aggregate_carla_summary(route_rows: list[dict]) -> list[dict]:
     return out
 
 
-
 def robustness_summaries(summary_rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """
-    Creates per-(sim,map,test_type,model,perturbation) robustness aggregates over severity:
+    Per-(sim,map,test_type,model,perturbation) over severities:
       - AUC(primary vs severity)
-      - CE (relative-drop vs baseline) if baseline row exists
+      - CE (relative-drop vs baseline)
+    Primary:
+      - Udacity jungle: mean_segments_passed_rate_per_run
+      - Udacity genroads: pass_rate
+      - CARLA: ds_all_mean (advisor), while ds_active_mean is still in summary_table
     """
     def primary_value(row: Dict[str, Any]) -> float:
         if row["sim"] == "udacity":
             if str(row.get("map", "")).lower() == "jungle":
                 return float(row.get("mean_segments_passed_rate_per_run", np.nan))
             return float(row.get("pass_rate", np.nan))
-        # carla
-        return float(row.get("ds_active_mean", np.nan))
+        return float(row.get("ds_all_mean", np.nan))
 
     groups: Dict[Tuple[str, str, str, str, str], List[Dict[str, Any]]] = defaultdict(list)
     for r in summary_rows:
         groups[(r["sim"], r.get("map", ""), r["test_type"], r["model"], r["perturbation"])].append(r)
 
-    # baseline lookup per (sim,map,test_type,model)
     baseline_by_setting: Dict[Tuple[str, str, str, str], float] = {}
     for r in summary_rows:
         pert = str(r.get("perturbation", "")).lower()

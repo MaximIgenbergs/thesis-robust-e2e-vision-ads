@@ -9,14 +9,17 @@ Arguments:
 
 from __future__ import annotations
 import argparse
+import contextlib
 import json
+import os
 import time
-from typing import List, Dict, Any, Tuple
 from pathlib import Path
+from typing import List, Dict, Any, Tuple
 import numpy as np
 from PIL import Image
 
 from external.udacity_gym import UdacitySimulator, UdacityGym, UdacityAction
+from external.udacity_gym.agent import PIDUdacityAgent_Angle
 from external.udacity_gym.agent_callback import PDPreviewCallback
 from external.udacity_gym.logger import ScenarioOutcomeWriter, ScenarioOutcomeLite, ScenarioLite
 
@@ -25,6 +28,34 @@ from scripts.udacity.adapters.utils.build_adapter import build_adapter
 from scripts import abs_path, load_cfg
 
 from perturbationdrive import ImagePerturbation
+
+
+PID_TARGET_SPEED = 22.0
+
+
+def compute_pid_action(pid_agent: PIDUdacityAgent_Angle, obs) -> UdacityAction:
+    """
+    Compute a reference PID action from the SAME pre-step observation.
+    PID prints every step in the agent code -> silence stdout here.
+    """
+    try:
+        with open(os.devnull, "w") as f, contextlib.redirect_stdout(f):
+            a = pid_agent(obs)
+    except Exception:
+        return UdacityAction(steering_angle=0.0, throttle=0.0)
+
+    if isinstance(a, UdacityAction):
+        steer = float(np.clip(float(a.steering_angle), -1.0, 1.0))
+        thr = float(np.clip(float(a.throttle), -1.0, 1.0))
+        return UdacityAction(steering_angle=steer, throttle=thr)
+
+    try:
+        arr = np.array(a).reshape(-1)
+        steer = float(np.clip(float(arr[0]), -1.0, 1.0))
+        thr = float(np.clip(float(arr[1]), -1.0, 1.0))
+        return UdacityAction(steering_angle=steer, throttle=thr)
+    except Exception:
+        return UdacityAction(steering_angle=0.0, throttle=0.0)
 
 
 def force_start_episode(
@@ -148,22 +179,15 @@ def save_img(img: np.ndarray, path: Path) -> None:
 
     a = np.asarray(img)
 
-    # handle potential batch dim (1, H, W, C)
     if a.ndim == 4 and a.shape[0] == 1:
         a = a[0]
 
-    # If float, map to [0,255] then uint8.
     if np.issubdtype(a.dtype, np.floating):
         amin = float(np.nanmin(a)) if a.size else 0.0
         amax = float(np.nanmax(a)) if a.size else 1.0
-
-        # common case: [0,1]
         if amin >= 0.0 and amax <= 1.0:
             a = a * 255.0
-
         a = np.clip(a, 0.0, 255.0).astype(np.uint8)
-
-    # If int but not uint8, clip/cast
     elif a.dtype != np.uint8:
         a = np.clip(a, 0, 255).astype(np.uint8)
 
@@ -189,13 +213,8 @@ def run_episode(
     """
     Run a single episode with one (segment, perturbation, severity) triple.
 
-    Termination:
-      - segment timeout_s reached, or
-      - (if provided) reached end_waypoint (with wrap handling), or
-      - KeyboardInterrupt.
-
     Returns:
-      - ScenarioOutcomeLite with trajectories, images, counters
+      - ScenarioOutcomeLite with trajectories, counters, pid_actions
       - events_log: list of {step, sim_time, event, raw}
     """
     force_start_episode(env, track=track, weather=weather, daytime=daytime)
@@ -205,16 +224,24 @@ def run_episode(
 
     metrics_base = metrics(env)
 
+    # Reference PID (fresh per episode)
+    pid_agent = PIDUdacityAgent_Angle(
+        target_speed=PID_TARGET_SPEED,
+        track="jungle",
+        before_action_callbacks=[],
+        after_action_callbacks=[],
+    )
+
     frames: list[int] = []
     xte: list[float] = []
     angle_diff: list[float] = []
     speeds: list[float] = []
     actions: list[list[float]] = []
+    pid_actions: list[list[float]] = []
     pos: list[list[float]] = []
 
     events_log: List[Dict[str, Any]] = []
 
-    # We do NOT store images in ScenarioOutcomeLite anymore.
     original_images = None
     perturbed_images = None
 
@@ -227,24 +254,20 @@ def run_episode(
     step = 0
     t0 = time.perf_counter()
     obs = env.observe()
-    prev_sector: int | None = None  # for wrap-aware end detection
+    prev_sector: int | None = None
 
-    # state for event de-duplication
     seen_events: set[tuple[str, str]] = set()
     last_flag_out = False
     last_flag_collision = False
 
-    # Only save perturbed images to disk if enabled
     save_images = bool(save_images and image_out_dir is not None)
 
     try:
         while True:
-            # Per-segment timeout
             if timeout_s is not None and (time.perf_counter() - t0) > timeout_s:
                 timed_out = True
                 print(
-                    f"[eval:jungle:robustness][INFO] "
-                    f"episode {pert_name}@{severity} timeout after {timeout_s:.1f}s"
+                    f"[eval:jungle:robustness][INFO] episode {pert_name}@{severity} timeout after {timeout_s:.1f}s"
                 )
                 break
 
@@ -253,18 +276,19 @@ def run_episode(
                 obs = env.observe()
                 continue
 
+            # PID reference on SAME pre-step obs (state-based, not image-based)
+            pid_a = compute_pid_action(pid_agent, obs)
+
             img_np = np.asarray(obs.input_image, dtype=np.uint8).copy()
 
             if controller is not None and pert_name:
                 pert_np = controller.perturbation(img_np, pert_name, int(severity))
             else:
-                # Baseline: no perturbation, use original image
                 pert_np = img_np
 
             if save_images:
                 save_img(pert_np, image_out_dir / "perturbed" / f"frame_{step:06d}.jpg")
 
-            # Adapter -> UdacityAction
             try:
                 out = getattr(adapter, "predict")(pert_np)
             except AttributeError:
@@ -291,7 +315,6 @@ def run_episode(
             last_time = obs.time
             obs, reward, terminated, truncated, info = env.step(action)
 
-            # Log discrete events with timestamps for offline metrics (deduplicated)
             events = (info or {}).get("events") or []
             for e in events:
                 key = (e.get("key") or e.get("type") or "").lower()
@@ -303,28 +326,17 @@ def run_episode(
                     seen_events.add(ident)
 
                     events_log.append(
-                        {
-                            "step": int(step),
-                            "sim_time": float(last_time),
-                            "event": key,
-                            "raw": e,
-                        }
+                        {"step": int(step), "sim_time": float(last_time), "event": key, "raw": e}
                     )
                     if key == "out_of_track":
                         offtrack_count += 1
                     elif key == "collision":
                         collision_count += 1
 
-            # Compatibility with possible boolean flags in info (only count rising edge)
             flag_out = (info or {}).get("out_of_track") is True
             if flag_out and not last_flag_out:
                 events_log.append(
-                    {
-                        "step": int(step),
-                        "sim_time": float(last_time),
-                        "event": "out_of_track",
-                        "raw": {"source": "flag"},
-                    }
+                    {"step": int(step), "sim_time": float(last_time), "event": "out_of_track", "raw": {"source": "flag"}}
                 )
                 offtrack_count += 1
             last_flag_out = flag_out
@@ -332,41 +344,33 @@ def run_episode(
             flag_collision = (info or {}).get("collision") is True
             if flag_collision and not last_flag_collision:
                 events_log.append(
-                    {
-                        "step": int(step),
-                        "sim_time": float(last_time),
-                        "event": "collision",
-                        "raw": {"source": "flag"},
-                    }
+                    {"step": int(step), "sim_time": float(last_time), "event": "collision", "raw": {"source": "flag"}}
                 )
                 collision_count += 1
             last_flag_collision = flag_collision
 
             frames.append(step)
             xte.append(float(getattr(obs, "cte", 0.0)))
-            angle_diff.append(float((obs.get_metrics() or {}).get("angleDiff", 0.0)))
+            angle_diff.append(float(getattr(obs, "angle_diff", 0.0)))
             speeds.append(float(getattr(obs, "speed", 0.0)))
             px, py, pz = obs.position
             pos.append([float(px), float(py), float(pz)])
             actions.append([float(action.steering_angle), float(action.throttle)])
+            pid_actions.append([float(pid_a.steering_angle), float(pid_a.throttle)])
 
-            # Waypoint / sector-based termination with wrap handling
             hit_end = False
             sector_for_log: int | None = None
             if end_waypoint is not None:
                 sector = get_sector(obs)
                 if sector is not None:
                     if prev_sector is None:
-                        # first valid reading: simple check
                         if sector >= end_waypoint:
                             hit_end = True
                             sector_for_log = sector
                     else:
-                        # normal crossing: prev < end <= current
                         if prev_sector < end_waypoint <= sector:
                             hit_end = True
                             sector_for_log = sector
-                        # wrap-around: sector jumped from high to low -> treat as done
                         elif prev_sector > sector:
                             hit_end = True
                             sector_for_log = sector
@@ -374,9 +378,7 @@ def run_episode(
 
             if hit_end:
                 print(
-                    f"[eval:jungle:robustness][INFO] "
-                    f"episode {pert_name}@{severity} reached end_waypoint={end_waypoint} "
-                    f"(sector={sector_for_log})"
+                    f"[eval:jungle:robustness][INFO] episode {pert_name}@{severity} reached end_waypoint={end_waypoint} (sector={sector_for_log})"
                 )
                 reached_end = True
                 step += 1
@@ -388,33 +390,31 @@ def run_episode(
 
             step += 1
 
+            if terminated or truncated:
+                break
+
     except KeyboardInterrupt:
         stop_requested = True
         print(
-            f"\n[eval:jungle:robustness][WARN] episode {pert_name}@{severity} interrupted by user."
-            f" Attempting to finish writing logs..."
+            f"\n[eval:jungle:robustness][WARN] episode {pert_name}@{severity} interrupted by user. Attempting to finish writing logs..."
         )
     finally:
         wall = time.perf_counter() - t0
 
-        # For clean segment ends, don't wait for late infractions after the segment.
         if reached_end and not timed_out and not stop_requested:
             delta = settle_metrics(env, metrics_base, settle_seconds=0.0, probe_hz=10.0)
         else:
             delta = settle_metrics(env, metrics_base, settle_seconds=1.5, probe_hz=10.0)
 
-        # Use Unity counters as an upper bound (in case some events were missed)
         offtrack_count = max(offtrack_count, int(delta["outOfTrackCount"]))
         collision_count = max(collision_count, int(delta["collisionCount"]))
 
         print(
-            f"[eval:jungle:robustness][INFO] episode {pert_name}@{severity}: "
-            f"steps={step} wall={wall:.1f}s "
+            f"[eval:jungle:robustness][INFO] episode {pert_name}@{severity}: steps={step} wall={wall:.1f}s "
             f"offtrack_count={offtrack_count} collisions={collision_count} "
             f"{'(interrupted)' if stop_requested else ''}"
         )
 
-    # For robustness: success = reached end of segment without timeout / manual stop
     is_success = reached_end and not timed_out and not stop_requested
 
     outcome = ScenarioOutcomeLite(
@@ -424,7 +424,7 @@ def run_episode(
         angle_diff=angle_diff,
         speeds=speeds,
         actions=actions,
-        pid_actions=[],
+        pid_actions=pid_actions,
         scenario=ScenarioLite(
             perturbation_function=pert_name,
             perturbation_scale=int(severity),
@@ -500,9 +500,7 @@ def main() -> int:
         git_info["thesis_sha"] = best_effort_git_sha(abs_path(""))
 
     if include_git.get("perturbation_drive", True):
-        git_info["perturbation_drive_sha"] = best_effort_git_sha(
-            abs_path("external/perturbation-drive")
-        )
+        git_info["perturbation_drive_sha"] = best_effort_git_sha(abs_path("external/perturbation-drive"))
 
     logger = RunLogger(
         run_dir=run_dir,
@@ -544,21 +542,12 @@ def main() -> int:
                 {
                     "id": seg.get("id", "seg"),
                     "start_waypoint": int(seg["start_waypoint"]),
-                    "end_waypoint": int(seg["end_waypoint"])
-                    if seg.get("end_waypoint") is not None
-                    else None,
+                    "end_waypoint": int(seg["end_waypoint"]) if seg.get("end_waypoint") is not None else None,
                     "timeout_s": float(seg.get("timeout_s", default_timeout_s)),
                 }
             )
     else:
-        segments.append(
-            {
-                "id": "full",
-                "start_waypoint": None,
-                "end_waypoint": None,
-                "timeout_s": float(default_timeout_s),
-            }
-        )
+        segments.append({"id": "full", "start_waypoint": None, "end_waypoint": None, "timeout_s": float(default_timeout_s)})
 
     sim = UdacitySimulator(str(sim_app), udacity_cfg["host"], int(udacity_cfg["port"]))
     env = UdacityGym(simulator=sim)
@@ -589,6 +578,7 @@ def main() -> int:
             "image_size": {"h": image_size_hw[0], "w": image_size_hw[1]},
             "episodes": 1,
             "ckpt_name": ckpt_name,
+            "pid": {"target_speed": float(PID_TARGET_SPEED), "track": "jungle"},
         }
         eid, ep_dir = logger.new_episode(ep_idx, meta)
 
@@ -682,19 +672,14 @@ def main() -> int:
                             "segment_timeout_s": float(default_timeout_s),
                             "perturbation": pert,
                             "severity": int(sev),
-                            "image_size": {
-                                "h": image_size_hw[0],
-                                "w": image_size_hw[1],
-                            },
+                            "image_size": {"h": image_size_hw[0], "w": image_size_hw[1]},
                             "episodes": int(episodes),
                             "ckpt_name": ckpt_name,
+                            "pid": {"target_speed": float(PID_TARGET_SPEED), "track": "jungle"},
                         }
                         eid, ep_dir = logger.new_episode(ep_idx, meta)
 
-                        writer = ScenarioOutcomeWriter(
-                            str(ep_dir / "log.json"),
-                            overwrite_logs=True,
-                        )
+                        writer = ScenarioOutcomeWriter(str(ep_dir / "log.json"), overwrite_logs=True)
 
                         all_outcomes: List[ScenarioOutcomeLite] = []
                         all_events: List[Dict[str, Any]] = []
@@ -728,6 +713,7 @@ def main() -> int:
 
                                 for e in events_log:
                                     e.setdefault("segment_id", seg_id)
+
                                 all_outcomes.append(outcome)
                                 all_events.extend(events_log)
 
@@ -740,8 +726,7 @@ def main() -> int:
 
                             writer.write(all_outcomes, images=False)
 
-                            events_path = ep_dir / "events.json"
-                            events_path.write_text(
+                            (ep_dir / "events.json").write_text(
                                 json.dumps(all_events, indent=2, sort_keys=True),
                                 encoding="utf-8",
                             )
@@ -753,11 +738,7 @@ def main() -> int:
                             else:
                                 status = "fail_offtrack"
 
-                            logger.complete_episode(
-                                eid,
-                                status=status,
-                                wall_time_s=(time.perf_counter() - t0),
-                            )
+                            logger.complete_episode(eid, status=status, wall_time_s=(time.perf_counter() - t0))
 
                         except Exception as e:
                             logger.complete_episode(

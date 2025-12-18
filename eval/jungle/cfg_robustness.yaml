@@ -72,7 +72,7 @@ segments:
     end_waypoint: 760
     timeout_s: 100
 
-# They were not in the training dataset, which is composed of waypoints 0-666.
+# Not part of the training dataset (waypoints 0-666):
 
   # - id: "segment_09_downhill_and_steep_uphill"
   #   start_waypoint: 760
@@ -134,17 +134,6 @@ perturbations:
 
     # Overlays (Occlusions)
     - ["dynamic_object_overlay", "static_object_overlay"]
-
-    # # dave2:
-    # # Category D/F: Distortion Perturbations & Graphic Patterns
-    # - ["cutout_filter", "sample_pairing_filter"]
-    # - ["splatter_mapping", "dotted_lines_mapping", "zigzag_mapping", "canny_edges_mapping"]
-
-    # # Category E: Affine Transformations
-    # - ["translate_image", "scale_image"]
-
-    # # Overlays (Occlusions)
-    # - ["dynamic_object_overlay", "static_object_overlay"]
     
 
 # List of all available perturbations:
