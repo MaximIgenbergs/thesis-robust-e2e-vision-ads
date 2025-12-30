@@ -1,0 +1,2 @@
+blocked_rate,condition,ds_all_mean,ds_nb_mean,map,model,n_blocked,n_nb,n_routes,perturbation,severity,sim,test_type,ttb_mean_s
+0.45664739884393063,ALL,46.065657772354704,59.24321700420971,multi-town,tcp,79,94,173,baseline,0,carla,generalization,476.20823494415686
