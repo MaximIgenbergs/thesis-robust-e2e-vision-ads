@@ -29,21 +29,6 @@ def infer_num_segments_from_snapshot(config_snapshot: Dict[str, Any]) -> int:
     return int(len(segs)) if isinstance(segs, list) else 0
 
 
-def _normalize_action_list(actions: Any) -> List[List[float]]:
-    if actions is None or not isinstance(actions, list):
-        return []
-    out: List[List[float]] = []
-    for a in actions:
-        if isinstance(a, list) and len(a) == 1 and isinstance(a[0], list):
-            a = a[0]
-        if isinstance(a, list) and len(a) >= 2:
-            try:
-                out.append([float(a[0]), float(a[1])])
-            except Exception:
-                continue
-    return out
-
-
 def _to_float(x: Any) -> Optional[float]:
     try:
         if x is None:
@@ -55,15 +40,152 @@ def _to_float(x: Any) -> Optional[float]:
         return None
 
 
+def _first_float(*cands: Any) -> Optional[float]:
+    for c in cands:
+        v = _to_float(c)
+        if v is not None:
+            return v
+    return None
+
+
+def _as_list(x: Any) -> List[Any]:
+    if x is None:
+        return []
+    if isinstance(x, list):
+        return x
+    if isinstance(x, tuple):
+        return list(x)
+    return []
+
+
+def _as_float_list(x: Any) -> List[float]:
+    if x is None:
+        return []
+    if isinstance(x, (int, float)):
+        v = _to_float(x)
+        return [v] if v is not None else []
+    if isinstance(x, list):
+        out: List[float] = []
+        for a in x:
+            v = _to_float(a)
+            if v is not None:
+                out.append(v)
+        return out
+    return []
+
+
+def _normalize_action_pair(a: Any) -> Optional[List[float]]:
+    if a is None:
+        return None
+
+    if isinstance(a, (list, tuple)):
+        if len(a) == 1 and isinstance(a[0], (list, tuple)):
+            a = a[0]
+        if len(a) >= 2:
+            try:
+                return [float(a[0]), float(a[1])]
+            except Exception:
+                return None
+        return None
+
+    if isinstance(a, dict):
+        steer = _first_float(a.get("steer"), a.get("steering"), a.get("angle"))
+        thr = _first_float(a.get("throttle"), a.get("thr"))
+        if steer is not None and thr is not None:
+            return [float(steer), float(thr)]
+        return None
+
+    return None
+
+
+def _zip_steer_throttle(steer_seq: Any, thr_seq: Any) -> List[List[float]]:
+    s = _as_list(steer_seq)
+    t = _as_list(thr_seq)
+    if not s or not t:
+        return []
+    out: List[List[float]] = []
+    for i in range(min(len(s), len(t))):
+        sv = _to_float(s[i])
+        tv = _to_float(t[i])
+        if sv is None or tv is None:
+            continue
+        out.append([float(sv), float(tv)])
+    return out
+
+
+def _normalize_action_list(actions: Any) -> List[List[float]]:
+    if actions is None:
+        return []
+
+    # If already a dict, try common (steer_seq, throttle_seq) patterns or recurse into nested "actions"
+    if isinstance(actions, dict):
+        if "actions" in actions and actions["actions"] is not None:
+            return _normalize_action_list(actions["actions"])
+
+        steer_seq = None
+        thr_seq = None
+
+        for k in ("steer", "steering", "angle", "model_steer", "actual_steer"):
+            if k in actions:
+                steer_seq = actions.get(k)
+                break
+        for k in ("throttle", "thr", "model_throttle", "actual_throttle"):
+            if k in actions:
+                thr_seq = actions.get(k)
+                break
+
+        zipped = _zip_steer_throttle(steer_seq, thr_seq)
+        if zipped:
+            return zipped
+
+        pair = _normalize_action_pair(actions)
+        return [pair] if pair is not None else []
+
+    # If list, handle:
+    # - list-of-pairs
+    # - a single pair
+    # - [steer_seq, throttle_seq]
+    if isinstance(actions, list):
+        if len(actions) == 1:
+            pair = _normalize_action_pair(actions[0])
+            return [pair] if pair is not None else []
+
+        # Special: [steer_seq, throttle_seq]
+        if len(actions) == 2 and isinstance(actions[0], list) and isinstance(actions[1], list):
+            # if these look like sequences of numbers (not list-of-pairs)
+            if actions[0] and not isinstance(actions[0][0], (list, dict)) and actions[1] and not isinstance(actions[1][0], (list, dict)):
+                zipped = _zip_steer_throttle(actions[0], actions[1])
+                if zipped:
+                    return zipped
+
+        out: List[List[float]] = []
+        for a in actions:
+            pair = _normalize_action_pair(a)
+            if pair is not None:
+                out.append(pair)
+        return out
+
+    # Anything else: try to interpret as one pair
+    pair = _normalize_action_pair(actions)
+    return [pair] if pair is not None else []
+
+
+def _extract_pair_from_step(step: Dict[str, Any], keys: List[str]) -> Optional[List[float]]:
+    for k in keys:
+        if k in step:
+            pair = _normalize_action_pair(step.get(k))
+            if pair is not None:
+                return pair
+    info = step.get("info") if isinstance(step.get("info"), dict) else {}
+    for k in keys:
+        if k in info:
+            pair = _normalize_action_pair(info.get(k))
+            if pair is not None:
+                return pair
+    return None
+
+
 def _parse_pd_log(pd: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-    """
-    Convert pd_log.json (steps) into a single "entry" compatible with the rest of the pipeline:
-      - xte: list[cte]
-      - angle_errors: list[angle]
-      - actions: [[steer, throttle], ...] (actual_*, fallback model_*)
-      - pid_actions: [] (not present in pd_log)
-      - isSuccess / timeout inferred from last step info
-    """
     steps = pd.get("steps")
     if not isinstance(steps, list) or not steps:
         return None
@@ -71,6 +193,7 @@ def _parse_pd_log(pd: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     cte_seq: List[float] = []
     ang_seq: List[float] = []
     actions: List[List[float]] = []
+    pid_actions: List[List[float]] = []
 
     last_info: Dict[str, Any] = {}
     for s in steps:
@@ -79,64 +202,118 @@ def _parse_pd_log(pd: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         info = s.get("info") if isinstance(s.get("info"), dict) else {}
         pid_state = s.get("pid_state") if isinstance(s.get("pid_state"), dict) else {}
 
-        # cte
-        cte = _to_float(info.get("cte", None))
-        if cte is None:
-            cte = _to_float(pid_state.get("cte", None))
+        cte = _first_float(
+            info.get("xte"), info.get("cte"),
+            pid_state.get("xte"), pid_state.get("cte"),
+            s.get("xte"), s.get("cte"),
+        )
         if cte is not None:
             cte_seq.append(cte)
 
-        # angle (string in your sample)
-        ang = _to_float(info.get("angle", None))
-        if ang is None:
-            ang = _to_float(pid_state.get("angle", None))
+        ang = _first_float(
+            info.get("angle_diff"), info.get("angle_error"), info.get("angle_err"), info.get("angle_errors"),
+            pid_state.get("angle_diff"), pid_state.get("angle_error"), pid_state.get("angle_err"), pid_state.get("angle_errors"),
+            s.get("angle_diff"), s.get("angle_error"), s.get("angle_err"), s.get("angle_errors"),
+            info.get("angle"), pid_state.get("angle"), s.get("angle"),
+        )
         if ang is not None:
             ang_seq.append(ang)
 
-        # actions
-        steer = _to_float(s.get("actual_steer", None))
-        thr = _to_float(s.get("actual_throttle", None))
-        if steer is None:
-            steer = _to_float(s.get("model_steer", None))
-        if thr is None:
-            thr = _to_float(s.get("model_throttle", None))
-        if steer is not None and thr is not None:
-            actions.append([steer, thr])
+        model_pair = _extract_pair_from_step(s, ["action", "actions", "model_action", "model_actions", "act"])
+        if model_pair is None:
+            steer = _first_float(s.get("actual_steer"), s.get("model_steer"), info.get("steer"), info.get("steering"))
+            thr = _first_float(s.get("actual_throttle"), s.get("model_throttle"), info.get("throttle"))
+            if steer is not None and thr is not None:
+                model_pair = [float(steer), float(thr)]
+        if model_pair is not None:
+            actions.append(model_pair)
+
+        pid_pair = _extract_pair_from_step(s, ["pid_action", "pid_actions", "expert_action", "expert_actions", "target_action", "target_actions"])
+        if pid_pair is None:
+            pid_steer = _first_float(
+                s.get("pid_steer"), s.get("expert_steer"), s.get("target_steer"),
+                info.get("pid_steer"), info.get("expert_steer"), info.get("target_steer"),
+                pid_state.get("pid_steer"), pid_state.get("expert_steer"), pid_state.get("target_steer"),
+                pid_state.get("steer"), pid_state.get("steering"),
+            )
+            pid_thr = _first_float(
+                s.get("pid_throttle"), s.get("expert_throttle"), s.get("target_throttle"),
+                info.get("pid_throttle"), info.get("expert_throttle"), info.get("target_throttle"),
+                pid_state.get("pid_throttle"), pid_state.get("expert_throttle"), pid_state.get("target_throttle"),
+                pid_state.get("throttle"),
+            )
+            if pid_steer is not None and pid_thr is not None:
+                pid_pair = [float(pid_steer), float(pid_thr)]
+        if pid_pair is not None:
+            pid_actions.append(pid_pair)
 
         last_info = info
 
-    # infer success/timeout from the last step info if present
-    is_success_val = last_info.get("is_success", 0)
+    is_success_val = last_info.get("is_success", last_info.get("isSuccess", 0))
     is_success = bool(int(is_success_val) == 1) if isinstance(is_success_val, (int, float)) else False
     timeout = bool(last_info.get("timeout", False))
 
     return {
-        # pipeline expects these names
         "xte": cte_seq,
-        "angle_errors": ang_seq,
+        "angle_diff": ang_seq,
         "actions": actions,
-        "pid_actions": [],
-
+        "pid_actions": pid_actions,
         "isSuccess": is_success,
         "timeout": timeout,
-
-        # keep raw steps for failure detection
         "_pd_steps": steps,
     }
 
 
+def _looks_like_step_dict(d: Dict[str, Any]) -> bool:
+    if "info" in d or "pid_state" in d:
+        return True
+    if "step" in d:
+        return True
+    for k in (
+        "pid_steer", "pid_throttle",
+        "expert_steer", "expert_throttle",
+        "target_steer", "target_throttle",
+        "model_steer", "model_throttle",
+        "actual_steer", "actual_throttle",
+    ):
+        if k in d:
+            return True
+    return False
+
+
+def _looks_like_step_list(xs: Any) -> bool:
+    if not isinstance(xs, list) or not xs:
+        return False
+    if not isinstance(xs[0], dict):
+        return False
+    return _looks_like_step_dict(xs[0])
+
+
 def _coerce_log_entries(log_json: Any) -> List[Dict[str, Any]]:
-    """
-    Jungle: log.json is a list of entry dicts.
-    GenRoads: pd_log.json is a dict with {"steps":[...]} -> we convert to one entry dict.
-    """
+    # Case A: list of per-step dicts -> treat as a PD-style step list
+    if _looks_like_step_list(log_json):
+        one = _parse_pd_log({"steps": log_json})
+        return [one] if isinstance(one, dict) else []
+
+    # Case B: list of entry dicts (Jungle segments, or multiple entries)
     if isinstance(log_json, list):
         return [x for x in log_json if isinstance(x, dict)]
+
+    # Case C: dict wrapper around entries
     if isinstance(log_json, dict):
+        for k in ("entries", "log_entries"):
+            v = log_json.get(k)
+            if isinstance(v, list) and v and all(isinstance(x, dict) for x in v):
+                return [x for x in v if isinstance(x, dict)]
+
+        # Case D: dict with "steps"
         if "steps" in log_json:
             one = _parse_pd_log(log_json)
             return [one] if isinstance(one, dict) else []
+
+        # Case E: single entry dict
         return [log_json]
+
     return []
 
 
@@ -152,17 +329,43 @@ def iter_udacity_entries(run_dir: Path) -> Iterator[Dict[str, Any]]:
     episodes = manifest.get("episodes")
     if not isinstance(episodes, list):
         return
+    
+    # SAFETY CHECK: Only check new_log.json if this is GenRoads Generalization.
+    # We infer this from the run_dir path string (contains 'genroads' and 'generalization').
+    path_str = str(run_dir).lower()
+    is_genroads_gen = "genroads" in path_str and "generalization" in path_str
 
     for ep in episodes:
         if not isinstance(ep, dict):
             continue
 
         ep_id = safe_str(ep.get("id"), default="unknown")
+        ep_dir = run_dir / "episodes" / ep_id
 
-        # manifest points to episodes/<id>/log.json, but GenRoads uses episodes/<id>/pd_log.json
+        # Original logic paths
         log_rel = safe_str(ep.get("log"), default=f"episodes/{ep_id}/log.json")
         log_path = run_dir / log_rel
         pd_log_path = run_dir / "episodes" / ep_id / "pd_log.json"
+        
+        # New log path (only used if is_genroads_gen)
+        new_log_path = run_dir / "episodes" / ep_id / "new_log.json"
+
+        log_json = None
+
+        if is_genroads_gen:
+            # For GenRoads Generalization: prefer new_log.json
+            if new_log_path.exists():
+                log_json = try_read_json(new_log_path)
+            elif pd_log_path.exists():
+                log_json = try_read_json(pd_log_path)
+            else:
+                log_json = try_read_json(log_path)
+        else:
+            # For everything else: Strict legacy behavior (pd_log or log)
+            if pd_log_path.exists():
+                log_json = try_read_json(pd_log_path)
+            else:
+                log_json = try_read_json(log_path)
 
         meta_path = run_dir / "episodes" / ep_id / "meta.json"
         events_path = run_dir / "episodes" / ep_id / "events.json"
@@ -174,13 +377,6 @@ def iter_udacity_entries(run_dir: Path) -> Iterator[Dict[str, Any]]:
         events = try_read_json(events_path)
         if not isinstance(events, list):
             events = []
-
-        # choose the actual log file
-        log_json = None
-        if pd_log_path.exists():
-            log_json = try_read_json(pd_log_path)
-        else:
-            log_json = try_read_json(log_path)
 
         entries = _coerce_log_entries(log_json)
 
@@ -196,11 +392,40 @@ def iter_udacity_entries(run_dir: Path) -> Iterator[Dict[str, Any]]:
         }
 
 
+def _coerce_int(x: Any, default: int = 0) -> int:
+    try:
+        if isinstance(x, str):
+            x = x.strip()
+        return int(x)
+    except Exception:
+        return default
+
+
+def _severity_for_entry(sev_raw: Any, idx: int, n_entries: int, *, paired_severities: bool) -> int:
+    if not paired_severities or not isinstance(sev_raw, list):
+        return _coerce_int(sev_raw, default=0)
+
+    sev_list = [_coerce_int(s, default=0) for s in sev_raw]
+    if not sev_list:
+        return 0
+
+    if n_entries > 0 and len(sev_list) == n_entries and 0 <= idx < len(sev_list):
+        return int(sev_list[idx])
+
+    if len(sev_list) == 1:
+        return int(sev_list[0])
+    if 0 <= idx < len(sev_list):
+        return int(sev_list[idx])
+
+    return int(sev_list[0])
+
+
 def normalize_udacity_entry(
     raw: Dict[str, Any],
     map_name: str,
     test_type: str,
     baseline_name: str = BASELINE_NAME_DEFAULT,
+    paired_severities: bool = False,
 ) -> List[Dict[str, Any]]:
     run_dir = Path(raw["run_dir"])
     manifest: Dict[str, Any] = raw["manifest"]
@@ -214,18 +439,15 @@ def normalize_udacity_entry(
     run_id = safe_str(manifest.get("run_id"), default=run_dir.name)
     run_ts = safe_str(manifest.get("timestamp"), default=_infer_model_and_ts(run_dir.name)[1])
 
-    # ---- perturbation normalization (treat "none" / "" / None as baseline) ----
     pert_raw = ep_m.get("perturbation")
     pert_s = "" if pert_raw is None else str(pert_raw).strip()
-    if pert_raw is None or pert_s == "" or pert_s.lower() == "none":
+    is_baseline = (pert_raw is None) or (pert_s == "") or (pert_s.lower() == "none")
+    if is_baseline:
         perturbation = baseline_name
-        severity = 0
+        sev_raw = 0
     else:
         perturbation = safe_str(pert_raw, default=baseline_name)
-        try:
-            severity = int(ep_m.get("severity", 0))
-        except Exception:
-            severity = 0
+        sev_raw = ep_m.get("severity", 0)
 
     road = safe_str(ep_m.get("road"), default=map_name)
 
@@ -235,44 +457,67 @@ def normalize_udacity_entry(
         num_segments = len(seg_ids_list)
 
     out: List[Dict[str, Any]] = []
+    n_entries = len(log_entries)
 
     for idx, entry in enumerate(log_entries):
-        xte = entry.get("xte") or []
-        angle_err = entry.get("angle_diff") if "angle_diff" in entry else (entry.get("angle_errors") or [])
+        severity = 0 if is_baseline else _severity_for_entry(sev_raw, idx, n_entries, paired_severities=paired_severities)
 
-        actions = _normalize_action_list(entry.get("actions"))
-        pid_actions = _normalize_action_list(entry.get("pid_actions"))
+        # Tracking series
+        xte = entry.get("xte")
+        if xte is None:
+            xte = entry.get("cte")
+        if xte is None:
+            xte = entry.get("xte_seq")
+        if xte is None:
+            xte = entry.get("cte_seq")
+        xte_list = xte if isinstance(xte, list) else _as_float_list(xte)
+
+        angle_err = entry.get("angle_diff") if "angle_diff" in entry else None
+        if angle_err is None:
+            angle_err = entry.get("angle_errors")
+        if angle_err is None:
+            angle_err = entry.get("angle_err")
+        angle_list = angle_err if isinstance(angle_err, list) else _as_float_list(angle_err)
+
+        # Model actions (try several possible containers)
+        actions = _normalize_action_list(
+            entry.get("actions")
+            or entry.get("model_actions")
+            or entry.get("action")
+            or {"steer": entry.get("steer") or entry.get("steering") or entry.get("model_steer") or entry.get("actual_steer"),
+                "throttle": entry.get("throttle") or entry.get("thr") or entry.get("model_throttle") or entry.get("actual_throttle")}
+        )
+
+        # PID/expert actions (robust: pid_actions, pid_action, expert/target, or pid_steer+pid_throttle arrays)
+        pid_actions = _normalize_action_list(
+            entry.get("pid_actions")
+            or entry.get("pid_action")
+            or entry.get("expert_actions")
+            or entry.get("expert_action")
+            or entry.get("target_actions")
+            or entry.get("target_action")
+        )
+        if not pid_actions:
+            pid_actions = _normalize_action_list({
+                "steer": entry.get("pid_steer") or entry.get("expert_steer") or entry.get("target_steer"),
+                "throttle": entry.get("pid_throttle") or entry.get("expert_throttle") or entry.get("target_throttle"),
+            })
 
         timeout = bool(entry.get("timeout", False))
 
-        # task_id resolution
         if map_name.lower() == "jungle":
-            seg_id = (
-                safe_str(seg_ids_list[idx], default=f"segment_{idx:02d}")
-                if idx < len(seg_ids_list)
-                else f"segment_{idx:02d}"
-            )
+            seg_id = safe_str(seg_ids_list[idx], default=f"segment_{idx:02d}") if idx < len(seg_ids_list) else f"segment_{idx:02d}"
             task_id = seg_id
         else:
-            task_id = road  # genroads: one road/episode
+            task_id = road
 
-        # -----------------------------
-        # Success flag (authoritative)
-        # -----------------------------
         if map_name.lower() == "jungle":
-            # events.json is authoritative: any collision/out_of_track in this segment => failure
             seg_failed = has_failure_for_task(events=events, task_id=task_id)
             is_success = (not seg_failed) and (not timeout)
         else:
-            # genroads: keep the logged completion flag
-            is_success = bool(entry.get("isSuccess", False))
+            is_success = bool(entry.get("isSuccess", entry.get("is_success", False)))
 
-        # -----------------------------
-        # pre-fail boundary
-        # -----------------------------
-        series_len = int(
-            min(len(xte), len(angle_err)) if (xte and angle_err) else (len(xte) or len(angle_err) or 0)
-        )
+        series_len = int(min(len(xte_list), len(angle_list)) if (xte_list and angle_list) else (len(xte_list) or len(angle_list) or 0))
 
         if map_name.lower() == "jungle":
             ev_step = first_failure_step_for_task(events=events, task_id=task_id)
@@ -280,7 +525,6 @@ def normalize_udacity_entry(
             steps = entry.get("_pd_steps") if isinstance(entry, dict) else None
             ev_step = first_failure_step_from_pd_steps(steps if isinstance(steps, list) else None)
 
-        # NOTE: infer_stop_idx in the updated version expects (series_len, event_step)
         fail_stop_idx = infer_stop_idx(series_len=series_len, event_step=ev_step)
 
         out.append({
@@ -290,28 +534,21 @@ def normalize_udacity_entry(
             "model": model,
             "run_id": run_id,
             "run_ts": run_ts,
-
             "episode_folder": raw["episode_id"],
             "entry_index": idx,
             "entry_id": f"{raw['episode_id']}_{idx:02d}",
-
             "task_id": task_id,
             "road": road,
-
             "perturbation": perturbation,
-            "severity": severity,
-
+            "severity": int(severity),
             "is_success": is_success,
             "timeout": timeout,
-
-            "xte": xte,
-            "angle_err": angle_err,
+            "xte": xte_list,
+            "angle_err": angle_list,
             "actions": actions,
             "pid_actions": pid_actions,
-
             "num_segments": num_segments,
             "fail_stop_idx": int(fail_stop_idx),
-
             "track_error_name": "cte" if map_name.lower() != "jungle" else "xte",
         })
 
