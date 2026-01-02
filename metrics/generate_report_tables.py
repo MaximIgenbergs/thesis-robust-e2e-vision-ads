@@ -1,6 +1,7 @@
 from __future__ import annotations
 import argparse
 import csv
+import json
 import math
 import re
 from collections import defaultdict
@@ -160,7 +161,7 @@ def build_table_rq1(results_root: Path, out_dir: Path) -> None:
     if not final_rows:
         return
     final_rows.sort(key=lambda x: (x["Map"], str(x["Model"]), int(x["Severity"])))
-    cols = ["Map", "Model", "Severity", "PR", "E_dt", "p95_dt", "E_e", "p95_e", "DS", "BR", "N_nb", "DS_nb"]
+    cols = ["Map", "Model", "Severity", "PR", "E_dt", "p95_dt", "E_e", "p95_e", "DS_nb", "BR", "N_nb", "DS"]
     write_csv_ordered(out_dir / "study_table_rq1_robustness.csv", final_rows, cols)
 
 
@@ -184,6 +185,52 @@ def build_table_rq2(results_root: Path, out_dir: Path) -> None:
             display_map = str(r.get("map", ""))
         key = (sim, display_map, str(r.get("model", "")))
         groups[key].append(r)
+    
+    # Load tiny routes data for CARLA
+    tiny_routes_data = {}
+    tiny_routes_path = Path("/media/maxim/Elements/maximigenbergs/runs/carla/generalization/tcp/20251231_045136/tcp")
+    towns = ["Town01", "Town02", "Town03", "Town04", "Town05", "Town06"]
+    
+    if tiny_routes_path.exists():
+        all_tiny_routes = []
+        for town in towns:
+            # Use same method for all towns
+            town_path = tiny_routes_path / town
+            if town_path.exists():
+                json_files = list(town_path.rglob("simulation_results*.json"))
+                for json_file in json_files:
+                    try:
+                        with open(json_file, 'r') as f:
+                            data = json.load(f)
+                        
+                        from metrics.io_carla import parse_carla_routes, route_driving_score, is_blocked_route
+                        routes = parse_carla_routes(data)
+                        
+                        for rec in routes:
+                            ds = route_driving_score(rec)
+                            if ds is not None:
+                                all_tiny_routes.append({
+                                    "driving_score": float(ds),
+                                    "blocked": int(is_blocked_route(rec))
+                                })
+                    except Exception as e:
+                        print(f"Warning: Could not process {json_file}: {e}")
+                        continue
+        
+        if all_tiny_routes:
+            dss = [r["driving_score"] for r in all_tiny_routes]
+            blocked = [r["blocked"] for r in all_tiny_routes]
+            br = sum(blocked) / len(blocked) if blocked else 0
+            n_nb = sum(1 for b in blocked if b == 0)
+            ds_nb_vals = [r["driving_score"] for r in all_tiny_routes if r["blocked"] == 0]
+            
+            tiny_routes_data = {
+                "DS": _mean_for_display(dss),
+                "BR": br,
+                "N_nb": n_nb,
+                "DS_nb": _mean_for_display(ds_nb_vals),
+            }
+    
     aggregated_rows: List[Dict[str, Any]] = []
     for (sim, map_name, model), items in groups.items():
         base: Dict[str, Any] = {"sim": sim, "map": map_name, "model": model}
@@ -194,7 +241,15 @@ def build_table_rq2(results_root: Path, out_dir: Path) -> None:
                 if isinstance(v, (int, float)):
                     vals.append(float(v))
             base[m] = _mean_for_display(vals)
+        
+        # Add tiny routes data for CARLA
+        if sim == "carla" and tiny_routes_data:
+            # Add tiny routes metrics with "_tiny" suffix
+            for metric in ["DS", "BR", "N_nb", "DS_nb"]:
+                base[f"{metric}_tiny"] = tiny_routes_data.get(metric, "")
+        
         aggregated_rows.append(base)
+    
     def map_grouper(r: Dict[str, Any]) -> int:
         m_name = _norm(r.get("map", ""))
         if "genroads" in m_name:
@@ -203,7 +258,12 @@ def build_table_rq2(results_root: Path, out_dir: Path) -> None:
             return 1
         return 2
     aggregated_rows.sort(key=lambda x: (map_grouper(x), str(x.get("model", ""))))
-    cols = ["sim", "map", "model", "PR", "E_dt", "p95_dt", "E_e", "p95_e", "DS", "BR", "N_nb", "DS_nb"]
+    
+    # Update columns to include tiny routes metrics for CARLA (reordered)
+    cols = ["sim", "map", "model", "PR", "E_dt", "p95_dt", "E_e", "p95_e", "DS_nb", "BR", "N_nb", "DS"]
+    # Add tiny routes columns (they'll be empty for non-CARLA rows) (reordered)
+    cols.extend(["DS_nb_tiny", "BR_tiny", "N_nb_tiny", "DS_tiny"])
+    
     write_csv_ordered(out_dir / "study_table_rq2_generalization.csv", aggregated_rows, cols)
 
 
@@ -297,27 +357,27 @@ def build_pivot_perturbations_independent(results_root: Path, out_dir: Path) -> 
                 pert = p_raw
             grouped[(pert, sev)].append(r)
         def agg_row(items: List[Dict[str, Any]]) -> Tuple[Any, Any, Any, Any]:
-            dss = [float(x["ds_all_mean"]) for x in items if x.get("ds_all_mean") not in [None, ""]]
+            dsnb = [float(x["ds_nb_mean"]) for x in items if x.get("ds_nb_mean") not in [None, ""]]
             brs = [float(x["blocked_rate"]) for x in items if x.get("blocked_rate") not in [None, ""]]
             nbs = [float(x["n_nb"]) for x in items if x.get("n_nb") not in [None, ""]]
-            dsnb = [float(x["ds_nb_mean"]) for x in items if x.get("ds_nb_mean") not in [None, ""]]
-            return (_mean_for_display(dss), _mean_for_display(brs), _mean_for_display(nbs), _mean_for_display(dsnb))
+            dss = [float(x["ds_all_mean"]) for x in items if x.get("ds_all_mean") not in [None, ""]]
+            return (_mean_for_display(dsnb), _mean_for_display(brs), _mean_for_display(nbs), _mean_for_display(dss))
         def sort_key(k: Tuple[str, int]) -> Tuple[float, float, float]:
             pert, sev = k
             if pert == "Baseline":
                 return (float("inf"), float("inf"), float("inf"))
-            ds, br, _, dsnb = agg_row(grouped[k])
-            ds_f = float(ds) if isinstance(ds, (int, float)) else -1.0
-            br_f = float(br) if isinstance(br, (int, float)) else 1.0
-            dsnb_f = float(dsnb) if isinstance(dsnb, (int, float)) else -1.0
-            return (ds_f, -br_f, dsnb_f)
+            dsnb, br, _, ds = agg_row(grouped[k])
+            dsnb_f = float(dsnb) if isinstance(dsnb, (int, float)) else float("-inf")
+            br_f = float(br) if isinstance(br, (int, float)) else float("inf")
+            ds_f = float(ds) if isinstance(ds, (int, float)) else float("-inf")
+            return (dsnb_f, -br_f, ds_f)
         sorted_keys = sorted(list(grouped.keys()), key=sort_key, reverse=True)
         h1 = ["CARLA"] + [""] * 5
-        h2 = ["perturbation", "severity", "DS", "BR", "N_nb", "DS_nb"]
+        h2 = ["perturbation", "severity", "DS_nb", "BR", "N_nb", "DS"]
         d_rows: List[List[Any]] = []
         for (pert, sev) in sorted_keys:
-            ds, br, nb, dsnb = agg_row(grouped[(pert, sev)])
-            d_rows.append([pert, sev, ds, br, nb, dsnb])
+            dsnb, br, nb, ds = agg_row(grouped[(pert, sev)])
+            d_rows.append([pert, sev, dsnb, br, nb, ds])
         write_csv_multiheader(out_dir / "study_table_rq1_robustness_by_perturbation_carla.csv", header_rows=[h1, h2], data_rows=d_rows)
 
 
@@ -554,10 +614,10 @@ def build_table_rq2_carla_detail(results_root: Path, out_dir: Path) -> None:
     """
     CARLA Generalization Table:
     - Rows: Towns 1-6
-    - Columns: Long Routes (DS, BR, N_nb, DS_nb) | Tiny Routes (DS, BR, N_nb, DS_nb)
+    - Columns: Long Routes (DS_nb, BR, N_nb, DS) | Tiny Routes (DS_nb, BR, N_nb, DS)
     - Long Routes: real data from generalization runs
-    - Tiny Routes: placeholder/demo data (will be filled with nominal baseline later)
-    - Sorted by performance (DS desc, BR asc)
+    - Tiny Routes: data from /media/maxim/Elements/maximigenbergs/runs/carla/generalization/tcp/20251231_045136/tcp/
+    - Sorted by performance (DS_nb desc, BR asc, DS desc)
     """
     # Find route_metrics.csv files for carla generalization
     files = _find_files(results_root, "route_metrics.csv")
@@ -584,6 +644,7 @@ def build_table_rq2_carla_detail(results_root: Path, out_dir: Path) -> None:
     long_data: Dict[str, Dict[str, Any]] = {}
     
     for town in towns:
+        # Use same method for all towns
         routes = long_routes_by_town.get(town, [])
         if routes:
             dss = [float(r["driving_score"]) for r in routes if r.get("driving_score") not in [None, ""]]
@@ -602,42 +663,85 @@ def build_table_rq2_carla_detail(results_root: Path, out_dir: Path) -> None:
         else:
             long_data[town] = {"DS": "", "BR": "", "N_nb": "", "DS_nb": ""}
     
-    # Tiny routes: placeholder/demo data
-    # These will be populated with nominal baseline data later
+    # Tiny routes: load data from the specified path
+    tiny_routes_path = Path("/media/maxim/Elements/maximigenbergs/runs/carla/generalization/tcp/20251231_045136/tcp")
     tiny_data: Dict[str, Dict[str, Any]] = {}
+    
     for town in towns:
-        # Demo values - to be replaced with real tiny route data
-        tiny_data[town] = {
-            "DS": "--",  # Placeholder
-            "BR": "--",
-            "N_nb": "--",
-            "DS_nb": "--",
-        }
+        # Use same method for all towns
+        town_path = tiny_routes_path / town
+        if town_path.exists():
+            # Find simulation_results*.json files in this town folder
+            json_files = list(town_path.rglob("simulation_results*.json"))
+            
+            if json_files:
+                # Process the tiny routes data using the same logic as long routes
+                tiny_routes = []
+                for json_file in json_files:
+                    try:
+                        with open(json_file, 'r') as f:
+                            data = json.load(f)
+                        
+                        # Parse routes using existing function
+                        from metrics.io_carla import parse_carla_routes, route_driving_score, is_blocked_route
+                        routes = parse_carla_routes(data)
+                        
+                        for rec in routes:
+                            ds = route_driving_score(rec)
+                            if ds is not None:
+                                tiny_routes.append({
+                                    "driving_score": float(ds),
+                                    "blocked": int(is_blocked_route(rec))
+                                })
+                    except Exception as e:
+                        print(f"Warning: Could not process {json_file}: {e}")
+                        continue
+                
+                if tiny_routes:
+                    dss = [r["driving_score"] for r in tiny_routes]
+                    blocked = [r["blocked"] for r in tiny_routes]
+                    br = sum(blocked) / len(blocked) if blocked else 0
+                    n_nb = sum(1 for b in blocked if b == 0)
+                    ds_nb_vals = [r["driving_score"] for r in tiny_routes if r["blocked"] == 0]
+                    
+                    tiny_data[town] = {
+                        "DS": _mean_for_display(dss),
+                        "BR": br,
+                        "N_nb": n_nb,
+                        "DS_nb": _mean_for_display(ds_nb_vals),
+                    }
+                else:
+                    tiny_data[town] = {"DS": "", "BR": "", "N_nb": "", "DS_nb": ""}
+            else:
+                tiny_data[town] = {"DS": "", "BR": "", "N_nb": "", "DS_nb": ""}
+        else:
+            # Town folder doesn't exist, use empty values
+            tiny_data[town] = {"DS": "", "BR": "", "N_nb": "", "DS_nb": ""}
     
     # Calculate sort scores for each town (based on long routes performance)
-    def _calc_carla_score(ds: Any, br: Any, ds_nb: Any) -> Tuple[float, float, float]:
+    def _calc_carla_score(ds_nb: Any, br: Any, ds: Any) -> Tuple[float, float, float]:
         def _f(v: Any) -> float:
-            return float(v) if isinstance(v, (int, float)) else -1.0
-        v_ds = _f(ds)
-        v_br = _f(br)
+            return float(v) if isinstance(v, (int, float)) and v != "" else float("-inf")
         v_ds_nb = _f(ds_nb)
+        v_br = _f(br)
+        v_ds = _f(ds)
         # For BR, lower is better, so negate it
-        final_br = -v_br if v_br != -1.0 else float("inf")
-        return (v_ds, final_br, v_ds_nb)
+        final_br = -v_br if v_br != float("-inf") else float("inf")
+        return (v_ds_nb, final_br, v_ds)
     
     town_scores: Dict[str, Tuple[float, float, float]] = {}
     for town in towns:
         data = long_data.get(town, {})
-        v_ds = data.get("DS")
-        v_br = data.get("BR")
         v_ds_nb = data.get("DS_nb")
-        town_scores[town] = _calc_carla_score(v_ds, v_br, v_ds_nb)
+        v_br = data.get("BR")
+        v_ds = data.get("DS")
+        town_scores[town] = _calc_carla_score(v_ds_nb, v_br, v_ds)
     
     # Sort towns by performance (descending)
-    sorted_towns = sorted(towns, key=lambda t: town_scores.get(t, (-1, float("inf"), -1)), reverse=True)
+    sorted_towns = sorted(towns, key=lambda t: town_scores.get(t, (float("-inf"), float("inf"), float("-inf"))), reverse=True)
     
     # Build CSV with multi-header
-    metrics = ["DS", "BR", "N_nb", "DS_nb"]
+    metrics = ["DS_nb", "BR", "N_nb", "DS"]  # Reordered: DS_nb first, DS last
     
     # Header row 1: Long Routes | Tiny Routes
     h1 = [""]
@@ -652,10 +756,10 @@ def build_table_rq2_carla_detail(results_root: Path, out_dir: Path) -> None:
     
     for town in sorted_towns:
         row: List[Any] = [town]
-        # Long routes metrics
+        # Long routes metrics (reordered: DS_nb, BR, N_nb, DS)
         for met in metrics:
             row.append(long_data[town].get(met, ""))
-        # Tiny routes metrics (placeholder)
+        # Tiny routes metrics (reordered: DS_nb, BR, N_nb, DS)
         for met in metrics:
             row.append(tiny_data[town].get(met, ""))
         data_rows.append(row)
@@ -775,6 +879,121 @@ def write_normal_table(rows: List[List[str]], caption: str, label: str, digits: 
     out.append("\\end{table}")
     return "\n".join(out)
 
+def write_carla_generalization_subtable(sub_data: List[List[str]], header: List[str], metric_map: Dict[str, int], invert_map: Dict[str, bool], digits: int) -> str:
+    """
+    Write CARLA generalization subtable with proper double headers for Long Routes vs Tiny Routes.
+    """
+    if not sub_data:
+        return ""
+    
+    # Calculate statistics for coloring
+    stats: Dict[str, Tuple[float, float]] = {}
+    for m_name, m_idx in metric_map.items():
+        vals = [float(r[m_idx]) for r in sub_data if m_idx < len(r) and is_number(r[m_idx])]
+        if vals:
+            arr = np.array(vals, dtype=np.float64)
+            stats[m_name] = (float(np.percentile(arr, 5)), float(np.percentile(arr, 95)))
+        else:
+            stats[m_name] = (0.0, 0.0)
+    
+    # Sort by DS_nb (long routes) descending, then BR ascending
+    def sort_key(r: List[str]) -> Tuple[float, float, float]:
+        vals: Dict[str, float] = {}
+        for k, idx in metric_map.items():
+            vals[k] = float(r[idx]) if (idx < len(r) and is_number(r[idx])) else float("-inf")
+        br_val = vals.get("BR", float("inf"))
+        ds_val = vals.get("DS", float("-inf"))
+        return (vals.get("DS_nb", float("-inf")), -br_val, ds_val)
+    
+    sub_data.sort(key=sort_key, reverse=True)
+    
+    inner: List[str] = []
+    inner.append("\\small")
+    
+    # Column specification: Model | Long Routes (4 cols) | Tiny Routes (4 cols)
+    colspec = "l|cccc|cccc"
+    inner.append(f"\\begin{{tabular}}{{{colspec}}}")
+    inner.append("\\toprule")
+    
+    # Title row
+    inner.append("\\multicolumn{9}{c}{\\textbf{CARLA}} \\\\")
+    inner.append("\\midrule")
+    
+    # Route type header row
+    inner.append("Model & \\multicolumn{4}{c|}{Long Routes} & \\multicolumn{4}{c}{Tiny Routes} \\\\")
+    
+    # Metric header row (reordered: DS_nb, BR, N_nb, DS)
+    metric_labels = ["$DS_{nb}$", "BR [\\%]", "$N_{nb}$", "DS"]
+    inner.append(" & " + " & ".join(metric_labels) + " & " + " & ".join(metric_labels) + " \\\\")
+    inner.append("\\midrule")
+    
+    # Data rows
+    for r in sub_data:
+        cells: List[str] = []
+        
+        # Model name
+        try:
+            model_idx = header.index("model")
+            model_name = r[model_idx] if model_idx < len(r) else ""
+            cells.append(escape_latex(model_name))
+        except ValueError:
+            cells.append("--")
+        
+        # Long routes metrics (reordered: DS_nb, BR, N_nb, DS)
+        long_metrics = ["DS_nb", "BR", "N_nb", "DS"]
+        for col_name in long_metrics:
+            try:
+                idx = header.index(col_name)
+                val = r[idx] if idx < len(r) else ""
+                if col_name in metric_map and is_number(val):
+                    v_float = float(val)
+                    p05, p95 = stats.get(col_name, (0.0, 0.0))
+                    inv = invert_map.get(col_name, False)
+                    hex_code = get_neon_bg_color_hex(v_float, p05, p95, invert=inv)
+                    if col_name == "BR":
+                        disp = fmt_percent(val, 1)
+                    elif col_name == "N_nb":
+                        disp = fmt_num(val, 0)
+                    else:
+                        disp = fmt_num(val, digits)
+                    cells.append(f"\\cellcolor[HTML]{{{hex_code}}}{disp}")
+                else:
+                    cells.append("--")
+            except ValueError:
+                cells.append("--")
+        
+        # Tiny routes metrics (reordered: DS_nb_tiny, BR_tiny, N_nb_tiny, DS_tiny)
+        tiny_metrics = ["DS_nb_tiny", "BR_tiny", "N_nb_tiny", "DS_tiny"]
+        for col_name in tiny_metrics:
+            try:
+                idx = header.index(col_name)
+                val = r[idx] if idx < len(r) else ""
+                if col_name in metric_map and is_number(val):
+                    v_float = float(val)
+                    p05, p95 = stats.get(col_name, (0.0, 0.0))
+                    inv = invert_map.get(col_name, False)
+                    hex_code = get_neon_bg_color_hex(v_float, p05, p95, invert=inv)
+                    if col_name == "BR_tiny":
+                        disp = fmt_percent(val, 1)
+                    elif col_name == "N_nb_tiny":
+                        disp = fmt_num(val, 0)
+                    else:
+                        disp = fmt_num(val, digits)
+                    cells.append(f"\\cellcolor[HTML]{{{hex_code}}}{disp}")
+                else:
+                    cells.append("--")
+            except ValueError:
+                cells.append("--")
+        
+        inner.append(" & ".join(cells) + " \\\\")
+    
+    inner.append("\\bottomrule")
+    inner.append("\\end{tabular}%")
+    
+    result = wrap_table_content("\n".join(inner)) + "\n\\vspace{0.5em}"
+    return result
+
+
 def write_split_latex(rows: List[List[str]], caption: str, label: str, digits: int, is_robustness: bool = True) -> str:
     header = [h.strip() for h in rows[0]]
     data = rows[1:]
@@ -787,9 +1006,9 @@ def write_split_latex(rows: List[List[str]], caption: str, label: str, digits: i
     carla_data = [r for r in data if "carla" in str(r[idx_map]).lower()]
     metric_map: Dict[str, int] = {}
     for i, h in enumerate(header):
-        if h in ["PR", "E_dt", "E_e", "DS", "BR", "N_nb", "DS_nb"]:
+        if h in ["PR", "E_dt", "E_e", "DS_nb", "BR", "N_nb", "DS", "DS_nb_tiny", "BR_tiny", "N_nb_tiny", "DS_tiny"]:
             metric_map[h] = i
-    invert_map = {"PR": False, "DS": False, "N_nb": False, "DS_nb": False, "E_dt": True, "E_e": True, "BR": True}
+    invert_map = {"PR": False, "DS_nb": False, "BR": True, "N_nb": False, "DS": False, "E_dt": True, "E_e": True, "DS_nb_tiny": False, "BR_tiny": True, "N_nb_tiny": False, "DS_tiny": False}
     out: List[str] = []
     out.append("\\begin{table}[t]")
     out.append("\\centering")
@@ -801,15 +1020,16 @@ def write_split_latex(rows: List[List[str]], caption: str, label: str, digits: i
         def sort_key(r: List[str]) -> Tuple[float, float, float]:
             vals: Dict[str, float] = {}
             for k, idx in metric_map.items():
-                vals[k] = float(r[idx]) if (idx < len(r) and is_number(r[idx])) else -1.0
+                vals[k] = float(r[idx]) if (idx < len(r) and is_number(r[idx])) else float("-inf")
             if showing_col("DS"):
-                br_val = vals.get("BR", 999.0)
-                return (vals.get("DS", -1.0), -br_val, vals.get("DS_nb", -1.0))
-            v_pr = vals.get("PR", -1.0)
-            raw_dt = vals.get("E_dt", -1.0)
-            v_dt = -raw_dt if raw_dt != -1.0 else float("-inf")
-            raw_e = vals.get("E_e", -1.0)
-            v_e = -raw_e if raw_e != -1.0 else float("-inf")
+                # CARLA: sort by DS_nb first, then BR (lower is better), then DS
+                br_val = vals.get("BR", float("inf"))
+                return (vals.get("DS_nb", float("-inf")), -br_val, vals.get("DS", float("-inf")))
+            v_pr = vals.get("PR", float("-inf"))
+            raw_dt = vals.get("E_dt", float("inf"))
+            v_dt = -raw_dt if raw_dt != float("inf") else float("-inf")
+            raw_e = vals.get("E_e", float("inf"))
+            v_e = -raw_e if raw_e != float("inf") else float("-inf")
             return (v_pr, v_dt, v_e)
         sub_data.sort(key=sort_key, reverse=True)
         stats: Dict[str, Tuple[float, float]] = {}
@@ -846,9 +1066,9 @@ def write_split_latex(rows: List[List[str]], caption: str, label: str, digits: i
                         p05, p95 = stats.get(col_name, (0.0, 0.0))
                         inv = invert_map.get(col_name, False)
                         hex_code = get_neon_bg_color_hex(v_float, p05, p95, invert=inv)
-                        if col_name == "BR":
+                        if col_name in ["BR", "BR_tiny"]:
                             disp = fmt_percent(val, 1)
-                        elif col_name == "N_nb":
+                        elif col_name in ["N_nb", "N_nb_tiny"]:
                             disp = fmt_num(val, 0)
                         else:
                             disp = fmt_num(val, digits)
@@ -869,16 +1089,23 @@ def write_split_latex(rows: List[List[str]], caption: str, label: str, digits: i
         out.append("\\vspace{0.5em}")
     if is_robustness:
         udacity_cols = [("Model", "Model"), ("Severity", "Sev"), ("PR", "PR"), ("E_dt", "$\\mathbb{E}[d_t]$"), ("E_e", "$\\mathbb{E}[|e_t|]$")]
-        carla_cols = [("Model", "Model"), ("Severity", "Sev"), ("DS", "DS"), ("BR", "BR [\\%]"), ("N_nb", "$N_{nb}$"), ("DS_nb", "$DS_{nb}$")]
+        carla_cols = [("Model", "Model"), ("Severity", "Sev"), ("DS_nb", "$DS_{nb}$"), ("BR", "BR [\\%]"), ("N_nb", "$N_{nb}$"), ("DS", "DS")]
         write_subtable(genroads_data, "GenRoads", udacity_cols)
         write_subtable(jungle_data, "Jungle", udacity_cols)
         write_subtable(carla_data, "CARLA", carla_cols)
     else:
         udacity_cols = [("model", "Model"), ("PR", "PR"), ("E_dt", "$\\mathbb{E}[d_t]$"), ("E_e", "$\\mathbb{E}[|e_t|]$")]
-        carla_cols = [("model", "Model"), ("DS", "DS"), ("BR", "BR [\\%]"), ("N_nb", "$N_{nb}$"), ("DS_nb", "$DS_{nb}$")]
-        write_subtable(genroads_data, "GenRoads", udacity_cols)
-        write_subtable(jungle_data, "Jungle", udacity_cols)
-        write_subtable(carla_data, "CARLA", carla_cols)
+        # For CARLA generalization, we need special handling for the double header
+        if carla_data:
+            write_subtable(genroads_data, "GenRoads", udacity_cols)
+            write_subtable(jungle_data, "Jungle", udacity_cols)
+            carla_content = write_carla_generalization_subtable(carla_data, header, metric_map, invert_map, digits)
+            out.append(carla_content)
+        else:
+            carla_cols = [("model", "Model"), ("DS_nb", "$DS_{nb}$"), ("BR", "BR [\\%]"), ("N_nb", "$N_{nb}$"), ("DS", "DS"), ("DS_nb_tiny", "$DS_{nb,tiny}$"), ("BR_tiny", "BR$_{tiny}$ [\\%]"), ("N_nb_tiny", "$N_{nb,tiny}$"), ("DS_tiny", "DS$_{tiny}$")]
+            write_subtable(genroads_data, "GenRoads", udacity_cols)
+            write_subtable(jungle_data, "Jungle", udacity_cols)
+            write_subtable(carla_data, "CARLA", carla_cols)
     out.append(f"\\caption{{{escape_latex(caption)}}}")
     out.append(f"\\label{{{escape_latex(label)}}}")
     out.append("\\end{table}")
@@ -887,8 +1114,11 @@ def write_split_latex(rows: List[List[str]], caption: str, label: str, digits: i
 def write_carla_pivot_latex(rows: List[List[str]], caption: str, label: str, digits: int) -> str:
     data = rows[2:]
     colspec = "lc|cccc"
+    # Reordered columns: DS_nb=2, BR=3, N_nb=4, DS=5
     cols_to_color = [2, 3, 4, 5]
-    invert_cols = [3]
+    invert_cols = [3]  # BR is inverted (index 3)
+    
+    # Calculate stats for coloring
     stats: Dict[int, Tuple[float, float]] = {}
     for c_idx in cols_to_color:
         vals = [float(r[c_idx]) for r in data if c_idx < len(r) and is_number(r[c_idx])]
@@ -897,15 +1127,29 @@ def write_carla_pivot_latex(rows: List[List[str]], caption: str, label: str, dig
             stats[c_idx] = (float(np.percentile(arr, 5)), float(np.percentile(arr, 95)))
         else:
             stats[c_idx] = (0.0, 0.0)
+    
+    # Sort by DS_nb (column 2), then BR (column 3), then DS (column 5)
+    def sort_key(r: List[str]) -> Tuple[float, float, float]:
+        def _f(v: Any, default: float = float("-inf")) -> float:
+            return float(v) if is_number(v) else default
+        ds_nb = _f(r[2] if len(r) > 2 else "")
+        br = _f(r[3] if len(r) > 3 else "", float("inf"))
+        ds = _f(r[5] if len(r) > 5 else "")
+        return (ds_nb, -br, ds)  # DS_nb desc, BR asc (negated), DS desc
+    
+    data.sort(key=sort_key, reverse=True)
+    
     out: List[str] = []
     out.append("\\begin{table}[t]")
     out.append("\\centering")
     inner: List[str] = []
-    inner.append("\\small")
+    inner.append("\\tiny")
     inner.append(f"\\begin{{tabular}}{{{colspec}}}")
     inner.append("\\toprule")
-    inner.append("Perturbation & Sev & DS & BR [\\%] & $N_{nb}$ & $DS_{nb}$ \\\\")
+    # Reordered header: DS_nb, BR, N_nb, DS
+    inner.append("Perturbation & Sev & $DS_{nb}$ & BR [\\%] & $N_{nb}$ & DS \\\\")
     inner.append("\\midrule")
+    
     for r in data:
         cells: List[str] = []
         cells.append(escape_latex(r[0] if len(r) > 0 else ""))
@@ -916,17 +1160,25 @@ def write_carla_pivot_latex(rows: List[List[str]], caption: str, label: str, dig
             sev = 0.0
         sev_col = get_neon_bg_color_hex(sev, 0.0, 4.0, invert=True)
         cells.append(f"\\cellcolor[HTML]{{{sev_col}}}{fmt_num(sev_raw, 0)}")
-        for i in range(2, 6):
+        
+        # Process columns in new order: DS_nb(2), BR(3), N_nb(4), DS(5)
+        for i in [2, 3, 4, 5]:
             if i < len(r) and is_number(r[i]):
                 val = float(r[i])
                 p05, p95 = stats.get(i, (0.0, 0.0))
                 inv = i in invert_cols
                 hex_c = get_neon_bg_color_hex(val, p05, p95, invert=inv)
-                disp = fmt_percent(r[i], 1) if i == 3 else (fmt_num(r[i], 0) if i == 4 else fmt_num(r[i], digits))
+                if i == 3:  # BR
+                    disp = fmt_percent(r[i], 1)
+                elif i == 4:  # N_nb
+                    disp = fmt_num(r[i], 0)
+                else:  # DS_nb, DS
+                    disp = fmt_num(r[i], digits)
                 cells.append(f"\\cellcolor[HTML]{{{hex_c}}}{disp}")
             else:
                 cells.append("--")
         inner.append(" & ".join(cells) + " \\\\")
+    
     inner.append("\\bottomrule")
     inner.append("\\end{tabular}%")
     out.append(wrap_table_content("\n".join(inner)))
@@ -934,6 +1186,7 @@ def write_carla_pivot_latex(rows: List[List[str]], caption: str, label: str, dig
     out.append(f"\\label{{{escape_latex(label)}}}")
     out.append("\\end{table}")
     return "\n".join(out)
+
 
 def looks_like_single_map_pivot(rows: List[List[str]]) -> bool:
     if len(rows) < 4:
@@ -999,10 +1252,10 @@ def write_single_map_pivot_latex(rows: List[List[str]], label: str, digits: int)
     out.append("\\begin{table}[t]")
     out.append("\\centering")
     inner: List[str] = []
-    inner.append("\\small")
+    inner.append("\\tiny")
     colspec = "lc|" + ("c" * len(metrics) + "|") * (len(models) - 1) + ("c" * len(metrics))
     inner.append(f"\\begin{{tabular}}{{{colspec}}}")
-    inner.append("\\hline")
+    inner.append("\\toprule")
     h_models = ["", ""]
     for i, mdl in enumerate(models):
         trailing = "|" if i != (len(models) - 1) else ""
@@ -1013,7 +1266,7 @@ def write_single_map_pivot_latex(rows: List[List[str]], label: str, digits: int)
         for met in metrics:
             h_metrics.append(metric_label.get(met, escape_latex(met)))
     inner.append(" & ".join(h_metrics) + " \\\\")
-    inner.append("\\hline")
+    inner.append("\\midrule")
     for r in data:
         pert = r[0] if len(r) > 0 else ""
         sev_raw = r[1] if len(r) > 1 else "0"
@@ -1040,7 +1293,7 @@ def write_single_map_pivot_latex(rows: List[List[str]], label: str, digits: int)
                 else:
                     row_cells.append("--")
         inner.append(" & ".join(row_cells) + " \\\\")
-    inner.append("\\hline")
+    inner.append("\\bottomrule")
     inner.append("\\end{tabular}%")
     out.append(wrap_table_content("\n".join(inner)))
     out.append(f"\\caption{{{escape_latex(caption)}}}")
@@ -1085,7 +1338,7 @@ def write_genroads_gen_detail_latex(rows: List[List[str]], label: str, digits: i
     inner.append("\\small")
     colspec = "l|" + ("c" * len(metrics) + "|") * (len(models) - 1) + ("c" * len(metrics))
     inner.append(f"\\begin{{tabular}}{{{colspec}}}")
-    inner.append("\\hline")
+    inner.append("\\toprule")
     
     # Model header row
     h_models = [""]
@@ -1100,7 +1353,7 @@ def write_genroads_gen_detail_latex(rows: List[List[str]], label: str, digits: i
         for met in metrics:
             h_metrics.append(metric_label.get(met, escape_latex(met)))
     inner.append(" & ".join(h_metrics) + " \\\\")
-    inner.append("\\hline")
+    inner.append("\\midrule")
     
     # Data rows
     for r in data:
@@ -1122,7 +1375,7 @@ def write_genroads_gen_detail_latex(rows: List[List[str]], label: str, digits: i
                     row_cells.append("--")
         inner.append(" & ".join(row_cells) + " \\\\")
     
-    inner.append("\\hline")
+    inner.append("\\bottomrule")
     inner.append("\\end{tabular}%")
     out.append(wrap_table_content("\n".join(inner)))
     out.append(f"\\caption{{{escape_latex(caption)}}}")
@@ -1167,7 +1420,7 @@ def write_jungle_gen_detail_latex(rows: List[List[str]], label: str, digits: int
     inner.append("\\small")
     colspec = "l|" + ("c" * len(metrics) + "|") * (len(models) - 1) + ("c" * len(metrics))
     inner.append(f"\\begin{{tabular}}{{{colspec}}}")
-    inner.append("\\hline")
+    inner.append("\\toprule")
     
     # Model header row
     h_models = [""]
@@ -1182,7 +1435,7 @@ def write_jungle_gen_detail_latex(rows: List[List[str]], label: str, digits: int
         for met in metrics:
             h_metrics.append(metric_label.get(met, escape_latex(met)))
     inner.append(" & ".join(h_metrics) + " \\\\")
-    inner.append("\\hline")
+    inner.append("\\midrule")
     
     # Data rows
     for r in data:
@@ -1204,7 +1457,7 @@ def write_jungle_gen_detail_latex(rows: List[List[str]], label: str, digits: int
                     row_cells.append("--")
         inner.append(" & ".join(row_cells) + " \\\\")
     
-    inner.append("\\hline")
+    inner.append("\\bottomrule")
     inner.append("\\end{tabular}%")
     out.append(wrap_table_content("\n".join(inner)))
     out.append(f"\\caption{{{escape_latex(caption)}}}")
@@ -1217,34 +1470,36 @@ def write_carla_gen_detail_latex(rows: List[List[str]], label: str, digits: int)
     """
     Write LaTeX for CARLA generalization detail table.
     Rows: Town
-    Columns: Long Routes (DS, BR, N_nb, DS_nb) | Tiny Routes (DS, BR, N_nb, DS_nb)
+    Columns: Long Routes (DS_nb, BR, N_nb, DS) | Tiny Routes (DS_nb, BR, N_nb, DS)
     Already sorted by performance in CSV generation.
     """
     caption = "Generalization results per town (CARLA): Long Routes vs Tiny Routes (nominal) (sorted descending by performance)"
     data = rows[2:]  # Skip 2 header rows
     metrics = ["DS", "BR", "N_nb", "DS_nb"]
     
-    # Calculate stats for coloring (separate for long and tiny)
+    # Calculate stats for coloring (separate for long and tiny) - reordered metrics
     stats_long: Dict[int, Tuple[float, float]] = {}
     stats_tiny: Dict[int, Tuple[float, float]] = {}
-    invert_map = {1: False, 2: True, 3: False, 4: False}  # BR is inverted
     
-    for m_idx in range(len(metrics)):
-        # Long routes: columns 1-4
-        vals_long = [float(r[1 + m_idx]) for r in data if 1 + m_idx < len(r) and is_number(r[1 + m_idx])]
+    # Use the correct indices that match the CSV structure and rendering
+    long_indices = [1, 2, 3, 4]  # DS_nb, BR, N_nb, DS (matches CSV and rendering)
+    tiny_indices = [5, 6, 7, 8]  # DS_nb_tiny, BR_tiny, N_nb_tiny, DS_tiny (matches CSV and rendering)
+    
+    for new_idx, old_idx in enumerate(long_indices):
+        vals_long = [float(r[old_idx]) for r in data if old_idx < len(r) and is_number(r[old_idx])]
         if vals_long:
             arr = np.array(vals_long, dtype=np.float64)
-            stats_long[m_idx] = (float(np.percentile(arr, 5)), float(np.percentile(arr, 95)))
+            stats_long[new_idx] = (float(np.percentile(arr, 5)), float(np.percentile(arr, 95)))
         else:
-            stats_long[m_idx] = (0.0, 0.0)
-        
-        # Tiny routes: columns 5-8
-        vals_tiny = [float(r[5 + m_idx]) for r in data if 5 + m_idx < len(r) and is_number(r[5 + m_idx])]
+            stats_long[new_idx] = (0.0, 0.0)
+    
+    for new_idx, old_idx in enumerate(tiny_indices):
+        vals_tiny = [float(r[old_idx]) for r in data if old_idx < len(r) and is_number(r[old_idx])]
         if vals_tiny:
             arr = np.array(vals_tiny, dtype=np.float64)
-            stats_tiny[m_idx] = (float(np.percentile(arr, 5)), float(np.percentile(arr, 95)))
+            stats_tiny[new_idx] = (float(np.percentile(arr, 5)), float(np.percentile(arr, 95)))
         else:
-            stats_tiny[m_idx] = (0.0, 0.0)
+            stats_tiny[new_idx] = (0.0, 0.0)
     
     out: List[str] = []
     out.append("\\begin{table}[t]")
@@ -1253,33 +1508,33 @@ def write_carla_gen_detail_latex(rows: List[List[str]], label: str, digits: int)
     inner.append("\\small")
     colspec = "l|cccc|cccc"
     inner.append(f"\\begin{{tabular}}{{{colspec}}}")
-    inner.append("\\hline")
+    inner.append("\\toprule")
     
     # Route type header row
     inner.append(r"& \multicolumn{4}{c|}{Long Routes} & \multicolumn{4}{c}{Tiny Routes} \\")
     
-    # Metric header row
-    metric_labels = ["DS", "BR [\\%]", "$N_{nb}$", "$DS_{nb}$"]
+    # Metric header row (reordered: DS_nb, BR, N_nb, DS)
+    metric_labels = ["$DS_{nb}$", "BR [\\%]", "$N_{nb}$", "DS"]
     inner.append("Town & " + " & ".join(metric_labels) + " & " + " & ".join(metric_labels) + " \\\\")
-    inner.append("\\hline")
+    inner.append("\\midrule")
     
     # Data rows
     for r in data:
         town = r[0] if len(r) > 0 else ""
         row_cells: List[str] = [escape_latex(town)]
         
-        # Long routes metrics (columns 1-4)
-        for m_idx in range(len(metrics)):
-            col_idx = 1 + m_idx
+        # Long routes metrics (correct order: DS_nb=1, BR=2, N_nb=3, DS=4)
+        long_indices = [1, 2, 3, 4]  # DS_nb, BR, N_nb, DS
+        for i, col_idx in enumerate(long_indices):
             val_str = r[col_idx] if col_idx < len(r) else ""
             if is_number(val_str):
                 val = float(val_str)
-                p05, p95 = stats_long.get(m_idx, (0.0, 0.0))
-                inv = m_idx == 1  # BR is inverted
+                p05, p95 = stats_long.get(i, (0.0, 0.0))
+                inv = i == 1  # BR is inverted (index 1 in reordered list)
                 hex_c = get_neon_bg_color_hex(val, p05, p95, invert=inv)
-                if m_idx == 1:  # BR
+                if i == 1:  # BR
                     disp = fmt_percent(val_str, 1)
-                elif m_idx == 2:  # N_nb
+                elif i == 2:  # N_nb
                     disp = fmt_num(val_str, 0)
                 else:
                     disp = fmt_num(val_str, digits)
@@ -1287,18 +1542,18 @@ def write_carla_gen_detail_latex(rows: List[List[str]], label: str, digits: int)
             else:
                 row_cells.append("--")
         
-        # Tiny routes metrics (columns 5-8)
-        for m_idx in range(len(metrics)):
-            col_idx = 5 + m_idx
+        # Tiny routes metrics (correct order: DS_nb_tiny=5, BR_tiny=6, N_nb_tiny=7, DS_tiny=8)
+        tiny_indices = [5, 6, 7, 8]  # DS_nb_tiny, BR_tiny, N_nb_tiny, DS_tiny
+        for i, col_idx in enumerate(tiny_indices):
             val_str = r[col_idx] if col_idx < len(r) else ""
             if is_number(val_str):
                 val = float(val_str)
-                p05, p95 = stats_tiny.get(m_idx, (0.0, 0.0))
-                inv = m_idx == 1  # BR is inverted
+                p05, p95 = stats_tiny.get(i, (0.0, 0.0))
+                inv = i == 1  # BR is inverted (index 1 in reordered list)
                 hex_c = get_neon_bg_color_hex(val, p05, p95, invert=inv)
-                if m_idx == 1:  # BR
+                if i == 1:  # BR
                     disp = fmt_percent(val_str, 1)
-                elif m_idx == 2:  # N_nb
+                elif i == 2:  # N_nb
                     disp = fmt_num(val_str, 0)
                 else:
                     disp = fmt_num(val_str, digits)
@@ -1308,7 +1563,7 @@ def write_carla_gen_detail_latex(rows: List[List[str]], label: str, digits: int)
         
         inner.append(" & ".join(row_cells) + " \\\\")
     
-    inner.append("\\hline")
+    inner.append("\\bottomrule")
     inner.append("\\end{tabular}%")
     out.append(wrap_table_content("\n".join(inner)))
     out.append(f"\\caption{{{escape_latex(caption)}}}")
