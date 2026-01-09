@@ -9,12 +9,12 @@ udacity:
 models:
   default_model: "dave2_gru"
   dave2:
-    checkpoint: "dave2/jungle_20251107-173326/best_model.h5"
+    checkpoint: "dave2/jungle_20251209-175046/best_model.h5"
     image_size_hw: [120, 160]
     normalize: "imagenet"
 
   dave2_gru:
-    checkpoint: "dave2_gru/jungle_20251103-150739/best_model.h5"
+    checkpoint: "dave2_gru/jungle_20251201-142321/best_model.h5"
     image_size_hw: [120, 160]
     normalize: "imagenet"
 

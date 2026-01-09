@@ -16,8 +16,8 @@ VAL_SPLIT = 0.20
 RANDOM_SEED = 42
 BATCH_SIZE = 128
 EPOCHS = 2000
-PATIENCE = 50
+PATIENCE = 32
 AUGMENTATIONS = []
 
 SEQ_LEN = 3
-STRIDE = 2 # frames between sequences
+STRIDE = 1 # frames between sequences

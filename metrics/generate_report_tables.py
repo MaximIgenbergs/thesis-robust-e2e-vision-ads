@@ -385,6 +385,120 @@ def build_pivot_perturbations_independent(results_root: Path, out_dir: Path) -> 
 # PART 1C: NEW Generalization Detail Tables (RQ2)
 # ==============================================================================
 
+def build_table_rq2_genroads_by_scenario(results_root: Path, out_dir: Path) -> None:
+    """
+    GenRoads Generalization Table by Scenario Type:
+    - Rows: scenario types (e.g., chicane_lr, hairpin_l, wide_hairpin_r, etc.)
+    - Columns: 3 models (dave2, dave2_gru, vit) × 3 metrics (PR, E_dt, E_e)
+    - Aggregation: For each (scenario_type, model) combination, average over ALL episodes of that scenario type
+    - Sorted by performance (PR desc, dt asc, e asc)
+    """
+    # Find entry_metrics.csv files for genroads generalization
+    files = _find_files(results_root, "entry_metrics.csv")
+    
+    all_entries: List[Dict[str, Any]] = []
+    for fp in files:
+        # Only include genroads generalization data
+        path_str = str(fp).lower()
+        if "genroads" in path_str and "generalization" in path_str:
+            all_entries.extend(_load_all_rows_csv(fp))
+    
+    if not all_entries:
+        print("WARNING: No GenRoads generalization entry_metrics.csv found")
+        return
+    
+    models = ["dave2", "dave2_gru", "vit"]
+    
+    # Group entries by (scenario_type, model) - using task_id as scenario type
+    grouped: Dict[Tuple[str, str], List[Dict[str, Any]]] = defaultdict(list)
+    scenarios_seen: set = set()
+    
+    for entry in all_entries:
+        model = _norm(entry.get("model", ""))
+        if model not in models:
+            continue
+        
+        # Use 'task_id' field as the scenario type
+        scenario_type = str(entry.get("task_id", "unknown"))
+        scenarios_seen.add(scenario_type)
+        grouped[(scenario_type, model)].append(entry)
+    
+    if not scenarios_seen:
+        print("WARNING: No scenario types found in GenRoads generalization data")
+        return
+    
+    # Build aggregated data
+    # idx[(scenario_type, model)] = {PR: ..., E_dt: ..., E_e: ...}
+    idx: Dict[Tuple[str, str], Dict[str, Any]] = {}
+    
+    for (scenario_type, model), entries in grouped.items():
+        # Aggregate metrics
+        prs = [float(e["is_success"]) for e in entries if e.get("is_success") is not None]
+        dts = [float(e["pid_dev_mean_pre"]) for e in entries if e.get("pid_dev_mean_pre") not in [None, ""]]
+        es = [float(e["xte_abs_mean_pre"]) for e in entries if e.get("xte_abs_mean_pre") not in [None, ""]]
+        
+        idx[(scenario_type, model)] = {
+            "PR": _mean_for_display(prs),
+            "E_dt": _mean_for_display(dts),
+            "E_e": _mean_for_display(es),
+        }
+    
+    # Calculate sort scores for each scenario type (average across models)
+    scenario_scores: Dict[str, Tuple[float, float, float]] = {}
+    for scenario_type in scenarios_seen:
+        prs_for_score: List[float] = []
+        dts_for_score: List[float] = []
+        es_for_score: List[float] = []
+        for mdl in models:
+            data = idx.get((scenario_type, mdl), {})
+            v_pr = data.get("PR")
+            v_dt = data.get("E_dt")
+            v_e = data.get("E_e")
+            if isinstance(v_pr, (int, float)):
+                prs_for_score.append(float(v_pr))
+            if isinstance(v_dt, (int, float)):
+                dts_for_score.append(float(v_dt))
+            if isinstance(v_e, (int, float)):
+                es_for_score.append(float(v_e))
+        scenario_scores[scenario_type] = _calc_perf_score(
+            _safe_mean(prs_for_score),
+            _safe_mean(dts_for_score),
+            _safe_mean(es_for_score)
+        )
+    
+    # Sort scenario types by performance (descending)
+    sorted_scenarios = sorted(list(scenarios_seen), key=lambda s: scenario_scores.get(s, (-1, float("-inf"), float("-inf"))), reverse=True)
+    
+    # Build CSV with multi-header
+    metrics = ["PR", "E_dt", "E_e"]
+    
+    # Header row 1: genroads spanning all model columns
+    h1 = [""]
+    h1.extend(["genroads"] + [""] * (len(models) * len(metrics) - 1))
+    
+    # Header row 2: model names
+    h2 = [""]
+    for mdl in models:
+        h2.extend([mdl] + [""] * (len(metrics) - 1))
+    
+    # Header row 3: metric names
+    h3 = ["scenario"] + metrics * len(models)
+    
+    # Build data rows (sorted by performance)
+    data_rows: List[List[Any]] = []
+    for scenario_type in sorted_scenarios:
+        row: List[Any] = [scenario_type]
+        for mdl in models:
+            data = idx.get((scenario_type, mdl), {})
+            for met in metrics:
+                row.append(data.get(met, ""))
+        data_rows.append(row)
+    
+    fname = "study_table_rq2_generalization_genroads_by_scenario.csv"
+    write_csv_multiheader(out_dir / fname, header_rows=[h1, h2, h3], data_rows=data_rows)
+    print(f"[OK] Built GenRoads generalization by scenario table: {len(data_rows)} rows (scenario types)")
+
+
 def build_table_rq2_genroads_detail(results_root: Path, out_dir: Path) -> None:
     """
     GenRoads Generalization Table:
@@ -499,6 +613,143 @@ def build_table_rq2_genroads_detail(results_root: Path, out_dir: Path) -> None:
     print(f"[OK] Built GenRoads generalization detail table: {len(data_rows)} rows (roads)")
 
 
+def build_table_rq2_genroads_scenarios(results_root: Path, out_dir: Path) -> None:
+    """
+    GenRoads Generalization Table by Scenario Types:
+    - Rows: scenario types (baseline, btap, sbias, sfreeze, sgain, spulse, tboost)
+    - Columns: 3 models (dave2, dave2_gru, vit) × 3 metrics (PR, E_dt, E_e)
+    - Aggregation: For each (scenario_type, model) combination, average over ALL perturbations and roads in that scenario type
+    - Sorted by performance (PR desc, dt asc, e asc)
+    """
+    # Find entry_metrics.csv files for genroads generalization
+    files = _find_files(results_root, "entry_metrics.csv")
+    
+    all_entries: List[Dict[str, Any]] = []
+    for fp in files:
+        # Only include genroads generalization data
+        path_str = str(fp).lower()
+        if "genroads" in path_str and "generalization" in path_str:
+            all_entries.extend(_load_all_rows_csv(fp))
+    
+    if not all_entries:
+        print("WARNING: No GenRoads generalization entry_metrics.csv found")
+        return
+    
+    models = ["dave2", "dave2_gru", "vit"]
+    
+    # Define scenario type mapping based on perturbation prefixes
+    def get_scenario_type(perturbation: str) -> str:
+        pert = str(perturbation).lower().strip()
+        if pert == "baseline":
+            return "baseline"
+        elif pert.startswith("btap"):
+            return "btap"
+        elif pert.startswith("sbias"):
+            return "sbias"
+        elif pert.startswith("sfreeze"):
+            return "sfreeze"
+        elif pert.startswith("sgain"):
+            return "sgain"
+        elif pert.startswith("spulse"):
+            return "spulse"
+        elif pert.startswith("tboost"):
+            return "tboost"
+        else:
+            return "unknown"
+    
+    # Group entries by (scenario_type, model)
+    grouped: Dict[Tuple[str, str], List[Dict[str, Any]]] = defaultdict(list)
+    scenario_types_seen: set = set()
+    
+    for entry in all_entries:
+        model = _norm(entry.get("model", ""))
+        if model not in models:
+            continue
+        
+        perturbation = str(entry.get("perturbation", ""))
+        scenario_type = get_scenario_type(perturbation)
+        if scenario_type == "unknown":
+            continue
+            
+        scenario_types_seen.add(scenario_type)
+        grouped[(scenario_type, model)].append(entry)
+    
+    if not scenario_types_seen:
+        print("WARNING: No scenario types found in GenRoads generalization data")
+        return
+    
+    # Build aggregated data
+    # idx[(scenario_type, model)] = {PR: ..., E_dt: ..., E_e: ...}
+    idx: Dict[Tuple[str, str], Dict[str, Any]] = {}
+    
+    for (scenario_type, model), entries in grouped.items():
+        # Aggregate metrics
+        prs = [float(e["is_success"]) for e in entries if e.get("is_success") is not None]
+        dts = [float(e["pid_dev_mean_pre"]) for e in entries if e.get("pid_dev_mean_pre") not in [None, ""]]
+        es = [float(e["xte_abs_mean_pre"]) for e in entries if e.get("xte_abs_mean_pre") not in [None, ""]]
+        
+        idx[(scenario_type, model)] = {
+            "PR": _mean_for_display(prs),
+            "E_dt": _mean_for_display(dts),
+            "E_e": _mean_for_display(es),
+        }
+    
+    # Calculate sort scores for each scenario type (average across models)
+    scenario_scores: Dict[str, Tuple[float, float, float]] = {}
+    for scenario_type in scenario_types_seen:
+        prs_for_score: List[float] = []
+        dts_for_score: List[float] = []
+        es_for_score: List[float] = []
+        for mdl in models:
+            data = idx.get((scenario_type, mdl), {})
+            v_pr = data.get("PR")
+            v_dt = data.get("E_dt")
+            v_e = data.get("E_e")
+            if isinstance(v_pr, (int, float)):
+                prs_for_score.append(float(v_pr))
+            if isinstance(v_dt, (int, float)):
+                dts_for_score.append(float(v_dt))
+            if isinstance(v_e, (int, float)):
+                es_for_score.append(float(v_e))
+        scenario_scores[scenario_type] = _calc_perf_score(
+            _safe_mean(prs_for_score),
+            _safe_mean(dts_for_score),
+            _safe_mean(es_for_score)
+        )
+    
+    # Sort scenario types by performance (descending)
+    sorted_scenarios = sorted(list(scenario_types_seen), key=lambda s: scenario_scores.get(s, (-1, float("-inf"), float("-inf"))), reverse=True)
+    
+    # Build CSV with multi-header
+    metrics = ["PR", "E_dt", "E_e"]
+    
+    # Header row 1: genroads spanning all model columns
+    h1 = [""]
+    h1.extend(["genroads"] + [""] * (len(models) * len(metrics) - 1))
+    
+    # Header row 2: model names
+    h2 = [""]
+    for mdl in models:
+        h2.extend([mdl] + [""] * (len(metrics) - 1))
+    
+    # Header row 3: metric names
+    h3 = ["scenario"] + metrics * len(models)
+    
+    # Build data rows (sorted by performance)
+    data_rows: List[List[Any]] = []
+    for scenario_type in sorted_scenarios:
+        row: List[Any] = [scenario_type]
+        for mdl in models:
+            data = idx.get((scenario_type, mdl), {})
+            for met in metrics:
+                row.append(data.get(met, ""))
+        data_rows.append(row)
+    
+    fname = "study_table_rq2_generalization_genroads_scenarios.csv"
+    write_csv_multiheader(out_dir / fname, header_rows=[h1, h2, h3], data_rows=data_rows)
+    print(f"[OK] Built GenRoads generalization scenarios table: {len(data_rows)} rows (scenario types)")
+
+
 def build_table_rq2_jungle_detail(results_root: Path, out_dir: Path) -> None:
     """
     Jungle Generalization Table:
@@ -608,6 +859,117 @@ def build_table_rq2_jungle_detail(results_root: Path, out_dir: Path) -> None:
     fname = "study_table_rq2_generalization_jungle_detail.csv"
     write_csv_multiheader(out_dir / fname, header_rows=[h1, h2, h3], data_rows=data_rows)
     print(f"[OK] Built Jungle generalization detail table: {len(data_rows)} rows (segments)")
+
+
+def build_table_rq1_jungle_detail(results_root: Path, out_dir: Path) -> None:
+    """
+    Jungle Robustness Table:
+    - Rows: segments (task_id/segment names)
+    - Columns: 3 models × 3 metrics (PR, E_dt, E_e)
+    - Aggregation: Average over all episodes (runs) per segment per model
+    - Sorted by performance (PR desc, dt asc, e asc)
+    """
+    # Find entry_metrics.csv files for jungle robustness
+    files = _find_files(results_root, "entry_metrics.csv")
+    
+    all_entries: List[Dict[str, Any]] = []
+    for fp in files:
+        path_str = str(fp).lower()
+        if "jungle" in path_str and "robustness" in path_str:
+            all_entries.extend(_load_all_rows_csv(fp))
+    
+    if not all_entries:
+        print("WARNING: No Jungle robustness entry_metrics.csv found")
+        return
+    
+    models = ["dave2", "dave2_gru", "vit"]
+    
+    # Group entries by (segment/task_id, model)
+    grouped: Dict[Tuple[str, str], List[Dict[str, Any]]] = defaultdict(list)
+    segments_seen: set = set()
+    
+    for entry in all_entries:
+        model = _norm(entry.get("model", ""))
+        if model not in models:
+            continue
+        
+        segment = str(entry.get("task_id", "unknown"))
+        segments_seen.add(segment)
+        grouped[(segment, model)].append(entry)
+    
+    if not segments_seen:
+        print("WARNING: No segments found in Jungle robustness data")
+        return
+    
+    # Build aggregated data
+    idx: Dict[Tuple[str, str], Dict[str, Any]] = {}
+    
+    for (segment, model), entries in grouped.items():
+        prs = [float(e["is_success"]) for e in entries if e.get("is_success") is not None]
+        dts = [float(e["pid_dev_mean_pre"]) for e in entries if e.get("pid_dev_mean_pre") not in [None, ""]]
+        es = [float(e["xte_abs_mean_pre"]) for e in entries if e.get("xte_abs_mean_pre") not in [None, ""]]
+        
+        idx[(segment, model)] = {
+            "PR": _mean_for_display(prs),
+            "E_dt": _mean_for_display(dts),
+            "E_e": _mean_for_display(es),
+        }
+    
+    # Calculate sort scores for each segment (average across models)
+    segment_scores: Dict[str, Tuple[float, float, float]] = {}
+    for segment in segments_seen:
+        prs_for_score: List[float] = []
+        dts_for_score: List[float] = []
+        es_for_score: List[float] = []
+        for mdl in models:
+            data = idx.get((segment, mdl), {})
+            v_pr = data.get("PR")
+            v_dt = data.get("E_dt")
+            v_e = data.get("E_e")
+            if isinstance(v_pr, (int, float)):
+                prs_for_score.append(float(v_pr))
+            if isinstance(v_dt, (int, float)):
+                dts_for_score.append(float(v_dt))
+            if isinstance(v_e, (int, float)):
+                es_for_score.append(float(v_e))
+        segment_scores[segment] = _calc_perf_score(
+            _safe_mean(prs_for_score),
+            _safe_mean(dts_for_score),
+            _safe_mean(es_for_score)
+        )
+    
+    # Sort segments by performance (descending)
+    sorted_segments = sorted(list(segments_seen), key=lambda s: segment_scores.get(s, (-1, float("-inf"), float("-inf"))), reverse=True)
+    
+    # Build CSV with multi-header
+    metrics = ["PR", "E_dt", "E_e"]
+    
+    # Header row 1: jungle spanning all model columns
+    h1 = [""]
+    h1.extend(["jungle"] + [""] * (len(models) * len(metrics) - 1))
+    
+    # Header row 2: model names
+    h2 = [""]
+    for mdl in models:
+        h2.extend([mdl] + [""] * (len(metrics) - 1))
+    
+    # Header row 3: metric names
+    h3 = ["segment"] + metrics * len(models)
+    
+    # Build data rows (sorted by performance)
+    data_rows: List[List[Any]] = []
+    
+    for segment in sorted_segments:
+        row: List[Any] = [segment]
+        for mdl in models:
+            data = idx.get((segment, mdl), {})
+            for met in metrics:
+                row.append(data.get(met, ""))
+        data_rows.append(row)
+    
+    fname = "study_table_rq1_robustness_jungle_detail.csv"
+    write_csv_multiheader(out_dir / fname, header_rows=[h1, h2, h3], data_rows=data_rows)
+    print(f"[OK] Built Jungle robustness detail table: {len(data_rows)} rows (segments)")
 
 
 def build_table_rq2_carla_detail(results_root: Path, out_dir: Path) -> None:
@@ -1206,6 +1568,22 @@ def looks_like_genroads_gen_detail(rows: List[List[str]]) -> bool:
     # Now we just have 'road' as the first column
     return str(h3[0]).strip().lower() == "road"
 
+
+def looks_like_genroads_gen_scenarios(rows: List[List[str]]) -> bool:
+    """Check if this is a GenRoads generalization scenarios table (scenario only)."""
+    if len(rows) < 4:
+        print(f"DEBUG: genroads_gen_scenarios - not enough rows: {len(rows)}")
+        return False
+    h3 = rows[2]
+    if len(h3) < 1:
+        print(f"DEBUG: genroads_gen_scenarios - empty row 3")
+        return False
+    # Now we just have 'scenario' as the first column
+    first_col = str(h3[0]).strip().lower()
+    result = first_col == "scenario"
+    print(f"DEBUG: genroads_gen_scenarios - first_col='{first_col}', result={result}")
+    return result
+
 def looks_like_jungle_gen_detail(rows: List[List[str]]) -> bool:
     """Check if this is a Jungle generalization detail table (segment)."""
     if len(rows) < 4:
@@ -1214,6 +1592,22 @@ def looks_like_jungle_gen_detail(rows: List[List[str]]) -> bool:
     if len(h3) < 1:
         return False
     return str(h3[0]).strip().lower() == "segment"
+
+
+def looks_like_jungle_rob_detail(rows: List[List[str]]) -> bool:
+    """Check if this is a Jungle robustness detail table (segment)."""
+    if len(rows) < 4:
+        print(f"DEBUG: jungle_rob_detail - not enough rows: {len(rows)}")
+        return False
+    h3 = rows[2]
+    if len(h3) < 1:
+        print(f"DEBUG: jungle_rob_detail - empty row 3")
+        return False
+    # Check if it's a segment table and if the filename suggests robustness
+    first_col = str(h3[0]).strip().lower()
+    result = first_col == "segment"
+    print(f"DEBUG: jungle_rob_detail - first_col='{first_col}', result={result}")
+    return result
 
 def looks_like_carla_gen_detail(rows: List[List[str]]) -> bool:
     """Check if this is a CARLA generalization detail table (Town, Long/Tiny routes)."""
@@ -1384,6 +1778,88 @@ def write_genroads_gen_detail_latex(rows: List[List[str]], label: str, digits: i
     return "\n".join(out)
 
 
+def write_genroads_gen_scenarios_latex(rows: List[List[str]], label: str, digits: int) -> str:
+    """
+    Write LaTeX for GenRoads generalization scenarios table.
+    Rows: scenario type
+    Columns: 3 models × 3 metrics (PR, E_dt, E_e)
+    Already sorted by performance in CSV generation.
+    """
+    caption = "Generalization results per scenario type (GenRoads) (sorted descending by performance)"
+    data = rows[3:]  # Skip 3 header rows
+    models = ["dave2", "dave2_gru", "vit"]
+    metrics = ["PR", "E_dt", "E_e"]
+    metric_label = {"PR": r"$\mathrm{PR}$", "E_dt": r"$\mathbb{E}[d_t]$", "E_e": r"$\mathbb{E}[|e_t|]$"}
+    start_col = 1  # After scenario only
+    
+    # Calculate stats for coloring
+    stats: Dict[int, Tuple[float, float]] = {}
+    for m_idx in range(len(metrics)):
+        vals: List[float] = []
+        col_indices = [start_col + m_idx + (len(metrics) * mdl_i) for mdl_i in range(len(models))]
+        for r in data:
+            for c in col_indices:
+                if c < len(r) and is_number(r[c]):
+                    vals.append(float(r[c]))
+        if vals:
+            arr = np.array(vals, dtype=np.float64)
+            stats[m_idx] = (float(np.percentile(arr, 5)), float(np.percentile(arr, 95)))
+        else:
+            stats[m_idx] = (0.0, 0.0)
+    
+    out: List[str] = []
+    out.append("\\begin{table}[t]")
+    out.append("\\centering")
+    inner: List[str] = []
+    inner.append("\\small")
+    colspec = "l|" + ("c" * len(metrics) + "|") * (len(models) - 1) + ("c" * len(metrics))
+    inner.append(f"\\begin{{tabular}}{{{colspec}}}")
+    inner.append("\\toprule")
+    
+    # Model header row
+    h_models = [""]
+    for i, mdl in enumerate(models):
+        trailing = "|" if i != (len(models) - 1) else ""
+        h_models.append(rf"\multicolumn{{{len(metrics)}}}{{c{trailing}}}{{{escape_latex(mdl)}}}")
+    inner.append(" & ".join(h_models) + " \\\\")
+    
+    # Metric header row
+    h_metrics = ["Scenario"]
+    for _ in models:
+        for met in metrics:
+            h_metrics.append(metric_label.get(met, escape_latex(met)))
+    inner.append(" & ".join(h_metrics) + " \\\\")
+    inner.append("\\midrule")
+    
+    # Data rows
+    for r in data:
+        scenario = r[0] if len(r) > 0 else ""
+        row_cells: List[str] = [escape_latex(scenario)]
+        
+        for k_mdl in range(len(models)):
+            for k_met in range(len(metrics)):
+                col_idx = start_col + (k_mdl * len(metrics)) + k_met
+                val_str = r[col_idx] if col_idx < len(r) else ""
+                if is_number(val_str):
+                    val = float(val_str)
+                    p05, p95 = stats.get(k_met, (0.0, 0.0))
+                    inv = metrics[k_met] != "PR"
+                    hex_c = get_neon_bg_color_hex(val, p05, p95, invert=inv)
+                    disp = fmt_num(val_str, digits)
+                    row_cells.append(f"\\cellcolor[HTML]{{{hex_c}}}{disp}")
+                else:
+                    row_cells.append("--")
+        inner.append(" & ".join(row_cells) + " \\\\")
+    
+    inner.append("\\bottomrule")
+    inner.append("\\end{tabular}%")
+    out.append(wrap_table_content("\n".join(inner)))
+    out.append(f"\\caption{{{escape_latex(caption)}}}")
+    out.append(f"\\label{{{escape_latex(label)}}}")
+    out.append("\\end{table}")
+    return "\n".join(out)
+
+
 def write_jungle_gen_detail_latex(rows: List[List[str]], label: str, digits: int) -> str:
     """
     Write LaTeX for Jungle generalization detail table.
@@ -1392,6 +1868,88 @@ def write_jungle_gen_detail_latex(rows: List[List[str]], label: str, digits: int
     Already sorted by performance in CSV generation.
     """
     caption = "Generalization results per segment (Jungle) (sorted descending by performance)"
+    data = rows[3:]  # Skip 3 header rows
+    models = ["dave2", "dave2_gru", "vit"]
+    metrics = ["PR", "E_dt", "E_e"]
+    metric_label = {"PR": r"$\mathrm{PR}$", "E_dt": r"$\mathbb{E}[d_t]$", "E_e": r"$\mathbb{E}[|e_t|]$"}
+    start_col = 1  # After segment
+    
+    # Calculate stats for coloring
+    stats: Dict[int, Tuple[float, float]] = {}
+    for m_idx in range(len(metrics)):
+        vals: List[float] = []
+        col_indices = [start_col + m_idx + (len(metrics) * mdl_i) for mdl_i in range(len(models))]
+        for r in data:
+            for c in col_indices:
+                if c < len(r) and is_number(r[c]):
+                    vals.append(float(r[c]))
+        if vals:
+            arr = np.array(vals, dtype=np.float64)
+            stats[m_idx] = (float(np.percentile(arr, 5)), float(np.percentile(arr, 95)))
+        else:
+            stats[m_idx] = (0.0, 0.0)
+    
+    out: List[str] = []
+    out.append("\\begin{table}[t]")
+    out.append("\\centering")
+    inner: List[str] = []
+    inner.append("\\small")
+    colspec = "l|" + ("c" * len(metrics) + "|") * (len(models) - 1) + ("c" * len(metrics))
+    inner.append(f"\\begin{{tabular}}{{{colspec}}}")
+    inner.append("\\toprule")
+    
+    # Model header row
+    h_models = [""]
+    for i, mdl in enumerate(models):
+        trailing = "|" if i != (len(models) - 1) else ""
+        h_models.append(rf"\multicolumn{{{len(metrics)}}}{{c{trailing}}}{{{escape_latex(mdl)}}}")
+    inner.append(" & ".join(h_models) + " \\\\")
+    
+    # Metric header row
+    h_metrics = ["Segment"]
+    for _ in models:
+        for met in metrics:
+            h_metrics.append(metric_label.get(met, escape_latex(met)))
+    inner.append(" & ".join(h_metrics) + " \\\\")
+    inner.append("\\midrule")
+    
+    # Data rows
+    for r in data:
+        segment = r[0] if len(r) > 0 else ""
+        row_cells: List[str] = [escape_latex(segment)]
+        
+        for k_mdl in range(len(models)):
+            for k_met in range(len(metrics)):
+                col_idx = start_col + (k_mdl * len(metrics)) + k_met
+                val_str = r[col_idx] if col_idx < len(r) else ""
+                if is_number(val_str):
+                    val = float(val_str)
+                    p05, p95 = stats.get(k_met, (0.0, 0.0))
+                    inv = metrics[k_met] != "PR"
+                    hex_c = get_neon_bg_color_hex(val, p05, p95, invert=inv)
+                    disp = fmt_num(val_str, digits)
+                    row_cells.append(f"\\cellcolor[HTML]{{{hex_c}}}{disp}")
+                else:
+                    row_cells.append("--")
+        inner.append(" & ".join(row_cells) + " \\\\")
+    
+    inner.append("\\bottomrule")
+    inner.append("\\end{tabular}%")
+    out.append(wrap_table_content("\n".join(inner)))
+    out.append(f"\\caption{{{escape_latex(caption)}}}")
+    out.append(f"\\label{{{escape_latex(label)}}}")
+    out.append("\\end{table}")
+    return "\n".join(out)
+
+
+def write_jungle_rob_detail_latex(rows: List[List[str]], label: str, digits: int) -> str:
+    """
+    Write LaTeX for Jungle robustness detail table.
+    Rows: segment
+    Columns: 3 models × 3 metrics (PR, E_dt, E_e)
+    Already sorted by performance in CSV generation.
+    """
+    caption = "Robustness results per segment (Jungle) (sorted descending by performance)"
     data = rows[3:]  # Skip 3 header rows
     models = ["dave2", "dave2_gru", "vit"]
     metrics = ["PR", "E_dt", "E_e"]
@@ -1582,15 +2140,21 @@ def convert_csvs_to_latex(in_dir: Path, out_dir: Path, digits: int) -> None:
         stem = csv_path.stem
         label = f"tab:{stem}"
         
+        print(f"DEBUG: Processing {stem}")
+        if len(rows) >= 3:
+            print(f"DEBUG: Row 3: {rows[2][:5] if len(rows[2]) > 5 else rows[2]}")
+        
         # RQ1 Robustness main table
-        if "rq1_robustness" in stem and "perturbation" not in stem:
+        if "rq1_robustness" in stem and "perturbation" not in stem and "detail" not in stem:
+            print(f"DEBUG: Using write_split_latex for {stem}")
             tex = write_split_latex(rows, "Robustness scores per model (sorted descending by performance)", label, digits, is_robustness=True)
             (out_dir / f"{stem}.tex").write_text(tex, encoding="utf-8")
             inputs.append(f"\\input{{{stem}}}")
             continue
         
         # RQ2 Generalization main table
-        if "rq2_generalization" in stem and "detail" not in stem:
+        if "rq2_generalization" in stem and "detail" not in stem and "scenarios" not in stem:
+            print(f"DEBUG: Using write_split_latex for {stem}")
             tex = write_split_latex(rows, "Generalization scores (sorted descending by performance)", label, digits, is_robustness=False)
             (out_dir / f"{stem}.tex").write_text(tex, encoding="utf-8")
             inputs.append(f"\\input{{{stem}}}")
@@ -1598,6 +2162,7 @@ def convert_csvs_to_latex(in_dir: Path, out_dir: Path, digits: int) -> None:
         
         # RQ1 CARLA robustness by perturbation
         if "robustness_by_perturbation_carla" in stem:
+            print(f"DEBUG: Using write_carla_pivot_latex for {stem}")
             tex = write_carla_pivot_latex(rows, "Robustness results per perturbation and model (CARLA) (sorted descending by performance)", label, digits)
             (out_dir / f"{stem}.tex").write_text(tex, encoding="utf-8")
             inputs.append(f"\\input{{{stem}}}")
@@ -1605,6 +2170,7 @@ def convert_csvs_to_latex(in_dir: Path, out_dir: Path, digits: int) -> None:
         
         # RQ1 GenRoads/Jungle robustness by perturbation
         if looks_like_single_map_pivot(rows) and "generalization" not in stem:
+            print(f"DEBUG: Using write_single_map_pivot_latex for {stem}")
             tex = write_single_map_pivot_latex(rows, label, digits)
             (out_dir / f"{stem}.tex").write_text(tex, encoding="utf-8")
             inputs.append(f"\\input{{{stem}}}")
@@ -1612,26 +2178,46 @@ def convert_csvs_to_latex(in_dir: Path, out_dir: Path, digits: int) -> None:
         
         # NEW: RQ2 GenRoads generalization detail table
         if looks_like_genroads_gen_detail(rows):
+            print(f"DEBUG: Using write_genroads_gen_detail_latex for {stem}")
             tex = write_genroads_gen_detail_latex(rows, label, digits)
             (out_dir / f"{stem}.tex").write_text(tex, encoding="utf-8")
             inputs.append(f"\\input{{{stem}}}")
             continue
         
+        # NEW: RQ2 GenRoads generalization scenarios table
+        if looks_like_genroads_gen_scenarios(rows):
+            print(f"DEBUG: Using write_genroads_gen_scenarios_latex for {stem}")
+            tex = write_genroads_gen_scenarios_latex(rows, label, digits)
+            (out_dir / f"{stem}.tex").write_text(tex, encoding="utf-8")
+            inputs.append(f"\\input{{{stem}}}")
+            continue
+        
         # NEW: RQ2 Jungle generalization detail table
-        if looks_like_jungle_gen_detail(rows):
+        if looks_like_jungle_gen_detail(rows) and "generalization" in stem:
+            print(f"DEBUG: Using write_jungle_gen_detail_latex for {stem}")
             tex = write_jungle_gen_detail_latex(rows, label, digits)
+            (out_dir / f"{stem}.tex").write_text(tex, encoding="utf-8")
+            inputs.append(f"\\input{{{stem}}}")
+            continue
+        
+        # NEW: RQ1 Jungle robustness detail table
+        if looks_like_jungle_rob_detail(rows) and "robustness" in stem:
+            print(f"DEBUG: Using write_jungle_rob_detail_latex for {stem}")
+            tex = write_jungle_rob_detail_latex(rows, label, digits)
             (out_dir / f"{stem}.tex").write_text(tex, encoding="utf-8")
             inputs.append(f"\\input{{{stem}}}")
             continue
         
         # NEW: RQ2 CARLA generalization detail table
         if looks_like_carla_gen_detail(rows):
+            print(f"DEBUG: Using write_carla_gen_detail_latex for {stem}")
             tex = write_carla_gen_detail_latex(rows, label, digits)
             (out_dir / f"{stem}.tex").write_text(tex, encoding="utf-8")
             inputs.append(f"\\input{{{stem}}}")
             continue
         
         # Default: normal table
+        print(f"DEBUG: Using write_normal_table for {stem}")
         tex = write_normal_table(rows, caption="Table", label=label, digits=digits)
         (out_dir / f"{stem}.tex").write_text(tex, encoding="utf-8")
         inputs.append(f"\\input{{{stem}}}")
@@ -1668,8 +2254,14 @@ def main() -> None:
     print("Building RQ2 GenRoads generalization detail table...")
     build_table_rq2_genroads_detail(results_root, out_dir)
     
+    print("Building RQ2 GenRoads generalization scenarios table...")
+    build_table_rq2_genroads_scenarios(results_root, out_dir)
+    
     print("Building RQ2 Jungle generalization detail table...")
     build_table_rq2_jungle_detail(results_root, out_dir)
+    
+    print("Building RQ1 Jungle robustness detail table...")
+    build_table_rq1_jungle_detail(results_root, out_dir)
     
     print("Building RQ2 CARLA generalization detail table...")
     build_table_rq2_carla_detail(results_root, out_dir)

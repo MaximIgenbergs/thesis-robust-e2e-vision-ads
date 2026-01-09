@@ -28,8 +28,9 @@ models:
 run:
   road_set: "robustness"
   image_size_hw: [120, 160]
+  save_images: true
   show_image: true
-  reconnect: true # reconnect between severities for stability
+  reconnect: false # reconnect between severities for stability
   reconnect_cooldown_s: 8.0 # sleep between reconnects
   road_cooldown_s: 3.0 # sleep after each road
 

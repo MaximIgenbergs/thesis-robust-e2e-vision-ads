@@ -11,6 +11,9 @@ from __future__ import annotations
 import argparse
 import time
 from typing import List, Dict, Any
+from pathlib import Path
+import numpy as np
+from PIL import Image
 
 from scripts.udacity.logging.eval_runs import RunLogger, prepare_run_dir, best_effort_git_sha, pip_freeze
 from scripts.udacity.adapters.utils.build_adapter import build_adapter
@@ -20,6 +23,27 @@ from scripts import abs_path, load_cfg
 from perturbationdrive import Scenario, PerturbationDrive
 from perturbationdrive.RoadGenerator.CustomRoadGenerator import CustomRoadGenerator
 from examples.udacity.udacity_simulator import UdacitySimulator
+
+
+def save_img(img: np.ndarray, path: Path) -> None:
+    """Save an image array to disk as JPEG."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    a = np.asarray(img)
+
+    if a.ndim == 4 and a.shape[0] == 1:
+        a = a[0]
+
+    if np.issubdtype(a.dtype, np.floating):
+        amin = float(np.nanmin(a)) if a.size else 0.0
+        amax = float(np.nanmax(a)) if a.size else 1.0
+        if amin >= 0.0 and amax <= 1.0:
+            a = a * 255.0
+        a = np.clip(a, 0.0, 255.0).astype(np.uint8)
+    elif a.dtype != np.uint8:
+        a = np.clip(a, 0, 255).astype(np.uint8)
+
+    Image.fromarray(a).save(str(path))
 
 
 def make_scenarios(waypoints, pert_names: List[str], severities: List[int], episodes: int) -> List[Scenario]:
@@ -123,6 +147,7 @@ def main() -> int:
 
     image_size_hw = tuple(run_cfg.get("image_size_hw", [240, 320]))
     show_image = bool(run_cfg.get("show_image", True))
+    save_images = bool(run_cfg.get("save_images", False))
     reconnect = bool(run_cfg.get("reconnect", True))
     reconnect_cooldown_s = float(run_cfg.get("reconnect_cooldown_s", 8.0))
     road_cooldown_s = float(run_cfg.get("road_cooldown_s", 3.0))
@@ -175,7 +200,20 @@ def main() -> int:
                     scens = [Scenario(waypoints=waypoints, perturbation_function="", perturbation_scale=0)]
                     t0 = time.perf_counter()
                     try:
-                        bench.simulate_scenarios(scenarios=scens, log_dir=str(log_file), image_size=image_size_hw)
+                        outcomes = bench.simulate_scenarios(scenarios=scens, log_dir=str(log_file), image_size=image_size_hw)
+                        
+                        # Save images if enabled
+                        if save_images and outcomes:
+                            img_dir = ep_dir / "images"
+                            for i, outcome in enumerate(outcomes):
+                                episode_suffix = f"_ep{i}" if len(outcomes) > 1 else ""
+                                if outcome.original_images:
+                                    for j, img in enumerate(outcome.original_images):
+                                        save_img(img, img_dir / f"original{episode_suffix}_frame_{j:06d}.jpg")
+                                if outcome.perturbed_images:
+                                    for j, img in enumerate(outcome.perturbed_images):
+                                        save_img(img, img_dir / f"perturbed{episode_suffix}_frame_{j:06d}.jpg")
+                        
                         logger.complete_episode(eid, status="ok", wall_time_s=time.perf_counter() - t0)
                     except Exception as e:
                         logger.complete_episode(eid, status=f"error:{type(e).__name__}", wall_time_s=time.perf_counter() - t0)
@@ -208,7 +246,20 @@ def main() -> int:
                                 scens = make_scenarios(waypoints, [pert], [sev], episodes)
                                 t0 = time.perf_counter()
                                 try:
-                                    bench.simulate_scenarios(scenarios=scens, log_dir=str(log_file), image_size=image_size_hw)
+                                    outcomes = bench.simulate_scenarios(scenarios=scens, log_dir=str(log_file), image_size=image_size_hw)
+                                    
+                                    # Save images if enabled
+                                    if save_images and outcomes:
+                                        img_dir = ep_dir / "images"
+                                        for i, outcome in enumerate(outcomes):
+                                            episode_suffix = f"_ep{i}" if len(outcomes) > 1 else ""
+                                            if outcome.original_images:
+                                                for j, img in enumerate(outcome.original_images):
+                                                    save_img(img, img_dir / f"original{episode_suffix}_frame_{j:06d}.jpg")
+                                            if outcome.perturbed_images:
+                                                for j, img in enumerate(outcome.perturbed_images):
+                                                    save_img(img, img_dir / f"perturbed{episode_suffix}_frame_{j:06d}.jpg")
+                                    
                                     logger.complete_episode(eid, status="ok", wall_time_s=time.perf_counter() - t0)
                                 except Exception as e:
                                     logger.complete_episode(eid, status=f"error:{type(e).__name__}", wall_time_s=time.perf_counter() - t0)
@@ -247,7 +298,20 @@ def main() -> int:
                             scens = make_scenarios(waypoints, [pert], severities, episodes)
                             t0 = time.perf_counter()
                             try:
-                                bench.simulate_scenarios(scenarios=scens, log_dir=str(log_file), image_size=image_size_hw)
+                                outcomes = bench.simulate_scenarios(scenarios=scens, log_dir=str(log_file), image_size=image_size_hw)
+                                
+                                # Save images if enabled
+                                if save_images and outcomes:
+                                    img_dir = ep_dir / "images"
+                                    for i, outcome in enumerate(outcomes):
+                                        episode_suffix = f"_ep{i}" if len(outcomes) > 1 else ""
+                                        if outcome.original_images:
+                                            for j, img in enumerate(outcome.original_images):
+                                                save_img(img, img_dir / f"original{episode_suffix}_frame_{j:06d}.jpg")
+                                        if outcome.perturbed_images:
+                                            for j, img in enumerate(outcome.perturbed_images):
+                                                save_img(img, img_dir / f"perturbed{episode_suffix}_frame_{j:06d}.jpg")
+                                
                                 logger.complete_episode(eid, status="ok", wall_time_s=(time.perf_counter() - t0))
                             except Exception as e:
                                 logger.complete_episode(eid, status=f"error:{type(e).__name__}", wall_time_s=(time.perf_counter() - t0))

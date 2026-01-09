@@ -10,16 +10,15 @@ models:
   default_model: "dave2_gru"
 
   dave2:
-    checkpoint: "dave2/jungle_20251107-173326/best_model.h5"
+    checkpoint: "dave2/jungle_20251209-175046/best_model.h5"
     image_size_hw: [120, 160]
     normalize: "none"
 
   dave2_gru:
-    checkpoint: "dave2_gru/jungle_20251107-173305/best_model.h5"
-    sequence_length: 3
+    checkpoint: "dave2_gru/jungle_20251201-142321/best_model.h5"
     image_size_hw: [120, 160]
     normalize: "none"
-    
+
   vit:
     checkpoint: "vit/jungle_20251201-132938/best_model.ckpt"
     image_size_hw: [160, 160]
