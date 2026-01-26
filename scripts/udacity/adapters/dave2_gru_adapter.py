@@ -13,11 +13,10 @@ from scripts.udacity.models.dave2_gru.model import build_dave2_gru
 
 class Dave2GRUAdapter(ADS):
 
-    def __init__(self, weights: Optional[Path] = None, image_size_hw: tuple[int, int] = (66, 200), seq_len: int = 3, device: Optional[str] = None, normalize: str = "imagenet") -> None:
+    def __init__(self, weights: Optional[Path] = None, image_size_hw: tuple[int, int] = (66, 200), seq_len: int = 3, device: Optional[str] = None) -> None:
         super().__init__()
         self._name = "dave2_gru"
         self.device = device
-        self._normalize = normalize
 
         h, w = image_size_hw
         self._input_shape = (int(h), int(w), 3)

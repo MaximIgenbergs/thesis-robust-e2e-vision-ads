@@ -22,6 +22,7 @@ from typing import Any, Dict, List, Sequence, Tuple
 import gym
 import numpy as np
 import yaml
+from PIL import Image
 
 from scripts.udacity.adapters.utils.build_adapter import build_adapter
 from scripts.udacity.logging.eval_runs import RunLogger, prepare_run_dir, best_effort_git_sha, pip_freeze
@@ -31,6 +32,27 @@ from scripts import abs_path, load_cfg
 from perturbationdrive.RoadGenerator.CustomRoadGenerator import CustomRoadGenerator
 from examples.udacity.udacity_simulator import UdacitySimulator
 from perturbationdrive import ImageCallBack
+
+
+def save_img(img: np.ndarray, path: Path) -> None:
+    """Save an image array to disk as JPEG."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    a = np.asarray(img)
+
+    if a.ndim == 4 and a.shape[0] == 1:
+        a = a[0]
+
+    if np.issubdtype(a.dtype, np.floating):
+        amin = float(np.nanmin(a)) if a.size else 0.0
+        amax = float(np.nanmax(a)) if a.size else 1.0
+        if amin >= 0.0 and amax <= 1.0:
+            a = a * 255.0
+        a = np.clip(a, 0.0, 255.0).astype(np.uint8)
+    elif a.dtype != np.uint8:
+        a = np.clip(a, 0, 255).astype(np.uint8)
+
+    Image.fromarray(a).save(str(path))
 
 
 def nearest_wp_index(x: float, y: float, waypoints: Sequence[Tuple[float, float]]) -> int:
@@ -147,7 +169,7 @@ def format_active_perturbations(perts: List[Dict[str, Any]]) -> str:
     return " ".join(parts)
 
 
-def run_scenario_episode(sim: UdacitySimulator, controller, track_string: str, waypoints: List[Tuple[float, float]], scenario: Dict[str, Any], log_path: Path, max_steps: int | None = None, enable_preview: bool = False) -> Tuple[str, float]:
+def run_scenario_episode(sim: UdacitySimulator, controller, track_string: str, waypoints: List[Tuple[float, float]], scenario: Dict[str, Any], log_path: Path, max_steps: int | None = None, enable_preview: bool = False, save_images: bool = False, img_dir: Path | None = None) -> Tuple[str, float]:
     if sim.client is None:
         raise RuntimeError("UdacitySimulator.client is None. Did you call sim.connect()?")
 
@@ -169,6 +191,10 @@ def run_scenario_episode(sim: UdacitySimulator, controller, track_string: str, w
         step_idx = 0
 
         while not done:
+            # Save image if enabled
+            if save_images and img_dir is not None:
+                save_img(obs, img_dir / f"frame_{step_idx:06d}.jpg")
+
             model_actions = controller.action(obs)
             model_actions = np.asarray(model_actions, dtype=np.float32)
             if model_actions.ndim == 1:
@@ -265,8 +291,8 @@ def main() -> int:
     run_cfg = cfg["run"]
     logging_cfg = cfg["logging"]
 
-    roads_yaml = abs_path("scripts/udacity/maps/genroads/roads.yaml") # TODO: should be in config
-    roads_def, road_sets = load_roads(roads_yaml)
+    roads_path = abs_path(run_cfg["roads_path"])
+    roads_def, road_sets = load_roads(roads_path)
 
     # If you want subsets, you can add `road_set` to run: and use it here.
     road_set_id = run_cfg.get("road_set")
@@ -339,6 +365,7 @@ def main() -> int:
     max_steps = run_cfg.get("max_steps")
     road_cooldown_s = float(run_cfg.get("road_cooldown_s", 3.0))
     show_image = bool(run_cfg.get("show_image", True))
+    save_images = bool(run_cfg.get("save_images", False))
 
     try:
         for road_name in selected_roads:
@@ -394,6 +421,9 @@ def main() -> int:
 
                     log_file = ep_dir / "pd_log.json"
 
+                    # Set up image directory if saving images
+                    img_dir = ep_dir / "images" / scen["name"] if save_images else None
+
                     status, wall = run_scenario_episode(
                         sim=sim,
                         controller=adapter,
@@ -403,6 +433,8 @@ def main() -> int:
                         log_path=log_file,
                         max_steps=max_steps,
                         enable_preview=show_image,
+                        save_images=save_images,
+                        img_dir=img_dir,
                     )
                     logger.complete_episode(eid, status=status, wall_time_s=wall)
 

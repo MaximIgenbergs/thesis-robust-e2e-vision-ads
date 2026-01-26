@@ -3,14 +3,16 @@ import sys
 from typing import Union, Optional
 import yaml
 
-ROOT = Path("/home/maximigenbergs/thesis-robust-e2e-vision-ads")
+ROOT = Path(__file__).parent.parent.resolve()
 CKPTS_DIR = ROOT / "checkpoints"
 
+# add perturbationdrive to path 
 PD_DIR = ROOT / "external" / "perturbation-drive"
 if str(PD_DIR) not in sys.path: 
     sys.path.insert(0, str(PD_DIR))
 
-TCP_ROOT = ROOT / "external" / "TCP" # TODO: could be an issue if loaded every time and wrong venv is selected that doesnt contain anything to do with TCP. lets see. 
+# add tcp to path
+TCP_ROOT = ROOT / "external" / "TCP" 
 if str(TCP_ROOT) not in sys.path:
     sys.path.insert(0, str(TCP_ROOT))
 

@@ -76,10 +76,7 @@ def first_failure_step_from_pd_steps(steps: List[Dict[str, Any]] | None) -> Opti
 
 
 def infer_stop_idx(*, series_len: int, event_step: Optional[int]) -> int:
-    """
-    stop_idx is an exclusive slice index for "pre-fail" metrics.
-    If no event_step is found, we use full series length.
-    """
+    """Returns the index of the last successful step + 1."""
     if series_len <= 0:
         return 0
     if event_step is None:

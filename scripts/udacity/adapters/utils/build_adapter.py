@@ -11,15 +11,13 @@ def build_adapter(model_name: str, model_cfg: dict):
     ckpt = abs_path(CKPTS_DIR / ckpt_rel) if ckpt_rel else None
 
     image_size_hw = tuple(model_cfg.get("image_size_hw", [240, 320]))
-    normalize = model_cfg.get("normalize", "imagenet")
-
     seq_len = model_cfg.get("sequence_length", 3)
 
     if model_name == "dave2":
-        return (Dave2Adapter(weights=ckpt, image_size_hw=image_size_hw, device=None, normalize=normalize), ckpt)
+        return (Dave2Adapter(weights=ckpt, image_size_hw=image_size_hw, device=None), ckpt)
     if model_name == "dave2_gru":
-        return (Dave2GRUAdapter(weights=ckpt, image_size_hw=image_size_hw, seq_len=seq_len, device=None, normalize=normalize), ckpt)
+        return (Dave2GRUAdapter(weights=ckpt, image_size_hw=image_size_hw, seq_len=seq_len, device=None), ckpt)
     if model_name == "vit":
-        return (ViTAdapter(weights=ckpt, image_size_hw=image_size_hw, device=None, normalize="none"), ckpt)
+        return (ViTAdapter(weights=ckpt, image_size_hw=image_size_hw, device=None), ckpt)
 
     raise ValueError(f"Model '{model_name}' not defined.")

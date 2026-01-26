@@ -5,11 +5,11 @@ CARLA generalization evaluation for multiple leaderboard agents (TCP, InterFuser
 
 - Reads eval/carla/cfg_generalization.yaml
 - Agent/architecture is selected via --model:
-    * tcp
-    * interfuser
+    - tcp
+    - interfuser
 - For each town entry in `runs`:
-    * uses its own routes_files and carla_scenarios_file
-    * runs the selected agent via its own CARLA Leaderboard repo
+    - uses its own routes_files and carla_scenarios_file
+    - runs the selected agent via its own CARLA Leaderboard repo
 """
 
 import os
@@ -84,6 +84,10 @@ def run_eval_set(model_name: str, carla_cfg: Dict[str, Any], model_cfg: Dict[str
         env["CARLA_HOST"] = host
         env["CARLA_PORT"] = port
         env["SAVE_PATH"] = str(results_dir)
+        
+        # Pass save_images configuration to subprocess
+        save_images = logging_cfg.get("save_images", False)
+        env["SAVE_IMAGES"] = str(save_images).lower()
 
         cmd: List[str] = [
             sys.executable,

@@ -342,7 +342,7 @@ sets:
     - swiggly_056
     - swiggly_057
 
-  # Optional: all roads TODO: finish this list
+  # All roads
   all:
     - straight
     - r2
@@ -415,3 +415,11 @@ sets:
     - swiggly_055
     - swiggly_056
     - swiggly_057
+    - wide_hairpin_r
+    - wide_hairpin_l
+    - hairpin_r
+    - hairpin_l
+    - wide_chicane_lr
+    - wide_chicane_rl
+    - chicane_lr
+    - chicane_rl

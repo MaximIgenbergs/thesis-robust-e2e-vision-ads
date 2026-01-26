@@ -5,12 +5,12 @@ Robustness evaluation in CARLA using PerturbationDrive.
 
 - Reads eval/carla/cfg_robustness.yaml
 - Model/agent is selected via --model:
-    * tcp
-    * interfuser
+    - tcp
+    - interfuser
 - Uses a single routes_file + carla_scenarios_file from `run`
 - For each perturbation scenario (incl. optional baseline):
-    * runs the selected agent via its CARLA Leaderboard
-    * writes results into:
+    - runs the selected agent via its CARLA Leaderboard
+    - writes results into:
         <runs_dir>/<YYYYmmdd_HHMMSS>/<model>/<scenario_id>/simulation_results.json
 """
 
@@ -105,6 +105,10 @@ def run_scenario(model_name: str, carla_cfg: Dict[str, Any], run_cfg: Dict[str, 
     env["TCP_PD_SEVERITY"] = str(severity)
 
     env["SAVE_PATH"] = str(scenario_dir)
+    
+    # Pass save_images configuration to subprocess
+    save_images = run_cfg.get("save_images", False)
+    env["SAVE_IMAGES"] = str(save_images).lower()
 
     leaderboard_script = repo_root / model_cfg["launch_script"]
     agent_script = abs_path(model_cfg["script"])

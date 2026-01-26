@@ -3,6 +3,15 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# macOS system files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
 # C extensions
 *.so
 
@@ -185,17 +194,11 @@ models/**/figures/
 # VSCode settings
 .vscode/
 
+# Custom
+unitylog.txt
 binaries/**
 checkpoints/**
 data/**
 envs/**
 runs/**
 
-unitylog.txt
-external/foresee/**
-
-# old code
-sims/**
-scripts_old/**
-eval_old/**
-external/carla-test/**

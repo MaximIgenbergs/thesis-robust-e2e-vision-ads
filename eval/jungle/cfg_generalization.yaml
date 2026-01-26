@@ -1,27 +1,24 @@
 udacity:
-  map: "jungle_reverse" # jungle or jungle_reverse
-  binary: "binaries/jungle/udacity_linux/udacity.x86_64"
-  host: "127.0.0.1"
+  map: jungle_reverse # jungle or jungle_reverse
+  binary: binaries/jungle/udacity_macos_silicon/udacity.app
+  host: 127.0.0.1
   port: 9091
-  weather: "sunny"
-  daytime: "day"
+  weather: sunny
+  daytime: day
 
 models:
-  default_model: "dave2_gru"
+  default_model: dave2_gru
   dave2:
-    checkpoint: "dave2/jungle_20251209-175046/best_model.h5"
+    checkpoint: dave2/jungle_20251209-175046/best_model.h5
     image_size_hw: [120, 160]
-    normalize: "imagenet"
 
   dave2_gru:
-    checkpoint: "dave2_gru/jungle_20251201-142321/best_model.h5"
+    checkpoint: dave2_gru/jungle_20251201-142321/best_model.h5
     image_size_hw: [120, 160]
-    normalize: "imagenet"
 
   vit:
-    checkpoint: "vit/jungle_20251201-132938/best_model.ckpt"
+    checkpoint: vit/jungle_20251201-132938/best_model.ckpt
     image_size_hw: [160, 160]
-    normalize: "imagenet"
 
 run:
   image_size_hw: [240, 320]
@@ -32,67 +29,67 @@ run:
 
 segments:
   # jungle_reverse segments:
-  - id: "segment_01_easy_start"
+  - id: segment_01_easy_start
     start_waypoint: 0
     end_waypoint: 77
     timeout_s: 90
 
-  - id: "segment_02_steep_downhill_sharp_curves" # very difficult
+  - id: segment_02_steep_downhill_sharp_curves # very difficult
     start_waypoint: 77
     end_waypoint: 100
     timeout_s: 90
 
-  - id: "segment_03_very_steep_uphill"
+  - id: segment_03_very_steep_uphill
     start_waypoint: 88
     end_waypoint: 177
     timeout_s: 90
 
-  - id: "segment_04_gain_speed_uphill"
+  - id: segment_04_gain_speed_uphill
     start_waypoint: 177
     end_waypoint: 236
     timeout_s: 90
 
-  - id: "segment_05_left_right_curve"
+  - id: segment_05_left_right_curve
     start_waypoint: 236
     end_waypoint: 290
     timeout_s: 90
 
-  - id: "segment_05_uphill_with_enough_speed" # very easy
+  - id: segment_06_uphill_with_enough_speed # very easy
     start_waypoint: 290
     end_waypoint: 326
     timeout_s: 90
 
-  - id: "segment_06_long_downhill_and_straight"
+  - id: segment_07_long_downhill_and_straight
     start_waypoint: 326
     end_waypoint: 405
     timeout_s: 120
 
-  - id: "segment_07_bridge"
+  - id: segment_08_bridge
     start_waypoint: 405
     end_waypoint: 480
     timeout_s: 90
 
-  - id: "segment_08_uphill_curves"
+  - id: segment_09_uphill_curves
     start_waypoint: 480
     end_waypoint: 630
     timeout_s: 130
 
-  - id: "segment_09_very_steep_downhill_with_curves"
+  - id: segment_10_very_steep_downhill_with_curves
     start_waypoint: 630
     end_waypoint: 690
     timeout_s: 90
 
-  - id: "segment_10_uphill"
+  - id: segment_11_uphill
     start_waypoint: 670
     end_waypoint: 766
     timeout_s: 120
 
-  - id: "segment_11_level_curves" # easy topology
+  - id: segment_12_level_curves # easy topology
     start_waypoint: 766
     end_waypoint: 867
     timeout_s: 90
 
-  - id: "segment_12_downhill_to_finish"
+  - id: segment_13_downhill_to_finish
     start_waypoint: 867
     end_waypoint: 999
     timeout_s: 110
@@ -117,9 +114,9 @@ segments:
   #   start_waypoint: 960
   #   end_waypoint: 999
   #   timeout_s: 60
-    
+  
 logging:
-  runs_dir: "/media/maximigenbergs/Elements/maximigenbergs/runs/jungle/generalization"
+  runs_dir: runs/jungle/generalization
   snapshot_configs: true
   snapshot_env: true
   include_git_sha:

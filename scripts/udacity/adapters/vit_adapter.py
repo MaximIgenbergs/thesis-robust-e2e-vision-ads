@@ -15,10 +15,9 @@ from scripts.udacity.models.vit.config import INPUT_SHAPE, NUM_OUTPUTS
 
 class ViTAdapter(ADS):
 
-    def __init__(self, weights: Optional[Path] = None, image_size_hw: Tuple[int, int] = (160, 160), device: Optional[str] = None, normalize: str = "none") -> None:
+    def __init__(self, weights: Optional[Path] = None, image_size_hw: Tuple[int, int] = (160, 160), device: Optional[str] = None) -> None:
         super().__init__()
         self._name = "vit"
-        self._normalize = normalize  # kept for symmetry, not used
 
         h, w = image_size_hw
         self._input_shape = (int(h), int(w), 3)

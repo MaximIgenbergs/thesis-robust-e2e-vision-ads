@@ -5,12 +5,7 @@ from typing import Any, Dict, List, Tuple
 
 import numpy as np
 
-from metrics.metrics import (
-    auc_over_severity,
-    relative_drop,
-    corruption_error,
-    mean_corruption_error,
-)
+from metrics.metrics import auc_over_severity, relative_drop, corruption_error, mean_corruption_error
 
 _BASELINE_NAMES = {"baseline", "clean"}
 

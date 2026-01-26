@@ -7,7 +7,6 @@ Creates a pid_YYYYMMDD-HHMMSS/ run directory under DATA_DIR and fills it with im
 from __future__ import annotations
 import time
 from pathlib import Path
-from types import SimpleNamespace
 
 from scripts.udacity.maps.genroads.utils.load_roads import load_roads
 from scripts.udacity.logging.data_collection_runs import make_run_dir, convert_outputs

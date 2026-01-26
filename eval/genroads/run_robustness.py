@@ -77,8 +77,8 @@ def main() -> int:
     pert_cfg = cfg["perturbations"]
     baseline = bool(pert_cfg.get("baseline", False))
 
-    roads_yaml = abs_path("scripts/udacity/maps/genroads/roads.yaml") # TODO: maybe not hardcode this path?
-    roads_def, road_sets = load_roads(roads_yaml)
+    roads_path = abs_path(run_cfg["roads_path"])
+    roads_def, road_sets = load_roads(roads_path)
 
     road_set_id = run_cfg.get("road_set")
     if not road_set_id or road_set_id not in road_sets:
@@ -132,7 +132,7 @@ def main() -> int:
             cfg_logging=logging_cfg,
             cfg_udacity=udacity_cfg,
             cfg_models=models_cfg,
-            cfg_roads={"map": map_name, "roads_yaml": str(roads_yaml), "road_set": road_set_id, "roads": selected_roads},
+            cfg_roads={"map": map_name, "roads_path": str(roads_path), "road_set": road_set_id, "roads": selected_roads},
             cfg_perturbations=pert_cfg,
             cfg_run=run_cfg,
             cfg_host_port={"host": udacity_cfg["host"], "port": udacity_cfg["port"]},

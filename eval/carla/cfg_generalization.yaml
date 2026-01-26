@@ -28,7 +28,8 @@ models:
     checkpoint: external/InterFuser/leaderboard/team_code/interfuser_config.py
 
 logging:
-  runs_dir: /media/maximigenbergs/Elements/maximigenbergs/runs/carla/generalization
+  runs_dir: runs/carla/generalization
+  save_images: false
 
 runs:
   - id: Town01

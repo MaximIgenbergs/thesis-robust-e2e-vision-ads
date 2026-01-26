@@ -1,40 +1,39 @@
 udacity:
-  map: "genroads"
-  binary: "binaries/genroads/udacity_linux/udacity_binary.x86_64"
-  host: "127.0.0.1"
+  map: genroads
+  binary: binaries/genroads/udacity_macos_silicon/udacity_sim_weather_sky_ready_angles_fortuna.app
+  host: 127.0.0.1
   port: 9091
-  weather: "sunny"
-  daytime: "day"
+  weather: sunny
+  daytime: day
 
 models:
-  default_model: "dave2_gru"
+  default_model: dave2_gru
 
   dave2:
-    checkpoint: "dave2/genroads_20251028-145557/best_model.h5"
+    checkpoint: dave2/genroads_20251028-145557/best_model.h5
     image_size_hw: [120, 160]
-    normalize: "imagenet"
 
   dave2_gru:
-    checkpoint: "dave2_gru/genroads_20251215-174930/best_model.h5"
+    checkpoint: dave2_gru/genroads_20251215-174930/best_model.h5
     sequence_length: 3
     image_size_hw: [120, 160]
-    normalize: "imagenet"
 
   vit:
-    checkpoint: "vit/genroads_20251202-152358/best_model.ckpt"
+    checkpoint: vit/genroads_20251202-152358/best_model.ckpt
     image_size_hw: [160, 160]
-    normalize: "imagenet"
 
 run:
   image_size_hw: [120, 160]
-  road_set: "generalization"
+  road_set: generalization
+  roads_path: scripts/udacity/maps/genroads/roads.yaml
   show_image: true
+  save_images: false
   max_steps: null # null = no limit
   road_cooldown_s: 3.0 # cooldown between roads (seconds)
-  scenarios_path: "scripts/udacity/maps/genroads/generated_scenarios.yaml"
+  scenarios_path: scripts/udacity/maps/genroads/generated_scenarios.yaml
 
 logging:
-  runs_dir: "runs/genroads/generalization"
+  runs_dir: runs/genroads/generalization
   snapshot_configs: true
   snapshot_env: true
   include_git_sha:

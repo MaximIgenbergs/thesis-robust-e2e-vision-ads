@@ -1,200 +1,22 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Any, Dict, List
 
 from scripts import abs_path
+from metrics.constants import BASELINE_NAME_DEFAULT as BASELINE_NAME
 from metrics.io_udacity import iter_udacity_entries, normalize_udacity_entry
 from metrics.io_carla import normalize_carla_run
 from metrics.compute_episode import compute_udacity_entry_metrics
-from metrics.aggregate import (
-    aggregate_udacity_summary,
-    aggregate_carla_summary,
-    robustness_summaries,
-    mce_over_all_corruptions,
-    robustness_by_severity,
-    rq1_robustness_wide,
-    rq2_generalization_row,
-    robustness_conditions_table,
-)
+from metrics.aggregate import aggregate_udacity_summary, aggregate_carla_summary, robustness_summaries, mce_over_all_corruptions, robustness_by_severity, rq1_robustness_wide, rq2_generalization_row, robustness_conditions_table
 from metrics.report_tables import write_csv
 
-BASELINE_NAME = "baseline"
+# Configuration: Set these environment variables or modify paths below
+RUNS_ROOT = Path(os.getenv("RUNS_ROOT", "/media/maxim/Elements/maximigenbergs/runs"))
+RESULTS_ROOT = Path(os.getenv("RESULTS_ROOT", "results"))
 
-# jungle robustness vit
-# RUN_DIR = abs_path(Path("/media/maxim/Elements/maximigenbergs/runs/jungle/robustness/vit_20251218_172745"))
-# OUT_DIR = abs_path(Path("results/jungle/robustness/vit_20251218_172745"))
-
-# jungle robustness dave2
-# RUN_DIR = abs_path(Path("/media/maxim/Elements/maximigenbergs/runs/jungle/robustness/dave2_20251219_165635"))
-# OUT_DIR = abs_path(Path("results/jungle/robustness/dave2_20251219_165635"))
-
-# jungle robustness dave2_gru
-# RUN_DIR = abs_path(Path("/media/maxim/Elements/maximigenbergs/runs/jungle/robustness/dave2_gru_20251220_113323"))
-# OUT_DIR = abs_path(Path("results/jungle/robustness/dave2_gru_20251220_113323"))
-
-# jungle generalization vit
-# RUN_DIR = abs_path(Path("/media/maxim/Elements/maximigenbergs/runs/jungle/generalization/vit_20251219_030941"))
-# OUT_DIR = abs_path(Path("results/jungle/generalization/vit_20251219_030941"))
-
-# jungle generalization dave2
-# RUN_DIR = abs_path(Path("/media/maxim/Elements/maximigenbergs/runs/jungle/generalization/dave2_20251220_225512"))
-# OUT_DIR = abs_path(Path("results/jungle/generalization/dave2_20251220_225512"))
-
-# jungle generalization dave2_gru
-# RUN_DIR = abs_path(Path("/media/maxim/Elements/maximigenbergs/runs/jungle/generalization/dave2_gru_20251221_000824"))
-# OUT_DIR = abs_path(Path("results/jungle/generalization/dave2_gru_20251221_000824"))
-
-# genroads robustness vit
-# RUN_DIR = abs_path(Path("/media/maxim/Elements/maximigenbergs/runs/genroads/robustness/vit_20251208_181344"))
-# OUT_DIR = abs_path(Path("results/genroads/robustness/vit_20251208_181344"))
-
-# genroads robustness dave2
-# RUN_DIR = abs_path(Path("/media/maxim/Elements/maximigenbergs/runs/genroads/robustness/dave2_20251214_184315"))
-# OUT_DIR = abs_path(Path("results/genroads/robustness/dave2_20251214_184315"))
-
-# genroads robustness dave2_gru
-# RUN_DIR = abs_path(Path("/media/maxim/Elements/maximigenbergs/runs/genroads/robustness/dave2_gru_20251221_193038"))
-# OUT_DIR = abs_path(Path("results/genroads/robustness/dave2_gru_20251221_193038"))
-
-# genroads generalization vit
-# RUN_DIR = abs_path(Path("/media/maxim/Elements/maximigenbergs/runs/genroads/generalization/vit_20251217_182632"))
-# OUT_DIR = abs_path(Path("results/genroads/generalization/vit_20251217_182632"))
-
-# genroads generalization dave2
-# RUN_DIR = abs_path(Path("/media/maxim/Elements/maximigenbergs/runs/genroads/generalization/dave2_20251217_225857"))
-# OUT_DIR = abs_path(Path("results/genroads/generalization/dave2_20251217_225857"))
-
-# genroads generalization dave2_gru
-# RUN_DIR = abs_path(Path("/media/maxim/Elements/maximigenbergs/runs/genroads/generalization/dave2_gru_20251218_031746"))
-# OUT_DIR = abs_path(Path("results/genroads/generalization/dave2_gru_20251218_031746"))
-
-# carla robustness tcp
-# RUN_DIR = abs_path(Path("/media/maxim/Elements/maximigenbergs/runs/carla/robustness/tcp/20251212_185734"))
-# OUT_DIR = abs_path(Path("results/carla/robustness/tcp/20251212_185734"))
-
-# carla generalization tcp
-# RUN_DIR = abs_path(Path("/media/maxim/Elements/maximigenbergs/runs/carla/generalization/tcp/20251201_120732"))
-# OUT_DIR = abs_path(Path("results/carla/generalization/tcp/20251201_120732"))
-
-# -------------------------
-# Define jobs + select which to run
-# -------------------------
-
-JOBS: Dict[str, Dict[str, Any]] = {
-    "jungle_robustness_vit": {
-        "sim": "udacity",
-        "map_name": "jungle",
-        "test_type": "robustness",
-        "paired_severities": False,
-        "run_dir": abs_path(Path("/media/maxim/Elements/maximigenbergs/runs/jungle/robustness/vit_20251218_172745")),
-        "out_dir": abs_path(Path("results/jungle/robustness/vit_20251218_172745")),
-    },
-    "jungle_robustness_dave2": {
-        "sim": "udacity",
-        "map_name": "jungle",
-        "test_type": "robustness",
-        "paired_severities": False,
-        "run_dir": abs_path(Path("/media/maxim/Elements/maximigenbergs/runs/jungle/robustness/dave2_20251219_165635")),
-        "out_dir": abs_path(Path("results/jungle/robustness/dave2_20251219_165635")),
-    },
-    "jungle_robustness_dave2_gru": {
-        "sim": "udacity",
-        "map_name": "jungle",
-        "test_type": "robustness",
-        "paired_severities": False,
-        "run_dir": abs_path(Path("/media/maxim/Elements/maximigenbergs/runs/jungle/robustness/dave2_gru_20251220_113323")),
-        "out_dir": abs_path(Path("results/jungle/robustness/dave2_gru_20251220_113323")),
-    },
-    "jungle_generalization_vit": {
-        "sim": "udacity",
-        "map_name": "jungle",
-        "test_type": "generalization",
-        "paired_severities": False,
-        "run_dir": abs_path(Path("/media/maxim/Elements/maximigenbergs/runs/jungle/generalization/vit_20251219_030941")),
-        "out_dir": abs_path(Path("results/jungle/generalization/vit_20251219_030941")),
-    },
-    "jungle_generalization_dave2": {
-        "sim": "udacity",
-        "map_name": "jungle",
-        "test_type": "generalization",
-        "paired_severities": False,
-        "run_dir": abs_path(Path("/media/maxim/Elements/maximigenbergs/runs/jungle/generalization/dave2_20251220_225512")),
-        "out_dir": abs_path(Path("results/jungle/generalization/dave2_20251220_225512")),
-    },
-    "jungle_generalization_dave2_gru": {
-        "sim": "udacity",
-        "map_name": "jungle",
-        "test_type": "generalization",
-        "paired_severities": False,
-        "run_dir": abs_path(Path("/media/maxim/Elements/maximigenbergs/runs/jungle/generalization/dave2_gru_20251221_000824")),
-        "out_dir": abs_path(Path("results/jungle/generalization/dave2_gru_20251221_000824")),
-    },
-    "genroads_robustness_vit": {
-        "sim": "udacity",
-        "map_name": "genroads",
-        "test_type": "robustness",
-        "paired_severities": False,
-        "run_dir": abs_path(Path("/media/maxim/Elements/maximigenbergs/runs/genroads/robustness/vit_20251208_181344")),
-        "out_dir": abs_path(Path("results/genroads/robustness/vit_20251208_181344")),
-    },
-    "genroads_robustness_dave2": {
-        "sim": "udacity",
-        "map_name": "genroads",
-        "test_type": "robustness",
-        "paired_severities": False,
-        "run_dir": abs_path(Path("/media/maxim/Elements/maximigenbergs/runs/genroads/robustness/dave2_20251214_184315")),
-        "out_dir": abs_path(Path("results/genroads/robustness/dave2_20251214_184315")),
-    },
-    "genroads_robustness_dave2_gru": {
-        "sim": "udacity",
-        "map_name": "genroads",
-        "test_type": "robustness",
-        "paired_severities": True,  # <-- special troubleshooting run
-        "run_dir": abs_path(Path("/media/maxim/Elements/maximigenbergs/runs/genroads/robustness/dave2_gru_20251221_193038")),
-        "out_dir": abs_path(Path("results/genroads/robustness/dave2_gru_20251221_193038")),
-    },
-    "genroads_generalization_vit": {
-        "sim": "udacity",
-        "map_name": "genroads",
-        "test_type": "generalization",
-        "paired_severities": False,
-        "run_dir": abs_path(Path("/media/maxim/Elements/maximigenbergs/runs/genroads/generalization/vit_20251217_182632")),
-        "out_dir": abs_path(Path("results/genroads/generalization/vit_20251217_182632")),
-    },
-    "genroads_generalization_dave2": {
-        "sim": "udacity",
-        "map_name": "genroads",
-        "test_type": "generalization",
-        "paired_severities": False,
-        "run_dir": abs_path(Path("/media/maxim/Elements/maximigenbergs/runs/genroads/generalization/dave2_20251217_225857")),
-        "out_dir": abs_path(Path("results/genroads/generalization/dave2_20251217_225857")),
-    },
-    "genroads_generalization_dave2_gru": {
-        "sim": "udacity",
-        "map_name": "genroads",
-        "test_type": "generalization",
-        "paired_severities": False,
-        "run_dir": abs_path(Path("/media/maxim/Elements/maximigenbergs/runs/genroads/generalization/dave2_gru_20251218_031746")),
-        "out_dir": abs_path(Path("results/genroads/generalization/dave2_gru_20251218_031746")),
-    },
-    "carla_robustness_tcp": {
-        "sim": "carla",
-        "map_name": "multi-town",
-        "test_type": "robustness",
-        "paired_severities": False,
-        "run_dir": abs_path(Path("/media/maxim/Elements/maximigenbergs/runs/carla/robustness/tcp/20251212_185734")),
-        "out_dir": abs_path(Path("results/carla/robustness/tcp/20251212_185734")),
-    },
-    "carla_generalization_tcp": {
-        "sim": "carla",
-        "map_name": "multi-town",
-        "test_type": "generalization",
-        "paired_severities": False,
-        "run_dir": abs_path(Path("/media/maxim/Elements/maximigenbergs/runs/carla/generalization/tcp/20251201_120732")),
-        "out_dir": abs_path(Path("results/carla/generalization/tcp/20251201_120732")),
-    },
-}
+RUN_ALL = True  # if True, ignores RUN_SET and runs all jobs in JOBS
 
 # Choose what to run:
 RUN_SET: List[str] = [
@@ -213,16 +35,99 @@ RUN_SET: List[str] = [
     "carla_robustness_tcp",
     "carla_generalization_tcp",
 ]
-RUN_ALL = True  # if True, ignores RUN_SET and runs all jobs in JOBS
+
+JOBS: Dict[str, Dict[str, Any]] = {
+    # Jungle experiments
+    "jungle_robustness_vit": _make_job_config("udacity", "jungle", "robustness", "vit", "20251218_172745"),
+    "jungle_robustness_dave2": _make_job_config("udacity", "jungle", "robustness", "dave2", "20251219_165635"),
+    "jungle_robustness_dave2_gru": _make_job_config("udacity", "jungle", "robustness", "dave2_gru", "20251220_113323"),
+    "jungle_generalization_vit": _make_job_config("udacity", "jungle", "generalization", "vit", "20251219_030941"),
+    "jungle_generalization_dave2": _make_job_config("udacity", "jungle", "generalization", "dave2", "20251220_225512"),
+    "jungle_generalization_dave2_gru": _make_job_config("udacity", "jungle", "generalization", "dave2_gru", "20251221_000824"),
+    
+    # GenRoads experiments
+    "genroads_robustness_vit": _make_job_config("udacity", "genroads", "robustness", "vit", "20251208_181344"),
+    "genroads_robustness_dave2": _make_job_config("udacity", "genroads", "robustness", "dave2", "20251214_184315"),
+    "genroads_robustness_dave2_gru": _make_job_config("udacity", "genroads", "robustness", "dave2_gru", "20251221_193038", paired_severities=True),  # Special case
+    "genroads_generalization_vit": _make_job_config("udacity", "genroads", "generalization", "vit", "20251217_182632"),
+    "genroads_generalization_dave2": _make_job_config("udacity", "genroads", "generalization", "dave2", "20251217_225857"),
+    "genroads_generalization_dave2_gru": _make_job_config("udacity", "genroads", "generalization", "dave2_gru", "20251218_031746"),
+    
+    # CARLA experiments
+    "carla_robustness_tcp": {
+        "sim": "carla",
+        "map_name": "multi-town",
+        "test_type": "robustness",
+        "paired_severities": False,
+        "run_dir": abs_path(RUNS_ROOT / "carla" / "robustness" / "tcp" / "20251212_185734"),
+        "out_dir": abs_path(RESULTS_ROOT / "carla" / "robustness" / "tcp" / "20251212_185734"),
+    },
+    "carla_generalization_tcp": {
+        "sim": "carla",
+        "map_name": "multi-town",
+        "test_type": "generalization",
+        "paired_severities": False,
+        "run_dir": abs_path(RUNS_ROOT / "carla" / "generalization" / "tcp" / "20251201_120732"),
+        "out_dir": abs_path(RESULTS_ROOT / "carla" / "generalization" / "tcp" / "20251201_120732"),
+    },
+}
+
+
+def _make_job_config(sim: str, map_name: str, test_type: str, model: str, timestamp: str, 
+                     paired_severities: bool = False) -> Dict[str, Any]:
+    """
+    Create a job configuration with consistent path structure.
+    
+    Args:
+        sim: Simulation type ("udacity" or "carla")
+        map_name: Map name ("jungle", "genroads", "multi-town")
+        test_type: Test type ("robustness" or "generalization")
+        model: Model name ("vit", "dave2", "dave2_gru", "tcp")
+        timestamp: Timestamp string from run directory
+        paired_severities: Whether to use paired severity handling (special case)
+    
+    Returns:
+        Dictionary with job configuration including paths
+    """
+    run_dir = abs_path(RUNS_ROOT / map_name / test_type / f"{model}_{timestamp}")
+    out_dir = abs_path(RESULTS_ROOT / map_name / test_type / f"{model}_{timestamp}")
+    
+    return {
+        "sim": sim,
+        "map_name": map_name,
+        "test_type": test_type,
+        "paired_severities": paired_severities,
+        "run_dir": run_dir,
+        "out_dir": out_dir,
+    }
 
 
 def run_job(cfg: Dict[str, Any]) -> None:
+    """Run a metrics computation job"""
+    # Input validation
+    required_fields = ["sim", "run_dir", "out_dir", "map_name", "test_type"]
+    for field in required_fields:
+        if field not in cfg:
+            raise ValueError(f"Missing required field: {field}")
+    
     sim = str(cfg["sim"])
+    if sim not in ("udacity", "carla"):
+        raise ValueError(f"Invalid sim type: {sim}. Must be 'udacity' or 'carla'")
+    
+    test_type = str(cfg["test_type"])
+    if test_type not in ("robustness", "generalization"):
+        raise ValueError(f"Invalid test_type: {test_type}. Must be 'robustness' or 'generalization'")
+    
     run_dir = Path(cfg["run_dir"])
+    if not run_dir.exists():
+        raise ValueError(f"run_dir does not exist: {run_dir}")
+    
     out_dir = Path(cfg["out_dir"])
     map_name = str(cfg["map_name"])
-    test_type = str(cfg["test_type"])
     paired_severities = bool(cfg.get("paired_severities", False))
+    
+    # Ensure output directory exists
+    out_dir.mkdir(parents=True, exist_ok=True)
 
     if sim == "udacity":
         entry_rows: List[Dict[str, Any]] = []

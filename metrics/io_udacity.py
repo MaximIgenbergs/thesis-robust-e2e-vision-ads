@@ -4,14 +4,13 @@ from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 from metrics.utils import try_read_json, safe_str
+from metrics.constants import BASELINE_NAME_DEFAULT
 from metrics.failure_udacity import (
     has_failure_for_task,
     first_failure_step_for_task,
     first_failure_step_from_pd_steps,
     infer_stop_idx,
 )
-
-BASELINE_NAME_DEFAULT = "baseline"
 
 
 def _infer_model_and_ts(run_dir_name: str) -> Tuple[str, str]:
@@ -330,11 +329,10 @@ def iter_udacity_entries(run_dir: Path) -> Iterator[Dict[str, Any]]:
     if not isinstance(episodes, list):
         return
     
-    # SAFETY CHECK: Only check new_log.json if this is GenRoads Generalization.
-    # We infer this from the run_dir path string (contains 'genroads' and 'generalization').
-    path_str = str(run_dir).lower()
-    is_genroads_gen = "genroads" in path_str and "generalization" in path_str
-
+    # Configuration-based log selection instead of path-based detection
+    # The 'use_new_log' flag should be passed from the job configuration
+    use_new_log = paired_severities  # Use paired_severities as proxy for now
+    
     for ep in episodes:
         if not isinstance(ep, dict):
             continue
@@ -342,30 +340,29 @@ def iter_udacity_entries(run_dir: Path) -> Iterator[Dict[str, Any]]:
         ep_id = safe_str(ep.get("id"), default="unknown")
         ep_dir = run_dir / "episodes" / ep_id
 
-        # Original logic paths
+        # Define all possible log paths
         log_rel = safe_str(ep.get("log"), default=f"episodes/{ep_id}/log.json")
         log_path = run_dir / log_rel
         pd_log_path = run_dir / "episodes" / ep_id / "pd_log.json"
-        
-        # New log path (only used if is_genroads_gen)
         new_log_path = run_dir / "episodes" / ep_id / "new_log.json"
 
         log_json = None
 
-        if is_genroads_gen:
-            # For GenRoads Generalization: prefer new_log.json
-            if new_log_path.exists():
-                log_json = try_read_json(new_log_path)
-            elif pd_log_path.exists():
-                log_json = try_read_json(pd_log_path)
-            else:
-                log_json = try_read_json(log_path)
+        # Load log with explicit priority order
+        if use_new_log:
+            # For special cases (like GenRoads with paired severities): prefer new_log.json
+            for path_to_try in [new_log_path, pd_log_path, log_path]:
+                if path_to_try.exists():
+                    log_json = try_read_json(path_to_try)
+                    if log_json is not None:
+                        break
         else:
-            # For everything else: Strict legacy behavior (pd_log or log)
-            if pd_log_path.exists():
-                log_json = try_read_json(pd_log_path)
-            else:
-                log_json = try_read_json(log_path)
+            # For standard cases: use legacy priority (pd_log, then log)
+            for path_to_try in [pd_log_path, log_path]:
+                if path_to_try.exists():
+                    log_json = try_read_json(path_to_try)
+                    if log_json is not None:
+                        break
 
         meta_path = run_dir / "episodes" / ep_id / "meta.json"
         events_path = run_dir / "episodes" / ep_id / "events.json"

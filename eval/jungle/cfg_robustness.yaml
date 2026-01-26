@@ -1,28 +1,25 @@
 udacity:
-  map: "jungle" # jungle or jungle_reverse
-  binary: "binaries/jungle/udacity_linux/udacity.x86_64"
-  host: "127.0.0.1"
+  map: jungle # jungle or jungle_reverse
+  binary: binaries/jungle/udacity_macos_silicon/udacity.app
+  host: 127.0.0.1
   port: 9091
-  weather: "sunny"
-  daytime: "day"
+  weather: sunny
+  daytime: day
 
 models:
-  default_model: "dave2_gru"
+  default_model: dave2_gru
 
   dave2:
-    checkpoint: "dave2/jungle_20251209-175046/best_model.h5"
+    checkpoint: dave2/jungle_20251209-175046/best_model.h5
     image_size_hw: [120, 160]
-    normalize: "none"
 
   dave2_gru:
-    checkpoint: "dave2_gru/jungle_20251201-142321/best_model.h5"
+    checkpoint: dave2_gru/jungle_20251201-142321/best_model.h5
     image_size_hw: [120, 160]
-    normalize: "none"
 
   vit:
-    checkpoint: "vit/jungle_20251201-132938/best_model.ckpt"
+    checkpoint: vit/jungle_20251201-132938/best_model.ckpt
     image_size_hw: [160, 160]
-    normalize: "imagenet"
 
 run:
   image_size_hw: [240, 320]
@@ -31,42 +28,42 @@ run:
   timeout_s: 1600 # default timeout per segment
 
 segments:
-  - id: "segment_01_steep_uphill"
+  - id: segment_01_steep_uphill
     start_waypoint: 0
     end_waypoint: 50
     timeout_s: 90
 
-  - id: "segment_02_long_uphill"
+  - id: segment_02_long_uphill
     start_waypoint: 50
     end_waypoint: 130
     timeout_s: 90
 
-  - id: "segment_03_very_tight_corner"
+  - id: segment_03_very_tight_corner
     start_waypoint: 130
     end_waypoint: 222
     timeout_s: 90
 
-  - id: "segment_04_steep_downhill"
+  - id: segment_04_steep_downhill
     start_waypoint: 222
     end_waypoint: 315
     timeout_s: 90
 
-  # - id: "segment_05_long_uphill" # impossible due to bug. 
+  # - id: segment_05_long_uphill # impossible due to bug. 
   #   start_waypoint: 305
   #   end_waypoint: 374
   #   timeout_s: 90
 
-  - id: "segment_06_tight_corner_suicide" 
+  - id: segment_06_tight_corner_suicide 
     start_waypoint: 375
     end_waypoint: 490
     timeout_s: 90
 
-  - id: "segment_07_cross_bridge" 
+  - id: segment_07_cross_bridge 
     start_waypoint: 490
     end_waypoint: 600
     timeout_s: 90
 
-  - id: "segment_08_slow_uphill_twists"
+  - id: segment_08_slow_uphill_twists
     start_waypoint: 600
     end_waypoint: 760
     timeout_s: 100
@@ -94,7 +91,7 @@ segments:
   #   timeout_s: 60
 
 logging:
-  runs_dir: "/media/maximigenbergs/Elements/maximigenbergs/runs/jungle/robustness"
+  runs_dir: runs/jungle/robustness
   snapshot_configs: true
   snapshot_env: true
   include_git_sha:
@@ -109,30 +106,30 @@ perturbations:
   # Only loads dynamic masks for perturbations in the current chunk
   chunks:
     # Category C: Weather Perturbations
-    - ["dynamic_rain_filter"]
-    - ["dynamic_snow_filter", "frost_filter", "fog_filter"]
-    - ["dynamic_sun_filter"]
-    - ["dynamic_lightning_filter"]
-    - ["dynamic_smoke_filter"]
+    - [dynamic_rain_filter]
+    - [dynamic_snow_filter, frost_filter, fog_filter]
+    - [dynamic_sun_filter]
+    - [dynamic_lightning_filter]
+    - [dynamic_smoke_filter]
 
     # Category B: Blur and Focus Perturbations
-    - ["motion_blur", "defocus_blur", "gaussian_blur"]
+    - [motion_blur, defocus_blur, gaussian_blur]
 
     # Category A: Noise Perturbations
-    - ["gaussian_noise", "poisson_noise", "impulse_noise", "speckle_noise_filter", "jpeg_filter", "pixelate"]
+    - [gaussian_noise, poisson_noise, impulse_noise, speckle_noise_filter, jpeg_filter, pixelate]
 
     # Category G: Color & Tone Adjustments
-    - ["increase_brightness", "contrast", "white_balance_filter", "saturation_filter", "saturation_decrease_filter", "posterize_filter", "histogram_equalisation", "grayscale_filter", "low_pass_filter", "phase_scrambling"]
+    - [increase_brightness, contrast, white_balance_filter, saturation_filter, saturation_decrease_filter, posterize_filter, histogram_equalisation, grayscale_filter, low_pass_filter, phase_scrambling]
 
     # Category D/F: Distortion Perturbations & Graphic Patterns
-    - ["elastic", "cutout_filter", "sample_pairing_filter"]
-    - ["splatter_mapping", "dotted_lines_mapping", "zigzag_mapping", "canny_edges_mapping"]
+    - [elastic, cutout_filter, sample_pairing_filter]
+    - [splatter_mapping, dotted_lines_mapping, zigzag_mapping, canny_edges_mapping]
 
     # Category E: Affine Transformations
-    - ["translate_image", "scale_image"]
+    - [translate_image, scale_image]
 
     # Overlays (Occlusions)
-    - ["dynamic_object_overlay", "static_object_overlay"]
+    - [dynamic_object_overlay, static_object_overlay]
     
 
 # List of all available perturbations:
